@@ -1,6 +1,6 @@
 # LAKSHYA V0.1 RBAC Architecture
 
-**Status:** Proposed model; organizational grants require approval
+**Status:** Partially approved; Stavya work-creation boundaries incorporated
 
 ## 1. Model
 
@@ -14,60 +14,52 @@ Scopes are `self`, `related` (assignee, RACI member, meeting participant), `depa
 
 Permission families include `*.read`, `*.create`, `*.update`, `*.assign`, `*.deadline.change`, `*.priority.change`, `*.complete`, `*.reopen`, plus explicit approval, escalation, audit and access-administration capabilities.
 
-## 2. Proposed persona intent
-
-These are safe starting assumptions, not final Stavya policy:
+## 2. Persona intent
 
 - **MD:** organization-level management visibility, decisions and high-level escalation authority; not automatically a system administrator.
-- **MD Office:** organization-wide coordination capabilities for approved management workflows; access administration and audit export remain separately granted.
-- **Department Head:** management capabilities within owned department and approved cross-department relationships.
-- **Manager:** team execution capabilities within assigned department/team scope.
-- **Employee:** own/related work participation, progress, blocker reporting and limited meeting access.
+- **MD Office:** may create and assign work organization-wide within authorized scope; access administration and audit export remain separately unresolved.
+- **Department Head:** may assign work within authorized department scope.
+- **Manager:** may assign work within authorized team scope.
+- **Employee:** may create/assign a Task only to themself and complete a normal assigned Task. They cannot assign others, directly change official deadlines, independently change organizational priority, complete a formal Commitment without Accountable/authorized approval, or directly reopen a completed formal Commitment.
 
-Whether any persona receives a capability is `REQUIRES BUSINESS DECISION` until the matrix is approved.
+The exact permission matrix remains unresolved beyond these approved boundaries.
 
 ## 3. Decision matrix
 
-Legend: `P` proposed baseline, `R` relationship/scope-limited, `—` not proposed. Every row marked TBD requires business approval before seeding roles.
+Legend: `A` approved, `S` approved within stated scope, `—` explicitly denied, `TBD` unresolved. Approved cells still require server-side relationship/scope validation.
 
 | Capability | MD | MD Office | Dept Head | Manager | Employee | Decision status |
 |---|---:|---:|---:|---:|---:|---|
-| View organization exception dashboard | P | P | — | — | — | `REQUIRES BUSINESS DECISION` |
-| View department dashboard | P | P | R | R | — | `REQUIRES BUSINESS DECISION` |
-| View own/related tasks | R | R | R | R | R | Proposed |
-| View all organization tasks | P | P | — | — | — | `REQUIRES BUSINESS DECISION` |
-| View other departments | P | P | R | — | — | `REQUIRES BUSINESS DECISION` |
-| Create standalone task | R | P | R | R | R | `REQUIRES BUSINESS DECISION` |
-| Assign task to self | R | P | R | R | R | `REQUIRES BUSINESS DECISION` |
-| Assign task to another user | P | P | R | R | — | `REQUIRES BUSINESS DECISION` |
-| Change owner | P | P | R | R | — | `REQUIRES BUSINESS DECISION` |
-| Change deadline | P | P | R | R | — | `REQUIRES BUSINESS DECISION` |
-| Change execution priority | P | P | R | R | — | `REQUIRES BUSINESS DECISION` |
-| Update own progress | R | R | R | R | R | Proposed |
-| Complete assigned task | R | R | R | R | R | `REQUIRES BUSINESS DECISION` |
-| Reopen/cancel task | P | P | R | R | — | `REQUIRES BUSINESS DECISION` |
-| Create monthly priority | P | P | R | — | — | `REQUIRES BUSINESS DECISION` |
-| Activate/change monthly priority | P | P | R | — | — | `REQUIRES BUSINESS DECISION` |
-| Create meeting | P | P | R | R | R | `REQUIRES BUSINESS DECISION` |
-| Record draft decision | P | P | R | R | R | `REQUIRES BUSINESS DECISION` |
-| Approve/supersede decision | P | P | R | — | — | `REQUIRES BUSINESS DECISION` |
-| Manage RACI | P | P | R | R | — | `REQUIRES BUSINESS DECISION` |
-| Report Stuck/Need | R | R | R | R | R | Proposed for visible work |
-| Resolve Stuck/Need | R | R | R | R | R | `REQUIRES BUSINESS DECISION` |
-| Create manual escalation | P | P | R | R | R | `REQUIRES BUSINESS DECISION` |
-| Acknowledge escalation | R | R | R | R | R | Proposed for named audience |
-| Resolve/change escalation level | P | P | R | — | — | `REQUIRES BUSINESS DECISION` |
-| Configure/activate automation rules | — | P | — | — | — | `REQUIRES BUSINESS DECISION`; separate approval recommended |
-| View scoped audit trail | P | P | R | — | — | `REQUIRES BUSINESS DECISION` |
-| Export organization audit data | — | R | — | — | — | `REQUIRES BUSINESS DECISION` |
-| Manage users and role grants | — | R | — | — | — | `REQUIRES BUSINESS DECISION`; dedicated admin recommended |
-
-`P` is not approval. Implementation must seed only the matrix accepted by Stavya.
+| View organization exception dashboard | TBD | TBD | — | — | — | `REQUIRES BUSINESS DECISION` |
+| View department dashboard | TBD | TBD | TBD | TBD | — | `REQUIRES BUSINESS DECISION` |
+| View own/related tasks | TBD | TBD | TBD | TBD | TBD | `REQUIRES BUSINESS DECISION` visibility matrix |
+| View all organization tasks | TBD | TBD | — | — | — | `REQUIRES BUSINESS DECISION` |
+| View other departments | TBD | TBD | TBD | — | — | `REQUIRES BUSINESS DECISION` |
+| Create normal Task for self | TBD | S | S | S | A | Employee self-task approved; other roles by assignment scope |
+| Assign Task to another user | TBD | S organization | S department | S team | — | Approved scope boundaries; hierarchy source unresolved |
+| Change Task owner | TBD | S organization | S department | S team | — | Same approved assignment boundaries |
+| Change official deadline | TBD | TBD | TBD | TBD | — | Employee denial approved; formal authority unresolved |
+| Change organizational priority | TBD | TBD | TBD | TBD | — | Authorized management only; exact grants unresolved |
+| Update own Task progress | TBD | TBD | TBD | TBD | TBD | `REQUIRES BUSINESS DECISION` |
+| Complete assigned normal Task | TBD | TBD | TBD | TBD | A | Employee completion approved |
+| Approve formal Commitment completion | TBD | TBD | TBD | TBD | S only if Accountable | Accountable or authorized approver; alternate authority unresolved |
+| Reopen completed formal Commitment | TBD | TBD | TBD | TBD | — | Employee denial approved; authority unresolved |
+| Create/approve official Commitment | TBD | TBD | TBD | TBD | — | `REQUIRES BUSINESS DECISION` |
+| Create/change Monthly Priority | TBD | TBD | TBD | — | — | Authorized management only; exact grants unresolved |
+| Create meeting / record draft Decision | TBD | TBD | TBD | TBD | TBD | `REQUIRES BUSINESS DECISION` |
+| Approve Decision/meeting work | TBD | TBD | TBD | TBD | — | Human approval required; exact grants unresolved |
+| Manage RACI | TBD | TBD | TBD | TBD | — | `REQUIRES BUSINESS DECISION`; mandatory R+A always enforced |
+| Report Stuck/Need | TBD | TBD | TBD | TBD | TBD | `REQUIRES BUSINESS DECISION` for visible work |
+| Create/resolve escalation | TBD | TBD | TBD | TBD | TBD | `REQUIRES BUSINESS DECISION` |
+| Configure/activate automation rules | TBD | TBD | — | — | — | `REQUIRES BUSINESS DECISION` |
+| View/export audit | TBD | TBD | TBD | — | — | `REQUIRES BUSINESS DECISION` |
+| Manage users and role grants | TBD | TBD | — | — | — | `REQUIRES BUSINESS DECISION` |
 
 ## 4. Field and transition controls
 
 - Task update is not one broad permission. Title/description, progress, owner, deadline, priority, status, completion, reopen and cancellation are distinct commands.
-- Owner, deadline, priority, RACI, approved decision and escalation changes are always audited; require a reason where policy approves.
+- Owner, deadline, priority, RACI, status, completion, reopening, approved Decision, Commitment and escalation changes are always audited with previous/new values where applicable.
+- Formal Commitment activation requires at least one R and exactly one A. Completion requires the Accountable user or another authorized approver; an Employee cannot reopen a completed Commitment directly.
 - A user cannot grant a permission or scope they do not possess. Privileged role changes should require recent authentication and optionally dual approval.
 - Department Head/Manager authority applies only to defined managed scope; hierarchy inference requires an authoritative reporting structure.
 - Meeting participation grants access to the meeting context, not automatic access to every linked organizational record.
@@ -85,11 +77,10 @@ Tests must cover positive and negative cases across role, organization, departme
 1. Who administers users, roles and permissions, and is MD Office administration separate from coordination?
 2. Can MD and MD Office read all task details, 1:1 records and employee remarks, or only summaries/exceptions?
 3. What defines a Manager's team and a Department Head's departments?
-4. May employees create/assign tasks or only accept work and report progress?
-5. Who may change owners, deadlines and priorities, and when is assignee consent required?
-6. Who approves decisions, priorities, commitment completion and task reopen/cancellation?
+4. Which users may create/approve official Commitments and approve meeting-derived work?
+5. Which management roles may change official deadlines and organizational priorities, and when is assignee consent required?
+6. Who is the alternate Commitment completion approver, and who may reopen/cancel formal Commitments or Tasks?
 7. Who may manually escalate, at what initial level, and who resolves each level?
 8. Which audit fields are visible to operational managers and who may export them?
 9. Are any actions subject to maker-checker separation or recent reauthentication?
 10. How are temporary delegates and acting roles represented?
-

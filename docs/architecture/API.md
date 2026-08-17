@@ -1,6 +1,6 @@
 # LAKSHYA V0.1 API Architecture
 
-**Status:** Proposed for review  
+**Status:** Reconciled with approved Stavya V0.1 business rules
 **Style:** JSON REST API under `/api/v1`
 
 ## 1. Conventions
@@ -58,14 +58,20 @@ SSO/OIDC routes are added only after the identity-provider decision.
 |---|---|---|
 | `GET/POST /objectives` | List/create objectives | `objective.read/create`; valid owner scope |
 | `GET/PATCH /objectives/{id}` | Read/update objective | `objective.read/update`; transition/version checks |
+| `GET/POST /quarterly-directions` | List/create quarter planning context | `quarterly_direction.read/create`; valid year/quarter/scope |
+| `GET/PATCH /quarterly-directions/{id}` | Read/update direction | `quarterly_direction.read/update`; transition/version checks |
+| `GET/POST /o-and-o-sources` | Read/register lightweight O&O provenance | restricted source registration; no O&O workflow operations |
 | `GET/POST /priorities` | List/create monthly priorities | `priority.read/create`; valid month and objective scope |
-| `GET/PATCH /priorities/{id}` | Read/update priority | `priority.read/update`; priority/deadline changes reasoned and audited |
+| `GET/PATCH /priorities/{id}` | Read/update non-sensitive priority fields | `priority.read/update`; cannot bypass organizational priority command |
+| `POST /priorities/{id}:change-priority` | Change organizational priority/rank | `priority.change`; authorized management scope; previous/new values audited |
 | `POST /priorities/{id}:activate` | Activate reviewed priority | `priority.activate`; required fields/RACI policy |
 | `GET/POST /milestones` | List/create weekly milestones | `milestone.read/create`; priority visible; week bounds valid |
 | `GET/PATCH /milestones/{id}` | Read/update milestone | `milestone.read/update`; parent/time/version checks |
 | `POST /milestones/{id}:complete` | Record completion/outcome | `milestone.complete`; completion policy |
 
 Create requests contain business fields and relationship IDs; responses contain IDs, lifecycle, relationship summaries, timestamps, version and permitted `available_actions` as a convenience only.
+
+Objective, Priority, Milestone, Commitment and Task creation may accept a visible `o_and_o_source_id`. This records provenance only. The API exposes no RCA, O&O stage or Improvement Action workflow in V0.1.
 
 ### Meetings and decisions
 
@@ -81,19 +87,32 @@ Create requests contain business fields and relationship IDs; responses contain 
 | `POST /decisions/{id}:submit` | Request approval | `decision.submit`; completeness checks |
 | `POST /decisions/{id}:approve` | Approve and emit conversion event | `decision.approve`; approver policy; idempotent |
 | `POST /decisions/{id}:supersede` | Preserve and replace decision | `decision.supersede`; reason and replacement required |
-| `POST /decisions/{id}/commitments` | Create linked commitment | `commitment.create`; decision approved unless exception authorized |
+| `POST /decisions/{id}/commitments` | Create linked draft Commitment | `commitment.create`; Decision approved; source traceable; idempotent |
+| `POST /meetings/{id}/commitments` | Capture meeting action as draft Commitment | `commitment.create`; meeting visible; never activates automatically |
+
+All meeting types and scheduling modes may produce Decisions or proposed work. Discussion/action capture does not create an active official Commitment. It creates a draft linked Commitment/Task proposal that must pass `POST /commitments/{id}:approve`; that command is also the meeting-action approval boundary when the Commitment source is a meeting.
 
 ### Commitments, tasks, RACI and dependencies
 
 | Method and route | Purpose | Permission / important validation |
 |---|---|---|
-| `GET/POST /commitments` | Scoped list/create | `commitment.read/create`; valid source and ownership |
-| `GET/PATCH /commitments/{id}` | Read/update commitment | `commitment.read/update`; owner/deadline changes need specific capability/reason |
-| `POST /commitments/{id}:fulfill` | Record outcome | `commitment.fulfill`; outcome/accountability checks |
-| `GET/POST /tasks` | Scoped list/create task | `task.read/create`; source visible; assignee/scope valid |
+| `GET/POST /commitments` | Scoped list/create draft Commitment | `commitment.read/create`; valid source; creation does not activate official work |
+| `GET/PATCH /commitments/{id}` | Read/update ordinary draft fields | `commitment.read/update`; sensitive fields use explicit commands |
+| `POST /commitments/{id}:submit` | Submit official Commitment for approval | `commitment.submit`; required source/content present |
+| `POST /commitments/{id}:approve` | Approve/activate official Commitment | `commitment.approve`; at least one R and exactly one A; approver policy |
+| `POST /commitments/{id}:request-completion` | Submit outcome for completion approval | permitted R/owner; outcome required; idempotent |
+| `POST /commitments/{id}:approve-completion` | Complete formal Commitment | Accountable or `commitment.completion.approve`; audit outcome |
+| `POST /commitments/{id}:reopen` | Reopen completed Commitment | `commitment.reopen`; Employee denied; reason/evidence and audit required |
+| `POST /commitments/{id}:change-owner` | Change coordinating owner | `commitment.owner.change`; authorized scope; previous/new values audited |
+| `POST /commitments/{id}:change-deadline` | Change official deadline | `commitment.deadline.change`; Employee denied; previous/new values audited |
+| `POST /commitments/{id}:change-priority` | Change organizational priority | `commitment.priority.change`; Employee denied; management scope and audit |
+| `GET/POST /tasks` | Scoped list/create Task | Employee may create only self-assigned Task; managers follow assignment scope |
 | `GET/PATCH /tasks/{id}` | Read/update allowed fields | field-level capabilities; `If-Match`; transition checks |
+| `POST /tasks/{id}:assign` | Initial assignment or owner change | self only for Employee; Manager team, Dept Head department, MD Office authorized organization scope |
+| `POST /tasks/{id}:change-deadline` | Change official Task deadline | `task.deadline.change`; Employee denied for official deadline; before/after audit |
+| `POST /tasks/{id}:change-priority` | Change organizational Task priority | `task.priority.change`; Employee denied; management scope and before/after audit |
 | `POST /tasks/{id}:start` | Start work | `task.start`; assignee/authorized manager and dependencies policy |
-| `POST /tasks/{id}:complete` | Complete with outcome | `task.complete`; blockers and evidence policy |
+| `POST /tasks/{id}:complete` | Complete normal Task with outcome | assigned Employee or authorized actor; blockers/evidence policy; audited |
 | `POST /tasks/{id}:reopen` | Reopen completed task | `task.reopen`; reason required |
 | `POST /tasks/{id}:cancel` | Cancel task | `task.cancel`; reason and downstream checks |
 | `GET/PUT /tasks/{id}/raci` | Read/replace complete RACI set atomically | `raci.read/manage`; users visible; uniqueness/accountability rules |
@@ -101,7 +120,7 @@ Create requests contain business fields and relationship IDs; responses contain 
 | `GET/POST /tasks/{id}/dependencies` | Read/add prerequisite | `dependency.read/manage`; same organization, no self/duplicate/cycle |
 | `DELETE /tasks/{id}/dependencies/{dependency_id}` | Resolve/remove edge | `dependency.manage`; reason/history retained |
 
-`PATCH /tasks/{id}` must not provide a generic bypass for owner, deadline, priority or status. These fields require named application commands/capabilities even if transported through PATCH.
+`PATCH` must not provide a generic bypass for assignment/owner, deadline, organizational priority, status, approval, completion or reopen. The named commands above are separate authorization and audit boundaries.
 
 ### Stuck/Need and escalation
 
@@ -159,6 +178,19 @@ Dashboard response fields must have written definitions (denominator, timezone, 
 
 The API validates relationship visibility, same-organization membership, assignment authority, RACI uniqueness/accountability, deadline policy and idempotency. It returns `201` with the canonical task, version, links and authorized available actions.
 
+For an Employee, `assignee_user_id` must equal the authenticated user. A Manager, Department Head or MD Office actor may select another assignee only when the target is inside the approved team, department or organization scope. Official Commitment creation uses its own endpoint and cannot be smuggled through Task creation.
+
+### Approve Commitment completion
+
+```json
+{
+  "outcome": "Waiting-time calculation corrected and verified.",
+  "approval_note": "Validated against the approved source report."
+}
+```
+
+The actor must be the Commitment's Accountable user or hold the unresolved alternate approval capability. The command requires an active/pending-completion Commitment, mandatory R+A, an outcome and an `If-Match` version. It writes completion, audit and outbox records atomically. An Employee acting only as Responsible cannot use this command.
+
 ### Resolve escalation
 
 ```json
@@ -178,9 +210,8 @@ Resolution requires an open/acknowledged case, resolution capability within scop
 ## 6. Unresolved API decisions
 
 - `REQUIRES BUSINESS DECISION`: identity provider, self-service reset and MFA requirements.
-- `REQUIRES BUSINESS DECISION`: exact role grants and cross-department visibility.
-- `REQUIRES BUSINESS DECISION`: decision approval and commitment conversion workflow.
+- `REQUIRES BUSINESS DECISION`: role grants beyond approved Employee self-task, Manager team, Department Head department and MD Office authorized organization assignment boundaries; cross-department visibility remains unresolved.
+- `REQUIRES BUSINESS DECISION`: exact decision/meeting-work approvers and alternate Commitment completion/reopen authorities.
 - `REQUIRES BUSINESS DECISION`: required reasons/evidence for each sensitive transition.
 - `REQUIRES BUSINESS DECISION`: dashboard metric definitions and freshness.
 - `REQUIRES BUSINESS DECISION`: external notification channels and mandatory notification classes.
-

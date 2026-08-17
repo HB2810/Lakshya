@@ -1,6 +1,6 @@
 # LAKSHYA V0.1 Security Architecture
 
-**Status:** Proposed baseline; production threat-model review required
+**Status:** Reconciled security baseline; production threat-model review required
 
 ## 1. Security objectives
 
@@ -26,6 +26,8 @@ A formal deployment-specific threat model is required before production.
 ## 4. Authorization
 
 Server-side RBAC with organization, department and relationship scope is mandatory. Every read, list, aggregate, update and export is scoped. Field/transition permissions separate owner, deadline, priority, RACI, approval, reopen and escalation actions. Administrative access is not implied by the MD persona.
+
+Approved minimum denies are enforced explicitly: Employees cannot assign another user, directly change official organizational deadlines, independently change organizational priority, complete a formal Commitment without Accountable/authorized approval, or directly reopen a completed formal Commitment. Manager, Department Head and MD Office assignment is constrained to authorized team, department and organization scope respectively.
 
 Prevent privilege escalation by requiring grantors to possess grantable permission/scope, invalidating authorization state promptly, auditing all grants and testing object-ID substitution. Consider maker-checker approval for high-impact role and escalation-rule changes.
 
@@ -54,7 +56,7 @@ Field-level application encryption may be added after data classification identi
 
 ## 7. Audit and monitoring
 
-Audit important authentication, authorization administration, decision, task, RACI, deadline, priority, escalation, automation-rule and export actions. Record actor, service/origin, entity, before/after (redacted), reason, time and correlation. Runtime role cannot update/delete audit records; reading/exporting audit is restricted and audited.
+Audit important authentication, authorization administration, owner, deadline, priority, RACI, status, completion, reopening, escalation, Decision, Commitment, automation-rule and export actions. Record actor, service/origin, entity, before/after (redacted), reason where required, time and correlation. Runtime role cannot update/delete audit records; reading/exporting audit is restricted and audited.
 
 Central monitoring should alert on repeated authentication failures, privileged role changes, unusual exports, automation failure/backlog, audit write failure and provider errors. Never allow a business mutation requiring audit to commit when its audit insert fails.
 
@@ -96,6 +98,8 @@ No advanced external integration is approved for V0.1.
 - Ownership, deadline, priority, RACI, escalation, closure, deletion and management decisions require human approval.
 - Define retention/training opt-out, residency and incident obligations before using an external AI provider.
 
+Execution Intelligence uses the same boundary. It receives minimized read-only organizational context and produces a persisted recommendation; it does not receive mutation credentials or bypass application authorization. Workload-aware assignment requires an approved workload/availability source before use. No vector database, autonomous agent runtime or separate AI service is assumed for V0.1.
+
 ## 13. Verification gates
 
 Before production: threat model; RBAC policy approval; security test cases for every scope; dependency/secret/container scanning; session/CSRF tests; backup restore; audit completeness test; penetration test proportional to exposure; incident response/runbook; retention and access-review process.
@@ -109,4 +113,3 @@ Before production: threat model; RBAC policy approval; security test cases for e
 - Notification providers/channels and allowed sensitive content.
 - Security/operations owner, incident response and periodic access review.
 - AI/integration provider governance for future phases.
-

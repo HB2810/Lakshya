@@ -1,10 +1,12 @@
 # LAKSHYA V0.1 Escalation Architecture
 
-**Status:** Configurable design; thresholds are not approved
+**Status:** Reconciled configurable design; thresholds remain unresolved
 
 ## 1. Principle
 
 Escalation is a contextual, durable management-attention case. `overdue != automatically escalated`. Rules may consider priority, criticality, business impact, deadline/delay, progress, blocker, dependency, decision need and risk. No threshold in this document is a business rule.
+
+`Stuck / Need -> Escalation -> Resolution` is the approved attention chain, but an open Stuck/Need does not automatically create an Escalation. A configured deterministic rule or authorized manual action must create the case.
 
 Provisional labels from the product specification are L0 Normal, L1 Attention, L2 Escalated and L3 Management/MD Attention. Their names, audiences and authorities are `REQUIRES BUSINESS DECISION`.
 
@@ -78,6 +80,8 @@ Audience resolvers may select task R/A, manager, department head, MD Office or M
 - Record false-positive/false-negative review feedback without allowing AI to self-modify rules.
 - Use a kill switch per rule and globally; disabling stops new evaluations but preserves history.
 
+Future Execution Intelligence may recommend risk classifications, next actions or a smart escalation. It remains advisory for escalation and cannot create/change/resolve a high-impact case without the applicable human approval. Deterministic approved rules remain the V0.1 execution mechanism.
+
 ## 9. Assumptions
 
 - Organization timezone and business calendar will be configured before time rules go live.
@@ -96,4 +100,3 @@ Audience resolvers may select task R/A, manager, department head, MD Office or M
 8. Decide mandatory channels, digest policy and after-hours behavior.
 9. Decide rule approval/maker-checker policy and emergency disable authority.
 10. Define resolution evidence and whether any case may auto-resolve.
-

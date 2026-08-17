@@ -1,6 +1,6 @@
 # LAKSHYA V0.1 Domain Model
 
-**Status:** Proposed for review
+**Status:** Reconciled with approved Stavya V0.1 business rules
 
 ## 1. Modeling principles
 
@@ -20,6 +20,7 @@ erDiagram
     ROLE ||--o{ ROLE_ASSIGNMENT : grants
     ROLE ||--o{ ROLE_PERMISSION : includes
     PERMISSION ||--o{ ROLE_PERMISSION : maps
+    QUARTERLY_DIRECTION ||--o{ MONTHLY_PRIORITY : guides
     OBJECTIVE ||--o{ MONTHLY_PRIORITY : focuses
     MONTHLY_PRIORITY ||--o{ WEEKLY_MILESTONE : decomposes
     WEEKLY_MILESTONE ||--o{ COMMITMENT : motivates
@@ -27,6 +28,8 @@ erDiagram
     MEETING ||--o{ DECISION : produces
     DECISION ||--o{ COMMITMENT : creates
     COMMITMENT ||--o{ TASK : fulfilled_by
+    O_AND_O_SOURCE ||--o{ OBJECTIVE : originates
+    O_AND_O_SOURCE ||--o{ COMMITMENT : originates
     TASK ||--o{ RACI_ASSIGNMENT : governs
     TASK ||--o{ DEPENDENCY : predecessor
     TASK ||--o{ DEPENDENCY : successor
@@ -59,23 +62,27 @@ An authenticated or provisioned person. User identity is organization-wide. Depa
 
 ## 4. Strategy
 
+### Quarterly Direction
+
+A planning context for one organizational quarter. It guides one or more Monthly Priorities without creating a V0.1 KPI engine. A Monthly Priority may also relate to an Objective; Quarterly Direction and Objective serve different planning purposes and neither is collapsed into a Task.
+
 ### Objective
 
 A durable organizational or departmental intended result. It may span months and own multiple monthly priorities. V0.1 needs basic lifecycle and traceability, not a KPI engine.
 
 ### Monthly Priority
 
-A time-boxed focus linked to an objective where applicable. Store year/month (or period start/end), owning department, priority/criticality and lifecycle. A priority may be organization-wide or department-owned. The allowed number and ranking method are `REQUIRES BUSINESS DECISION`.
+A time-boxed focus linked to a Quarterly Direction and optionally an Objective. Store year/month (or period start/end), owning department, priority/criticality and lifecycle. A priority may be organization-wide or department-owned and may change during the month. Each change is a normal authorized mutation with append-only audit before/after evidence; current state does not erase history. The allowed number and ranking method are `REQUIRES BUSINESS DECISION`.
 
 ### Weekly Milestone
 
-A measurable result expected within a defined week and linked to one monthly priority. A week is stored as start/end dates using an organization timezone policy. Milestones may create commitments or directly group tasks only if policy permits; the preferred chain is through commitments.
+A measurable result expected within a defined week and linked to one Monthly Priority. A week is stored as start/end dates using an organization timezone policy. Official organizational execution follows `Monthly Priority -> Weekly Milestone -> Commitment -> Task`; standalone self/operational Tasks remain permitted outside a formal Commitment.
 
 ## 5. Meetings and decisions
 
 ### Meeting
 
-An official execution source with type (major, cross-functional, one-to-one), scheduling mode (scheduled/non-scheduled), timing, organizer, owning department, agenda and lifecycle. "Type" and "scheduled" are separate attributes, not competing values.
+An official execution source with business type (major, cross-functional, one-to-one), scheduling mode (scheduled/non-scheduled), timing, organizer, owning department, agenda and lifecycle. All supported combinations may generate proposed work. "Type" and "scheduled" are separate attributes, not competing values.
 
 ### Meeting Participant
 
@@ -83,27 +90,33 @@ A membership relationship between meeting and user with participant role, attend
 
 ### Decision
 
-A durable, searchable management decision, distinct from discussion and task. It records text, context, decision maker, decided date, status, impact and optional meeting/priority/task relationships. A decision's approval is an explicit transition. An approved decision may produce one or more commitments; the conversion is idempotent and traceable.
+A durable, searchable management decision, distinct from discussion, Commitment and Task. It records text, context, decision maker, decided date, status, impact and optional meeting/priority/task relationships. A decision's approval is an explicit transition. Discussion or extracted action remains proposed work until the required human approval. An approved decision may produce one or more Commitments; conversion is idempotent and traceable.
 
 ## 6. Execution
 
 ### Commitment
 
-An organizational promise or obligation: what result was committed, by whom/for whom, by when, and from which source. It may originate from an approved decision, milestone, MD instruction, department request or issue. It is not merely a task: a commitment can require multiple executable tasks and has its own accountable result and outcome.
+An official organizational result or obligation: what result was committed, by whom/for whom, by when, and from which source. It may originate from an approved decision, milestone, MD instruction, department request, O&O or issue. It is not a Task: a Commitment can require multiple executable Tasks and has its own coordinating owner, Accountable result and outcome. The operational owner does not replace RACI A.
+
+Every official Commitment must have at least one Responsible assignment and exactly one Accountable assignment before activation. C and I are optional. Completion is a separate approval transition performed by the Accountable person or another authorized approver; completing every child Task does not complete the Commitment automatically.
 
 For V0.1, implement explicit foreign keys for approved source types that exist (for example `decision_id`, `milestone_id`) and a controlled source-kind field. Do not use an unconstrained polymorphic ID as the only provenance. MD Instruction is a future source type and should not become a V0.1 module merely to reserve it.
 
 ### Task
 
-An executable unit of work. It has an owner (operational assignee), status, deadline, progress, priority/criticality, optional commitment and milestone context, and outcome. "Overdue" is derived from deadline/status, not a mutable status. Parent/child tasks may support decomposition but must not be used to represent dependencies.
+An executable unit of work. It has an owner (operational assignee), status, deadline, progress, priority/criticality, optional Commitment and milestone context, and outcome. An Employee may create a Task for themself and may complete a normal assigned Task, but may not assign another Employee, change an official organizational deadline, independently change organizational priority, or directly reopen a formally completed Commitment. "Overdue" is derived from deadline/status, not a mutable status. Parent/child Tasks may support decomposition but must not represent dependencies.
 
 ### Commitment versus task
 
-One commitment can be fulfilled by zero or more tasks. A draft commitment may exist before task planning. A standalone operational task may exist without a commitment if authorized, but critical or decision-derived work should be promoted into a commitment according to an unresolved policy. Completion of all tasks does not automatically prove the commitment outcome unless a deterministic, approved rule says so.
+One Commitment can be fulfilled by zero or more Tasks. A draft Commitment may exist before task planning. A self-created or authorized standalone operational Task may exist without a Commitment. Formal organizational results use a Commitment. Completion of all Tasks never by itself proves the Commitment outcome; the required Accountable/authorized approval completes it.
 
 ### RACI Assignment
 
-A first-class relationship between a meaningful work item and a user. In V0.1 apply RACI to commitments and tasks through separate constrained assignments or a shared assignment table with integrity enforcement. RACI is not JSON. Details are in [RACI.md](../business-rules/RACI.md).
+A first-class relationship between a meaningful work item and a user. In V0.1 apply RACI to Commitments and Tasks through a shared assignment table with integrity enforcement. Every active official Commitment requires at least one R and exactly one A; C and I are optional. RACI is not JSON. Details are in [RACI.md](../business-rules/RACI.md).
+
+### O&O Source
+
+A lightweight provenance entity representing an O&O reference, not the full future O&O workflow. It records organization, reference/title, source date and origin metadata. Objectives, Monthly Priorities, Weekly Milestones, Commitments, Tasks and future Improvement Actions can reference it. The exact workflow remains unresolved, so V0.1 does not model O&O stages, RCA or autonomous improvement processing.
 
 ### Dependency
 
@@ -146,16 +159,17 @@ These technical entities are required even though they are not user-facing: outb
 - Meeting types, lifecycle statuses and reason codes: controlled enums/reference data until user configurability is proven.
 - Action: represented as a draft/approved commitment or task linked to a decision; a separate action table would duplicate lifecycle.
 - Progress: current percentage/summary plus audit history; a progress-update table is deferred unless threaded reporting is required.
-- Issue: future improvement-engine aggregate; V0.1 Stuck/Need covers execution blockers without prematurely building RCA.
+- Issue and Improvement Action: future improvement-engine aggregates. A lightweight O&O source preserves provenance in V0.1 without prematurely building the workflow.
 - KPI, RCA, AI transcript/recommendation and external integration payload models: future modules behind established boundaries.
 
 ## 10. Unresolved model decisions
 
 - `REQUIRES BUSINESS DECISION`: whether users can have multiple active department memberships.
-- `REQUIRES BUSINESS DECISION`: which work must have a commitment and which may remain a standalone task.
-- `REQUIRES BUSINESS DECISION`: which commitment/task classes require exactly one Accountable assignment.
 - `REQUIRES BUSINESS DECISION`: decision approval roles and whether approval is always required.
+- `REQUIRES BUSINESS DECISION`: alternate Commitment completion and reopening authority.
+- `REQUIRES BUSINESS DECISION`: Manager team and Department Head hierarchy data source.
+- `REQUIRES BUSINESS DECISION`: same-person R+A and multiple-Responsible rules.
+- `REQUIRES BUSINESS DECISION`: exact O&O workflow and Improvement Action lifecycle.
 - `REQUIRES BUSINESS DECISION`: definition and calculation of EC, time spent and progress.
 - `REQUIRES BUSINESS DECISION`: outcome verification requirements and evidence retention.
 - `REQUIRES BUSINESS DECISION`: organization timezone and week-start convention.
-

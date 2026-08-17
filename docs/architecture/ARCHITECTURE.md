@@ -1,11 +1,11 @@
 # LAKSHYA V0.1 System Architecture
 
-**Status:** Proposed for review  
+**Status:** Reconciled with approved Stavya V0.1 business rules; unresolved items remain marked
 **Scope:** Architecture only; no implementation is authorized by this document.
 
 ## 1. Architectural goals
 
-LAKSHYA is an organizational execution system, not a generic task tracker. The architecture preserves the product chains `Objective -> Priority -> Milestone -> Commitment -> Task -> Outcome`, `Meeting -> Decision -> Commitment`, and `Stuck/Need -> Escalation -> Resolution` as traceable domain relationships.
+LAKSHYA is an organizational execution system, not a generic task tracker. The architecture preserves `Quarterly Direction -> Monthly Priority -> Weekly Milestone -> Commitment -> Task -> Outcome`, `Meeting -> Decision -> Commitment -> Task`, `O&O -> planning/execution work`, and `Stuck/Need -> Escalation -> Resolution` as traceable domain relationships.
 
 V0.1 should be secure, auditable, inexpensive to operate, and easy for a small team to change. It should create extension seams for automation, integrations, AI assistance, and management intelligence without deploying those future capabilities now.
 
@@ -36,7 +36,7 @@ Microservices are rejected for V0.1: the domain boundaries are still being valid
 The backend is divided by business capability, with explicit module interfaces:
 
 - Identity and access: organizations, departments, users, roles, permissions, sessions.
-- Strategy: objectives, monthly priorities, weekly milestones.
+- Strategy: quarterly directions, objectives, monthly priorities and weekly milestones.
 - Meetings: meetings, participants, decisions and approval.
 - Execution: commitments, tasks, RACI, dependencies and outcomes.
 - Attention: stuck/need items, escalation cases and decisions required.
@@ -45,6 +45,8 @@ The backend is divided by business capability, with explicit module interfaces:
 - Audit: append-only security and business audit events.
 - Reporting: read-only dashboard projections and management queries.
 - Integrations: inbound/outbound adapters and external identity mapping.
+
+O&O is a recognized source of Objectives, Priorities, Milestones, Commitments, Tasks and future Improvement Actions. V0.1 stores source provenance and links; it does not implement the complete O&O workflow.
 
 Modules may share one database in V0.1, but may not bypass another module's service layer to mutate its records. Cross-module work occurs in one application transaction when synchronous, or through an outbox event when asynchronous.
 
@@ -96,6 +98,8 @@ allow = permission granted by active role
 
 Permissions are stable action strings such as `task.create`, `task.assign`, and `audit.read`. Roles map permissions to a scope. Record-level checks account for participant, RACI, assignee, creator and department relationships. Every protected use case checks authorization server-side; list queries apply scope in SQL to prevent data leakage. See [RBAC.md](../business-rules/RBAC.md).
 
+Approved boundaries are enforced independently of the unresolved full matrix: an Employee may create/assign a Task only to themself; a Manager may assign within authorized team scope; a Department Head may assign within authorized department scope; and MD Office may create/assign organization-wide within authorized scope. Employees cannot change official organizational deadlines or organizational priority, cannot directly reopen a formally completed Commitment, and may complete only normal assigned Tasks. Formal Commitment completion requires its Accountable person or another authorized approver.
+
 ## 9. Automation
 
 Domain mutations write business data, an audit event and an outbox event in the same transaction. A worker claims outbox/scheduled jobs, evaluates the exact active rule version, executes idempotent actions, and records attempts and outcomes. V0.1 uses a PostgreSQL-backed outbox/job table; a message broker may replace the transport later without changing event contracts.
@@ -111,6 +115,8 @@ Escalation creation and notification delivery are separate: provider failure doe
 ## 11. Audit architecture
 
 Audit events are append-only and separate from operational history/comments. Each event records organization, actor (or system), action, entity type/id, timestamp, source, request/correlation ID, reason where required, and redacted before/after values. Audit creation is atomic with the business mutation. Application roles cannot update or delete audit rows.
+
+At minimum, owner, deadline, priority, RACI, status, completion, reopening, escalation, decision and Commitment changes are audited with previous/new values where applicable. Monthly Priority changes during the month preserve history rather than overwriting it without evidence.
 
 Sensitive values, password material, session tokens and secrets must never enter audit payloads. Audit access is itself audited. Retention and export policy are `REQUIRES BUSINESS DECISION`.
 
@@ -131,7 +137,13 @@ sequenceDiagram
     L->>L: Authorized system action + audit
 ```
 
-AI never receives direct database credentials and never invokes domain mutations directly. Ownership, deadline, priority, RACI, escalation, closure and deletion changes require human approval unless a separately approved deterministic rule authorizes the action.
+AI never receives direct database credentials and never invokes domain mutations directly. High-impact ownership, deadline, priority, RACI, escalation, formal completion/reopening and deletion changes require human approval. Separately approved deterministic automation may execute only classified low-risk actions.
+
+## 12.1 Future Execution Intelligence
+
+Execution Intelligence is an extension point, not a V0.1 component. It may later use stable read ports and versioned domain events to support task generation/decomposition, assignment and workload recommendations, progress-versus-plan analysis, risk/dependency detection, next-best-action recommendations and smart escalation.
+
+Its boundary is `Organizational Data -> Deterministic Rules and/or Intelligence -> Recommendation -> Human Approval where required -> Execution -> Audit`. Recommendations are persisted with provenance and never bypass the same application use cases, authorization, RACI, deadline, priority, completion or audit policies used by people and deterministic automation. No vector database, autonomous agent framework, separate analytics warehouse or AI microservice is introduced for V0.1.
 
 ## 13. Integration architecture
 
@@ -180,10 +192,11 @@ Primary risks are unresolved access policy, unclear source-system ownership, esc
 
 The required second review of `LAKSHYA_MASTER_SPEC.md` found no irreconcilable contradiction, but implementation must use these documented interpretations:
 
-- The core chain includes Commitment while the shorter priority framework says `Objective -> Monthly Priority -> Weekly Milestone -> Task`. Architecture preserves Commitment as a distinct optional result-level layer: governed/decision-derived work should use it, while an authorized simple task may link directly to a milestone. The policy for when Commitment is mandatory `REQUIRES BUSINESS DECISION`.
+- The core chain includes Commitment while the shorter priority framework says `Objective -> Monthly Priority -> Weekly Milestone -> Task`. Reconciled Stavya architecture uses `Quarterly Direction -> Monthly Priority -> Weekly Milestone -> Commitment -> Task -> Outcome`. Commitment is the formal result/obligation; Task is executable work. Authorized standalone operational Tasks may still exist, but official organizational work is represented by a Commitment with mandatory R+A.
 - Meeting flows name an Action, but V0.1 modules and required entities do not define an Action lifecycle. Architecture treats an extracted action as a draft/approved Commitment or Task with meeting/decision provenance, not a separate table. Add an Action entity only if product review defines independent state or fields.
 - Issue appears in conceptual source/escalation flows, while the RCA/improvement engine is excluded from V0.1. Architecture does not build a generic Issue module now; Stuck/Need represents execution blockers. Future Issue/RCA remains a separate aggregate.
 - The meeting lifecycle mentions AI or manual extraction, while AI meeting transcription and autonomous agents are excluded. V0.1 supports manual capture/conversion and deterministic approved automation only. The AI recommendation boundary is future architecture, not V0.1 functionality.
 - Objectives appear in the core product model but are not consistently named in every V0.1 module list. Because organizational objectives are required by the architecture brief and priorities need durable context, V0.1 includes a minimal Objective aggregate without KPI functionality.
 - The product uses owner, accountable person, RACI and assignee-related language. Architecture distinguishes operational task assignee/Responsible from result Accountable; the exact one-person/multi-person rules remain in RACI business review.
 - EC is explicitly undefined. It is excluded from mandatory schema/workflows until the business meaning and calculation are approved.
+- O&O is excluded as a complete V0.1 workflow but is approved as an execution source. V0.1 preserves typed O&O provenance without building RCA/O&O process functionality.

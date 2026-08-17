@@ -1,6 +1,6 @@
 # LAKSHYA V0.1 Automation Architecture
 
-**Status:** Proposed for review
+**Status:** Reconciled with approved Stavya V0.1 business rules
 
 ## 1. Scope
 
@@ -9,7 +9,7 @@ V0.1 needs a small deterministic automation engine for reminders, overdue detect
 The model is:
 
 ```text
-Trigger -> Conditions -> Actions
+Trigger -> Condition -> Recommendation or Action -> Approval if required -> Execution -> Audit
 ```
 
 ## 2. Components
@@ -37,7 +37,7 @@ flowchart TB
 
 Events contain event ID, schema version, organization, aggregate type/ID/version, event type, occurred time, actor/source, correlation/causation IDs and a minimal payload. Do not copy sensitive entire records into events. Consumers reload authorized current data where necessary and record the fact snapshot used for decisions.
 
-Initial event examples: `task.assigned.v1`, `task.deadline_changed.v1`, `task.completed.v1`, `stuck_item.created.v1`, `dependency.resolved.v1`, `decision.approved.v1`, and `escalation.created.v1`.
+Initial event examples: `task.assigned.v1`, `task.deadline_changed.v1`, `task.priority_changed.v1`, `task.completed.v1`, `commitment.completion_requested.v1`, `commitment.completed.v1`, `commitment.reopened.v1`, `stuck_item.created.v1`, `dependency.resolved.v1`, `decision.approved.v1`, and `escalation.created.v1`.
 
 ## 4. Rule and action model
 
@@ -53,10 +53,12 @@ V0.1 actions are limited to:
 - Create in-app notification/reminder.
 - Request escalation-rule evaluation.
 - Create an escalation case when a configured escalation rule matches.
-- Create one draft or active commitment from an approved decision according to approved policy.
+- Create one **draft** Commitment from an approved Decision or approved meeting-work proposal; activation still requires Commitment approval and mandatory R+A.
 - Enqueue a management-summary refresh/read-model update if later needed.
 
-Rules cannot execute arbitrary code, SQL, HTTP requests or mutate ownership/RACI/priority/deadline. Integrations use separately reviewed adapters.
+Rules cannot execute arbitrary code, SQL, HTTP requests or mutate ownership/RACI/organizational priority/official deadline. They cannot approve formal Commitment completion or reopen a formal Commitment. Integrations use separately reviewed adapters.
+
+Each action declares its authority class: `low_risk_deterministic` may execute when its rule is approved; `approval_required` creates a recommendation/proposal and waits for an authorized human command. Employees' assignment, deadline, priority, completion and reopen restrictions are enforced by the same application use cases regardless of trigger source.
 
 ## 5. Time-based automation
 
@@ -75,6 +77,8 @@ Reminder windows, working days and quiet hours are configuration and `REQUIRES B
 At-least-once execution is assumed. Every handler uses a semantic idempotency key such as `(rule_version, trigger_event, target, action)`. A unique database constraint ensures one successful effect. State transitions use optimistic versions or row locks. Stale facts cause reevaluation, not blind action.
 
 Decision-to-commitment conversion has a unique decision/rule source key. Notifications use a deduplication key. Escalations use a partial uniqueness rule for open target/rule cases. An execution may safely be retried after a worker crash.
+
+Meeting discussion/action conversion uses the same pattern: repeated extraction or approval cannot create duplicate official work. The initial automated effect is a proposal/draft, not an approved Commitment.
 
 ## 7. Retries and failures
 
@@ -98,14 +102,15 @@ The worker uses a distinct database/runtime identity with only required operatio
 
 ## 10. Evolution
 
-PostgreSQL outbox/jobs are adequate for V0.1. Introduce a broker only when measured throughput, external consumers or availability needs justify it. Stable event/action interfaces allow the transport to change. Future AI may consume events to create recommendations, but cannot register rules or invoke action handlers directly.
+PostgreSQL outbox/jobs are adequate for V0.1. Introduce a broker only when measured throughput, external consumers or availability needs justify it. Stable event/action interfaces allow the transport to change.
+
+Future Execution Intelligence may consume minimized organizational data and events through read-only ports to produce persisted recommendations for task generation/decomposition, assignment, workload, progress/risk, dependency, next action and escalation. It cannot register deterministic rules, invoke action handlers directly or bypass approval. No AI infrastructure is implemented in V0.1.
 
 ## 11. Required business decisions
 
 - Automation rule authors, approvers and emergency-disable authority.
 - Reminder windows, working calendar, quiet hours and channel policy.
-- Whether approved decisions create draft commitments automatically or require a second confirmation.
+- Exact human approver for Decision/meeting-work conversion and whether draft creation itself requires confirmation. Commitment activation always remains a separate approved transition with R+A.
 - Escalation thresholds and automatic/manual resolution policy.
 - Operational ownership and response expectations for failed jobs.
 - Data retention for events, executions and notification attempts.
-

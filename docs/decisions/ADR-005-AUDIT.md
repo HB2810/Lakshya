@@ -13,6 +13,8 @@ Create an application-level append-only `audit_events` table. Insert the audit e
 
 The runtime database role cannot update/delete audit rows. Audit read/export uses separate explicit permissions and is audited. Domain events and audit events remain distinct: the former drive consumers; the latter provide human/security evidence.
 
+The approved minimum audit set includes owner, deadline, priority, RACI, status, completion, reopening, escalation, Decision and Commitment changes. Previous/new values are retained where applicable, including Monthly Priority changes during an active month.
+
 ## Alternatives
 
 - Application logs only: rejected because retention, structure, atomicity and access are insufficient.
@@ -24,4 +26,3 @@ The runtime database role cannot update/delete audit rows. Audit read/export use
 ## Consequences
 
 Every mutation use case must specify its audit action and redaction schema; audit insert failure aborts the mutation. Storage grows and requires an approved retention/export policy. Database-level controls and backups remain necessary because append-only application design alone is not absolute tamper proof.
-

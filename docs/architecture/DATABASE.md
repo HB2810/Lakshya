@@ -1,6 +1,6 @@
 # LAKSHYA V0.1 Database Architecture
 
-**Status:** Proposed for review  
+**Status:** Reconciled with approved Stavya V0.1 business rules
 **Database:** PostgreSQL
 
 ## 1. Strategy and conventions
@@ -41,19 +41,21 @@ All writes occur through transactions. A business mutation, its audit event and 
 
 | Table | Purpose | Important relationships/constraints |
 |---|---|---|
+| `quarterly_directions` | Quarter-level planning context | FK organization/optional department; year/quarter uniqueness within scope |
 | `objectives` | Durable intended results | FK organization/optional department; lifecycle |
-| `monthly_priorities` | Monthly focus | FK objective; period start/end; organization/department; date validity |
+| `monthly_priorities` | Monthly focus | FK quarterly direction; optional objective/O&O source; period dates; organization/department |
 | `weekly_milestones` | Weekly measurable result | FK priority; week start/end; date validity |
 | `meetings` | Scheduled/non-scheduled execution source | organization, optional department; organizer user; type and lifecycle |
 | `meeting_participants` | Participant relationship | unique meeting/user; participant role and attendance |
 | `decisions` | Independent management decision | optional meeting/priority; decision maker; approval lifecycle |
+| `o_and_o_sources` | Lightweight O&O provenance, not workflow | organization; unique external/reference key where available; source date/metadata |
 
 ### Execution and attention
 
 | Table | Purpose | Important relationships/constraints |
 |---|---|---|
-| `commitments` | Result-level organizational obligation | optional decision/milestone source; owner; due date; lifecycle |
-| `tasks` | Executable work | optional commitment/milestone; assignee; parent task; status/deadline/progress |
+| `commitments` | Formal result-level organizational obligation | owner; optional decision/milestone/O&O source; due date; completion approval/lifecycle |
+| `tasks` | Executable work | optional commitment/milestone/O&O source; assignee; parent task; status/deadline/progress |
 | `raci_assignments` | RACI on commitment or task | exactly one target; FK user; unique target/user/type; accountable rules |
 | `task_dependencies` | Directed prerequisite edge | predecessor/successor task; no self edge; unique active pair |
 | `stuck_items` | Blocker/need and resolution | task required; optional commitment; provider refs/text; impact |
@@ -61,6 +63,8 @@ All writes occur through transactions. A business mutation, its audit event and 
 | `escalation_events` | Acknowledge, level change, resolution history | FK escalation; actor; immutable event |
 
 For `raci_assignments`, use nullable `task_id` and `commitment_id` with a check that exactly one is non-null. This retains real foreign keys. If RACI later applies to many additional entity types, migrate deliberately to per-entity assignment tables or a validated work-item supertype; do not introduce an unconstrained polymorphic ID now.
+
+Every active official Commitment must have at least one R and exactly one A. Unique assignment constraints prevent duplicates; a serialized application transaction validates the complete assignment set and Commitment transition. C and I are optional. Whether the same user may be both R and A remains `REQUIRES BUSINESS DECISION`.
 
 For escalations, an explicit set of nullable target FKs plus an exactly-one-target check is acceptable for the small approved V0.1 target set. This favors integrity over a generic `entity_type/entity_id` pair. A target supertype can be introduced if the set grows materially.
 
@@ -81,11 +85,17 @@ For escalations, an explicit set of nullable target FKs plus an exactly-one-targ
 
 ### Priority to work
 
-`objectives 1:N monthly_priorities 1:N weekly_milestones 1:N commitments 1:N tasks` is the preferred traceability chain. Tasks may link directly to a milestone for grouping, but the link must agree with the commitment's milestone when both exist. A task may be standalone if business policy permits.
+`quarterly_directions 1:N monthly_priorities 1:N weekly_milestones 1:N commitments 1:N tasks` is the approved planning/execution chain. A Monthly Priority may also link to an Objective. A Task may be standalone when self-created or otherwise authorized; formal organizational results use a Commitment. If a Task has both Commitment and milestone links, they must agree.
 
 ### Meeting to execution
 
 `meetings 1:N decisions 1:N commitments 1:N tasks`. Decision-to-commitment conversion uses a unique source key so retries cannot create duplicates. A decision may also reference a related existing task without implying that the task originated from it.
+
+Discussion/action capture is draft/proposed data. No official Commitment row becomes active until its required approval and R+A validation succeed. Every supported meeting type and scheduling mode can be the source.
+
+### O&O provenance
+
+`o_and_o_sources` is a source envelope only. Nullable `o_and_o_source_id` foreign keys on Objectives, Monthly Priorities, Weekly Milestones, Commitments and Tasks preserve origin. The table does not implement the unresolved O&O workflow; future Improvement Actions can reference the same source without changing core entity identities.
 
 ### Task relationships
 
@@ -109,7 +119,7 @@ Suggested technical states are deliberately minimal and require product review:
 | Objective/Priority/Milestone | `draft`, `active`, `completed`, `cancelled` |
 | Meeting | `draft`, `scheduled`, `in_progress`, `completed`, `cancelled` |
 | Decision | `draft`, `pending_approval`, `approved`, `superseded`, `rejected` |
-| Commitment | `draft`, `active`, `fulfilled`, `cancelled` |
+| Commitment | `draft`, `active`, `pending_completion`, `completed`, `cancelled` |
 | Task | `draft`, `ready`, `in_progress`, `blocked`, `completed`, `cancelled` |
 | Stuck item | `open`, `addressing`, `resolved`, `cancelled` |
 | Escalation | `open`, `acknowledged`, `resolved`, `cancelled` |
@@ -117,7 +127,7 @@ Suggested technical states are deliberately minimal and require product review:
 
 `overdue`, `approaching_deadline` and `at_risk` are derived conditions, not lifecycle states. Transitions are allow-listed in domain policy and audited. Reopen is a transition event, not a permanent state.
 
-The exact transition authorities and cancellation semantics are `REQUIRES BUSINESS DECISION`.
+An assigned Employee may complete a normal Task. Commitment completion moves through `pending_completion -> completed` only after Accountable/authorized approval. An Employee cannot directly reopen a completed Commitment. Exact alternate approval, reopen and cancellation authorities remain `REQUIRES BUSINESS DECISION`.
 
 ## 5. Constraints
 
@@ -127,9 +137,10 @@ The exact transition authorities and cancellation semantics are `REQUIRES BUSINE
 - A user referenced by ownership/RACI must be active or historically valid at assignment time; deactivation does not erase history.
 - One meeting participant row per meeting/user.
 - One active role assignment per equivalent user/role/scope/effective period.
-- One RACI tuple per target/user/type. Exactly-one-Accountable constraints for required work are enforced transactionally because requirement depends on lifecycle/classification.
+- One RACI tuple per target/user/type. Active official Commitments require at least one R and exactly one A, enforced transactionally on activation and RACI replacement.
 - Completed/cancelled items cannot accept ordinary progress mutations.
-- Reason is mandatory for owner, deadline, priority, RACI, reopen, cancellation and escalation-resolution changes if policy requires it; initial recommendation is to require it.
+- Owner, deadline, priority, RACI, status, completion, reopening, escalation, Decision and Commitment mutations always create audit events. Deadline and priority mutations record previous/new values and authorized actor; exact required reason/evidence remains `REQUIRES BUSINESS DECISION`.
+- Employees may set themself as assignee when creating a self-Task but cannot assign another user. Manager, Department Head and MD Office assignment is constrained by team, department and organization authorization scope respectively.
 
 ## 6. Important indexes
 
@@ -140,6 +151,8 @@ Every index should be validated with real query plans. Initial candidates:
 - `(organization_id, assignee_user_id, status, due_at)` for personal work queues.
 - Partial task index on `(organization_id, due_at)` where status is active.
 - `(monthly_priority_id, week_start)` on milestones.
+- `(organization_id, year, quarter)` on quarterly directions and `(quarterly_direction_id, period_start)` on monthly priorities.
+- `(o_and_o_source_id)` on each source-linked entity where non-null.
 - `(meeting_id, status)` on decisions and `(decision_id)` on commitments.
 - `(commitment_id, status)` and `(milestone_id, status)` on tasks.
 - Unique active dependency pair `(predecessor_task_id, successor_task_id)`.
@@ -161,6 +174,8 @@ Audit events and automation execution evidence are append-only. Retention durati
 
 Insert audit rows in the same database transaction as the mutation. Deny UPDATE/DELETE on audit tables to the application runtime role; use a separate migration/maintenance role. Store field-level before/after JSONB with a schema version and redaction allow-list. Hash chaining or external immutable archival may be added if the Stavya threat model requires tamper evidence; it is not assumed for V0.1.
 
+Monthly Priority changes during an active month are updates or controlled transitions, never destructive replacement. The current row carries the latest state/version while append-only audit events preserve actor, reason where required, and previous/new values. Completion and reopen commands use the same approach; audit history is not reconstructed from timestamps alone.
+
 ## 9. Migrations
 
 Use Alembic with reviewed, deterministic migrations. Each release follows expand/migrate/contract when backward compatibility is needed. Production migration is a dedicated deployment step with backup verification, lock/size assessment, and rollback or roll-forward procedure. Never generate or run migrations automatically on API startup.
@@ -178,6 +193,6 @@ Future extensions use:
 - Separate KPI/outcome measurements rather than JSON embedded in tasks.
 - Persisted AI recommendations linked to source entities and human approvals.
 - Read models/warehouse feeds generated from events, never analytics writes into operational tables.
+- A future Execution Intelligence recommendation table/port linked to existing entity IDs and source events; core tables do not need redesign.
 
 Database-per-organization and row-level security are deferred. PostgreSQL RLS can be defense-in-depth later, but it does not replace application authorization and would increase V0.1 migration/connection complexity.
-

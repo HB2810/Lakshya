@@ -11,7 +11,7 @@ Reminders, escalation evaluation, notifications and decision conversion must run
 
 Use a transactional outbox, scheduled-job tables and a separate worker/scheduler process built from the FastAPI backend codebase. Assume at-least-once execution. Require semantic idempotency keys, immutable rule versions, bounded retries, failure review and recorded fact/effect evidence. Use PostgreSQL row claiming and an advisory lock for scheduler leadership.
 
-Rules implement a constrained `Trigger -> Conditions -> Actions` model. They cannot execute user code/SQL or directly invoke arbitrary integrations. Business mutation, audit event and outbox event commit atomically.
+Rules implement a constrained `Trigger -> Condition -> Recommendation or Action -> Approval if required -> Execution -> Audit` model. They cannot execute user code/SQL or directly invoke arbitrary integrations. Business mutation, audit event and outbox event commit atomically. Deterministic approved low-risk actions may execute; high-impact organizational actions and future intelligence recommendations require the applicable human approval.
 
 ## Alternatives
 
@@ -23,4 +23,3 @@ Rules implement a constrained `Trigger -> Conditions -> Actions` model. They can
 ## Consequences
 
 PostgreSQL bears moderate queue work and needs cleanup/index monitoring. Handlers must be idempotent and operational failures need ownership. Stable event/action ports allow later broker migration. Thresholds and automation authority remain business configuration, not code constants.
-
