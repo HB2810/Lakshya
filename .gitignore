@@ -1,0 +1,41 @@
+# LAKSHYA Repository Git Ignore Rules
+
+# Environment configuration
+.env
+.env.local
+.env.production
+.env.staging
+
+# Node / Next.js / Frontend
+node_modules/
+.next/
+out/
+build/
+dist/
+coverage/
+.vite/
+*.tsbuildinfo
+next-env.d.ts
+
+# Python / FastAPI / Backend
+.venv/
+venv/
+ENV/
+env/
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+
+# IDE & OS Metadata
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
