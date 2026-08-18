@@ -1,0 +1,20 @@
+Metadata-Version: 2.4
+Name: lakshya-api
+Version: 0.1.0
+Summary: LAKSHYA API — MD Office Management Operating System (identity, access and audit foundation)
+License: Proprietary
+Requires-Python: <3.13,>=3.10
+Requires-Dist: fastapi<0.116,>=0.115
+Requires-Dist: uvicorn[standard]<0.35,>=0.32
+Requires-Dist: pydantic<3,>=2.9
+Requires-Dist: pydantic-settings<3,>=2.6
+Requires-Dist: email-validator<3,>=2.2
+Requires-Dist: sqlalchemy<2.1,>=2.0.36
+Requires-Dist: alembic<2,>=1.14
+Requires-Dist: psycopg[binary]<4,>=3.2
+Requires-Dist: argon2-cffi<25,>=23.1
+Provides-Extra: dev
+Requires-Dist: pytest<9,>=8.3; extra == "dev"
+Requires-Dist: httpx<0.29,>=0.27; extra == "dev"
+Requires-Dist: ruff<0.13,>=0.8; extra == "dev"
+Requires-Dist: mypy<2,>=1.13; extra == "dev"

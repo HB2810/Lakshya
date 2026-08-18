@@ -1,0 +1,15 @@
+fastapi<0.116,>=0.115
+uvicorn[standard]<0.35,>=0.32
+pydantic<3,>=2.9
+pydantic-settings<3,>=2.6
+email-validator<3,>=2.2
+sqlalchemy<2.1,>=2.0.36
+alembic<2,>=1.14
+psycopg[binary]<4,>=3.2
+argon2-cffi<25,>=23.1
+
+[dev]
+pytest<9,>=8.3
+httpx<0.29,>=0.27
+ruff<0.13,>=0.8
+mypy<2,>=1.13
