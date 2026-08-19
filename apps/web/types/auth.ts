@@ -1,5 +1,35 @@
 export type Persona = 'MD' | 'MD_OFFICE' | 'DEPARTMENT_HEAD' | 'MANAGER' | 'EMPLOYEE';
 
+export interface BackendUser {
+  id: string;
+  email: string;
+  full_name: string;
+  is_active: boolean;
+  organization_id: string;
+  department_id?: string | null;
+  created_at?: string;
+  updated_at?: string;
+  last_login_at?: string | null;
+}
+
+export interface SessionSummary {
+  id: string;
+  issued_at: string;
+  expires_at: string;
+  last_activity_at: string;
+}
+
+export interface CurrentUserResponse {
+  user: BackendUser;
+  organization_id: string;
+  organization_slug: string;
+  session: SessionSummary;
+  roles: string[];
+  permissions: string[];
+  department_ids: string[];
+  must_change_password: boolean;
+}
+
 export interface User {
   id: string;
   name: string;
@@ -9,65 +39,20 @@ export interface User {
   departmentId: string;
   departmentName: string;
   avatarUrl?: string;
+  roles?: string[];
+  permissions?: string[];
+  organizationId?: string;
+  organizationSlug?: string;
+  mustChangePassword?: boolean;
 }
 
-export type Capability =
-  | 'user.read'
-  | 'user.create'
-  | 'user.update'
-  | 'department.read'
-  | 'department.create'
-  | 'role.read'
-  | 'role.assign'
-  | 'objective.read'
-  | 'objective.create'
-  | 'quarterly_direction.read'
-  | 'quarterly_direction.create'
-  | 'priority.read'
-  | 'priority.create'
-  | 'priority.change'
-  | 'priority.activate'
-  | 'milestone.read'
-  | 'milestone.create'
-  | 'milestone.complete'
-  | 'meeting.read'
-  | 'meeting.create'
-  | 'meeting.complete'
-  | 'decision.read'
-  | 'decision.create'
-  | 'decision.approve'
-  | 'commitment.read'
-  | 'commitment.create'
-  | 'commitment.submit'
-  | 'commitment.approve'
-  | 'commitment.owner.change'
-  | 'commitment.deadline.change'
-  | 'commitment.priority.change'
-  | 'commitment.completion.approve'
-  | 'commitment.reopen'
-  | 'task.read'
-  | 'task.create'
-  | 'task.assign'
-  | 'task.deadline.change'
-  | 'task.priority.change'
-  | 'task.complete'
-  | 'task.reopen'
-  | 'raci.read'
-  | 'raci.manage'
-  | 'stuck.read'
-  | 'stuck.create'
-  | 'stuck.resolve'
-  | 'escalation.read'
-  | 'escalation.create'
-  | 'escalation.acknowledge'
-  | 'escalation.resolve'
-  | 'dashboard.md.read'
-  | 'dashboard.department.read'
-  | 'audit.read'
-  | 'audit.export';
+export type Capability = string;
 
 export interface AuthSession {
-  user: User;
+  user: User | null;
   isAuthenticated: boolean;
-  csrfToken: string;
+  csrfToken?: string;
+  roles: string[];
+  permissions: string[];
+  mustChangePassword?: boolean;
 }

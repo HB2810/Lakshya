@@ -77,7 +77,11 @@ describe('LAKSHYA Frontend Hardening & Security Audit Suite', () => {
 
     it('HIDES quick login buttons in Production mode', () => {
       vi.stubEnv('NODE_ENV', 'production');
-      render(<LoginPage />);
+      render(
+        <AuthProvider>
+          <LoginPage />
+        </AuthProvider>
+      );
       expect(screen.queryByText(/Quick Persona Sign-In Demo/i)).toBeNull();
       expect(screen.queryByText(/Dr. Dave/i)).toBeNull();
     });

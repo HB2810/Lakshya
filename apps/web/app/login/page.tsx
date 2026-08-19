@@ -4,16 +4,18 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Lock, Mail, Eye, EyeOff, ShieldCheck, ArrowRight, AlertCircle } from 'lucide-react';
 import { DEMO_USERS } from '../../lib/mocks/organizationMock';
+import { useAuth } from '../../lib/auth/AuthContext';
 
 export default function LoginPage() {
   const router = useRouter();
+  const { login, isLoading: authLoading } = useAuth();
   const [email, setEmail] = useState('md@stavyaspine.com');
   const [password, setPassword] = useState('••••••••••••');
   const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
@@ -22,25 +24,37 @@ export default function LoginPage() {
       return;
     }
 
-    setIsLoading(true);
+    setIsSubmitting(true);
 
-    // Simulate secure server-side session authentication
-    setTimeout(() => {
-      setIsLoading(false);
+    try {
+      await login(email, password);
       router.push('/overview');
-    }, 600);
+    } catch (err: unknown) {
+      const errorMsg = (err as Error)?.message || 'Authentication failed. Please check your credentials.';
+      setError(errorMsg);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  const handleQuickLogin = (demoEmail: string) => {
+  const handleQuickLogin = async (demoEmail: string) => {
     setEmail(demoEmail);
     setPassword('••••••••••••');
     setError('');
-    setIsLoading(true);
-    setTimeout(() => {
-      setIsLoading(false);
+    setIsSubmitting(true);
+
+    try {
+      await login(demoEmail, 'password');
       router.push('/overview');
-    }, 400);
+    } catch (err: unknown) {
+      const errorMsg = (err as Error)?.message || 'Authentication failed.';
+      setError(errorMsg);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
+
+  const isLoading = isSubmitting || authLoading;
 
   return (
     <div className="min-h-screen w-full bg-slate-900 flex flex-col justify-center items-center p-4 relative overflow-hidden">
