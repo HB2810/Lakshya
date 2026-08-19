@@ -1,103 +1,91 @@
 import { Meeting, Decision } from '../../types/meeting';
+import { executionStore } from './executionMock';
 
-export const MOCK_DECISIONS: Decision[] = [
-  {
-    id: 'dec-2026-031',
-    code: 'DEC-2026-031',
-    meetingId: 'mtg-2026-101',
-    meetingTitle: 'Weekly MD Executive Operations Review',
-    title: 'Approve new MRI appointment allocation strategy for Spine Surgery OPD',
-    context: 'High outpatient volume in spine clinic requires reserving 4 dedicated daily emergency MRI slots.',
-    decisionMakerUserId: 'usr-md-001',
-    decisionMakerUserName: 'Managing Director',
-    status: 'APPROVED',
-    approvedAt: '2026-08-18T09:15:00+05:30',
-    approvedByUserName: 'MD Office',
-    impactSummary: 'Radiology will hold 4 daily slots specifically for acute spine consultation requisitions.',
-    linkedCommitmentId: 'cm-2026-090',
-  },
-  {
-    id: 'dec-2026-032',
-    code: 'DEC-2026-032',
-    meetingId: 'mtg-2026-102',
-    meetingTitle: 'OPD Flow Cross-Functional Team Briefing',
-    title: 'Authorize reception kiosk hardware upgrade and token display mounting',
-    context: 'Operations requested dual 55-inch display screens for lobby waiting area.',
-    decisionMakerUserId: 'usr-mdo-002',
-    decisionMakerUserName: 'Het Bhatt',
-    status: 'APPROVED',
-    approvedAt: '2026-08-17T11:00:00+05:30',
-    approvedByUserName: 'Het Bhatt',
-    impactSummary: 'IT cleared to procure dual lobby monitors under Q3 OPD optimization budget.',
-    linkedCommitmentId: 'cm-2026-089',
-  },
-];
+export let MOCK_DECISIONS: Decision[] = [];
+export let MOCK_MEETINGS: Meeting[] = [];
 
-export const MOCK_MEETINGS: Meeting[] = [
-  {
-    id: 'mtg-2026-101',
-    title: 'Weekly MD Executive Operations Review',
-    type: 'MAJOR',
-    scheduledAt: '2026-08-18T09:00:00+05:30',
-    locationOrLink: 'MD Office Boardroom & Teams',
-    organizerUserId: 'usr-mdo-002',
-    organizerUserName: 'Het Bhatt',
-    status: 'COMPLETED',
-    agendaItems: [
-      'Q3 OPD Waiting-Time Optimization Milestone Check',
-      'PACS Digital MRI Requisition Vendor Delay Review',
-      'Spine Surgery Rehabilitation Protocol Signoff',
-    ],
-    participants: [
-      { userId: 'usr-md-001', userName: 'Managing Director', userRoleTitle: 'MD', departmentName: 'MD Office', attended: true },
-      { userId: 'usr-mdo-002', userName: 'Het Bhatt', userRoleTitle: 'MD Office Lead', departmentName: 'MD Office', attended: true },
-      { userId: 'usr-dh-003', userName: 'Dr. Rohan Sharma', userRoleTitle: 'Spine Surgery Head', departmentName: 'Spine Surgery', attended: true },
-      { userId: 'usr-mgr-004', userName: 'Ananya Patel', userRoleTitle: 'Operations Manager', departmentName: 'Operations', attended: true },
-    ],
-    decisions: [MOCK_DECISIONS[0]],
-    actionItemsCount: 3,
+type Listener = () => void;
+const listeners: Set<Listener> = new Set();
+
+const notify = () => {
+  listeners.forEach(fn => fn());
+};
+
+export const meetingStore = {
+  subscribe(listener: Listener) {
+    listeners.add(listener);
+    return () => listeners.delete(listener);
   },
-  {
-    id: 'mtg-2026-102',
-    title: 'OPD Flow & IT Integration CFT Sync',
-    type: 'CROSS_FUNCTIONAL',
-    scheduledAt: '2026-08-19T14:00:00+05:30',
-    locationOrLink: 'Conference Room B',
-    organizerUserId: 'usr-mgr-004',
-    organizerUserName: 'Ananya Patel',
-    status: 'SCHEDULED',
-    agendaItems: [
-      'Receptionist token callout UI review',
-      'PACS OAuth API escalation plan with MedTech vendor',
-      'Patient triage queue testing',
-    ],
-    participants: [
-      { userId: 'usr-mgr-004', userName: 'Ananya Patel', userRoleTitle: 'Operations Manager', departmentName: 'Operations', attended: false },
-      { userId: 'usr-emp-005', userName: 'Priyesh Shah', userRoleTitle: 'Senior Systems Engineer', departmentName: 'IT', attended: false },
-      { userId: 'usr-mdo-002', userName: 'Het Bhatt', userRoleTitle: 'MD Office Lead', departmentName: 'MD Office', attended: false },
-    ],
-    decisions: [MOCK_DECISIONS[1]],
-    actionItemsCount: 2,
+
+  getMeetings() {
+    return MOCK_MEETINGS;
   },
-  {
-    id: 'mtg-2026-103',
-    title: '1:1 Review — IT Systems & Infrastructure Progress',
-    type: 'ONE_ON_ONE',
-    scheduledAt: '2026-08-20T11:00:00+05:30',
-    locationOrLink: 'MD Office Annex',
-    organizerUserId: 'usr-mdo-002',
-    organizerUserName: 'Het Bhatt',
-    status: 'SCHEDULED',
-    agendaItems: [
-      'Priyesh Shah Q3 workload review',
-      'PACS integration blocker mitigation',
-      'Server security patch schedule',
-    ],
-    participants: [
-      { userId: 'usr-mdo-002', userName: 'Het Bhatt', userRoleTitle: 'MD Office Lead', departmentName: 'MD Office', attended: false },
-      { userId: 'usr-emp-005', userName: 'Priyesh Shah', userRoleTitle: 'Senior Systems Engineer', departmentName: 'IT', attended: false },
-    ],
-    decisions: [],
-    actionItemsCount: 1,
+
+  getDecisions() {
+    return MOCK_DECISIONS;
   },
-];
+
+  /**
+   * Add a meeting and optionally auto-generate decision commitments
+   */
+  addMeeting(newMeeting: Partial<Meeting>, autoCreateCommitment = true): Meeting {
+    const id = `mtg-${Date.now()}`;
+    const meeting: Meeting = {
+      id,
+      title: newMeeting.title || 'Untitled Operational Meeting',
+      type: newMeeting.type || 'MAJOR',
+      scheduledAt: newMeeting.scheduledAt || new Date().toISOString(),
+      locationOrLink: newMeeting.locationOrLink || 'MD Office Boardroom',
+      organizerUserId: newMeeting.organizerUserId || 'usr-mdo-002',
+      organizerUserName: newMeeting.organizerUserName || 'Het Bhatt',
+      status: 'SCHEDULED',
+      agendaItems: newMeeting.agendaItems || ['Executive review and milestone alignment'],
+      participants: newMeeting.participants || [],
+      decisions: [],
+      actionItemsCount: autoCreateCommitment ? 1 : 0,
+    };
+
+    if (autoCreateCommitment) {
+      const decId = `dec-${Date.now()}`;
+      const decision: Decision = {
+        id: decId,
+        code: `DEC-2026-${String(MOCK_DECISIONS.length + 1).padStart(3, '0')}`,
+        meetingId: meeting.id,
+        meetingTitle: meeting.title,
+        title: `Approved Action: ${meeting.title}`,
+        context: 'Decision recorded during executive operational meeting.',
+        decisionMakerUserId: meeting.organizerUserId,
+        decisionMakerUserName: meeting.organizerUserName,
+        status: 'APPROVED',
+        approvedAt: new Date().toISOString(),
+        approvedByUserName: meeting.organizerUserName,
+        impactSummary: 'Executive decision committed for execution tracking.',
+      };
+      MOCK_DECISIONS.unshift(decision);
+      meeting.decisions.push(decision);
+
+      // Automated Meeting -> Decision Commitment generation
+      executionStore.addCommitment({
+        title: decision.title,
+        description: decision.context,
+        sourceType: 'MEETING_DECISION',
+        sourceTitle: `${meeting.type} Meeting — ${meeting.title}`,
+        responsibleId: 'usr-mgr-004',
+        responsibleName: 'Ananya Patel',
+        accountableId: 'usr-mdo-002',
+        accountableName: 'Het Bhatt',
+        priority: 'HIGH',
+      });
+    }
+
+    MOCK_MEETINGS.unshift(meeting);
+    notify();
+    return meeting;
+  },
+
+  resetToZero() {
+    MOCK_DECISIONS = [];
+    MOCK_MEETINGS = [];
+    notify();
+  },
+};

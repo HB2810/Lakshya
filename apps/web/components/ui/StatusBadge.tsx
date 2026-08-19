@@ -3,7 +3,7 @@ import { ExecutionStatus } from '../../types/execution';
 import { PriorityStatus } from '../../types/strategy';
 import { MeetingStatus } from '../../types/meeting';
 
-export type StatusType = ExecutionStatus | PriorityStatus | MeetingStatus | 'DRAFT' | 'SUPERSEDED' | 'ACKNOWLEDGED' | 'APPROVED' | 'PENDING_APPROVAL';
+export type StatusType = ExecutionStatus | PriorityStatus | MeetingStatus | 'DRAFT' | 'SUPERSEDED' | 'ACKNOWLEDGED' | 'APPROVED' | 'PENDING_APPROVAL' | 'OPEN' | 'RESOLVED';
 
 interface StatusBadgeProps {
   status: StatusType;
@@ -18,6 +18,11 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({ status, size = 'md', c
   let label = status.replace(/_/g, ' ');
 
   switch (normalized) {
+    case 'OPEN':
+      style = 'bg-amber-50 text-amber-800 border-amber-300';
+      label = 'Open';
+      break;
+
     case 'NOT_STARTED':
     case 'DRAFT':
     case 'SCHEDULED':

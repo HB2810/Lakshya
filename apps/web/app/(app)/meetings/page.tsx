@@ -7,21 +7,28 @@ import { StatusBadge } from '../../../components/ui/StatusBadge';
 import { Badge } from '../../../components/ui/Badge';
 import { Button } from '../../../components/ui/Button';
 import { Drawer } from '../../../components/ui/Modal';
-import { apiClient } from '../../../lib/api/client';
+import { EmptyState } from '../../../components/ui/States';
 import { Meeting, Decision } from '../../../types/meeting';
+import { meetingStore } from '../../../lib/mocks/meetingsMock';
+import { CreateMeetingModal } from '../../../components/modals/CreateMeetingModal';
 
 export default function MeetingsPage() {
   const [meetings, setMeetings] = useState<Meeting[]>([]);
   const [decisions, setDecisions] = useState<Decision[]>([]);
   const [selectedMeeting, setSelectedMeeting] = useState<Meeting | null>(null);
+  const [isMeetingModalOpen, setIsMeetingModalOpen] = useState(false);
+
+  const refreshData = () => {
+    setMeetings([...meetingStore.getMeetings()]);
+    setDecisions([...meetingStore.getDecisions()]);
+  };
 
   useEffect(() => {
-    Promise.all([apiClient.meetings.getMeetings(), apiClient.meetings.getDecisions()]).then(
-      ([mRes, dRes]) => {
-        setMeetings(mRes);
-        setDecisions(dRes);
-      }
-    );
+    refreshData();
+    const unsubscribe = meetingStore.subscribe(refreshData);
+    return () => {
+      unsubscribe();
+    };
   }, []);
 
   return (
@@ -34,116 +41,121 @@ export default function MeetingsPage() {
             Traceable meeting management: Major, Cross Functional, 1:1, Decisions & Action Commitments.
           </p>
         </div>
-        <Button size="sm" leftIcon={<Plus className="w-4 h-4" />}>
+        <Button size="sm" leftIcon={<Plus className="w-4 h-4" />} onClick={() => setIsMeetingModalOpen(true)}>
           Schedule Meeting
         </Button>
       </div>
 
       {/* Meetings Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {meetings.map(m => (
-          <div
-            key={m.id}
-            onClick={() => setSelectedMeeting(m)}
-            className="bg-white border border-workspace-border rounded-lg p-5 shadow-card hover:border-brand-blue transition-colors cursor-pointer space-y-4 flex flex-col justify-between"
-          >
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <Badge variant="primary">{m.type.replace('_', ' ')}</Badge>
-                <StatusBadge status={m.status} size="sm" />
-              </div>
-              <h3 className="text-sm font-bold text-text-primary line-clamp-2">{m.title}</h3>
-              <div className="space-y-1 text-xs text-text-muted">
-                <p className="flex items-center gap-1.5">
-                  <Clock className="w-3.5 h-3.5 text-brand-blue" />
-                  <span>19 Aug 2026, 14:00 AM</span>
-                </p>
-                <p className="flex items-center gap-1.5">
-                  <MapPin className="w-3.5 h-3.5 text-slate-400" />
-                  <span>{m.locationOrLink}</span>
-                </p>
-                <p className="flex items-center gap-1.5">
-                  <Users className="w-3.5 h-3.5 text-slate-400" />
-                  <span>Organizer: {m.organizerUserName}</span>
-                </p>
-              </div>
-            </div>
-
-            <div className="pt-3 border-t border-workspace-border flex items-center justify-between text-xs font-semibold text-brand-blue">
-              <span>{m.decisions.length} Decisions Recorded</span>
-              <span>View Details $\rightarrow$</span>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Official Decisions Register */}
-      <Card title="Official Decision Register">
-        <div className="space-y-3">
-          {decisions.map(d => (
-            <div key={d.id} className="p-4 bg-slate-50 border border-workspace-border rounded-lg space-y-2">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="font-bold font-mono text-brand-blue text-xs">{d.code}</span>
-                  <StatusBadge status={d.status} size="sm" />
+      {meetings.length === 0 ? (
+        <EmptyState
+          title="No Scheduled Meetings"
+          description="Schedule a meeting to log decisions and automatically generate action commitments."
+          action={<Button size="sm" onClick={() => setIsMeetingModalOpen(true)}>+ Schedule Meeting</Button>}
+        />
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {meetings.map(m => (
+            <div
+              key={m.id}
+              onClick={() => setSelectedMeeting(m)}
+              className="bg-white border border-workspace-border rounded-lg p-5 shadow-card hover:border-brand-blue transition-colors cursor-pointer space-y-4 flex flex-col justify-between"
+            >
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <Badge variant="primary">{m.type.replace('_', ' ')}</Badge>
+                  <StatusBadge status={m.status} size="sm" />
                 </div>
-                <span className="text-xs text-text-muted">Approved: {d.approvedAt}</span>
+                <h3 className="text-sm font-bold text-text-primary line-clamp-2">{m.title}</h3>
+                <div className="space-y-1 text-xs text-text-muted">
+                  <p className="flex items-center gap-1.5">
+                    <Clock className="w-3.5 h-3.5 text-brand-blue" />
+                    <span>{new Date(m.scheduledAt).toLocaleDateString()}</span>
+                  </p>
+                  <p className="flex items-center gap-1.5">
+                    <MapPin className="w-3.5 h-3.5 text-slate-400" />
+                    <span>{m.locationOrLink}</span>
+                  </p>
+                  <p className="flex items-center gap-1.5">
+                    <Users className="w-3.5 h-3.5 text-slate-400" />
+                    <span>Organizer: {m.organizerUserName}</span>
+                  </p>
+                </div>
               </div>
-              <h4 className="text-sm font-bold text-text-primary">{d.title}</h4>
-              <p className="text-xs text-text-secondary">{d.context}</p>
-              <div className="p-2.5 bg-white border border-workspace-border rounded text-xs text-brand-blue font-semibold">
-                Impact: {d.impactSummary}
+
+              <div className="pt-3 border-t border-workspace-border flex items-center justify-between text-xs font-semibold text-brand-blue">
+                <span>{m.decisions.length} Decisions Recorded</span>
+                <span>View Details &rarr;</span>
               </div>
             </div>
           ))}
         </div>
+      )}
+
+      {/* Official Decisions Register */}
+      <Card title="Official Decisions Register">
+        {decisions.length === 0 ? (
+          <EmptyState
+            title="No Decisions Logged"
+            description="Decisions recorded during meetings will be listed here with automated commitment linkages."
+          />
+        ) : (
+          <div className="space-y-4">
+            {decisions.map(d => (
+              <div key={d.id} className="p-4 bg-slate-50 border border-workspace-border rounded-lg space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-brand-blue text-xs">{d.code}</span>
+                  <StatusBadge status={d.status} size="sm" />
+                </div>
+                <h4 className="text-sm font-bold text-text-primary">{d.title}</h4>
+                <p className="text-xs text-text-secondary leading-relaxed">{d.context}</p>
+                <div className="pt-2 border-t border-slate-200 text-xs text-text-muted flex items-center justify-between">
+                  <span>Decision Maker: {d.decisionMakerUserName}</span>
+                  <span>Approved By: {d.approvedByUserName}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </Card>
 
-      {/* Selected Meeting Drawer */}
+      {/* MEETING DRAWER */}
       {selectedMeeting && (
         <Drawer
-          isOpen={!!selectedMeeting}
+          isOpen={Boolean(selectedMeeting)}
           onClose={() => setSelectedMeeting(null)}
           title={selectedMeeting.title}
-          subtitle={`Meeting Type: ${selectedMeeting.type}`}
         >
-          <div className="space-y-6 text-xs">
-            {/* Agenda Items */}
+          <div className="space-y-6">
             <div className="space-y-2">
-              <h4 className="font-bold text-text-primary uppercase tracking-wider">Agenda</h4>
-              <ul className="space-y-1.5 list-disc pl-4 text-text-secondary">
+              <Badge variant="primary">{selectedMeeting.type}</Badge>
+              <p className="text-xs text-text-muted">Organizer: {selectedMeeting.organizerUserName}</p>
+            </div>
+
+            <div className="space-y-2">
+              <h4 className="text-xs font-bold text-text-primary uppercase tracking-wider">Agenda Topics</h4>
+              <ul className="space-y-1 text-xs text-text-secondary list-disc pl-4">
                 {selectedMeeting.agendaItems.map((item, idx) => (
                   <li key={idx}>{item}</li>
                 ))}
               </ul>
             </div>
 
-            {/* Participants */}
-            <div className="space-y-2">
-              <h4 className="font-bold text-text-primary uppercase tracking-wider">Participants</h4>
-              <div className="space-y-1.5">
-                {selectedMeeting.participants.map(p => (
-                  <div key={p.userId} className="p-2 bg-slate-50 border border-workspace-border rounded flex items-center justify-between">
-                    <div>
-                      <p className="font-semibold text-text-primary">{p.userName}</p>
-                      <p className="text-[10px] text-text-muted">{p.userRoleTitle} ({p.departmentName})</p>
-                    </div>
-                    <Badge variant={p.attended ? 'success' : 'neutral'}>
-                      {p.attended ? 'Attended' : 'Invited'}
-                    </Badge>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="pt-4 border-t border-workspace-border flex justify-end">
-              <Button size="sm" variant="outline" onClick={() => setSelectedMeeting(null)}>
+            <div className="flex justify-end">
+              <Button variant="outline" onClick={() => setSelectedMeeting(null)}>
                 Close
               </Button>
             </div>
           </div>
         </Drawer>
       )}
+
+      {/* CREATE MEETING MODAL */}
+      <CreateMeetingModal
+        isOpen={isMeetingModalOpen}
+        onClose={() => setIsMeetingModalOpen(false)}
+        onSuccess={refreshData}
+      />
     </div>
   );
 }

@@ -1,202 +1,237 @@
-import { Commitment, Task, StuckNeedItem, Escalation } from '../../types/execution';
+import { Commitment, Task, StuckNeedItem, Escalation, RACIRole } from '../../types/execution';
 
-export const MOCK_COMMITMENTS: Commitment[] = [
-  {
-    id: 'cm-2026-089',
-    code: 'CM-2026-089',
-    title: 'Deploy Real-Time OPD Waiting Time Display System in Reception',
-    description: 'Integrate patient queue telemetry with lobby display monitors and reception desk software.',
-    monthlyPriorityId: 'mp-2026-08-01',
-    weeklyMilestoneId: 'wm-2026-w34-01',
-    sourceType: 'MD_INSTRUCTION',
-    sourceTitle: 'Direct MD Instruction — OPD Streamlining Review',
-    responsibleId: 'usr-mgr-004',
-    responsibleName: 'Ananya Patel',
-    accountableId: 'usr-mdo-002',
-    accountableName: 'Het Bhatt',
-    raci: [
-      { userId: 'usr-mgr-004', userName: 'Ananya Patel', userRoleTitle: 'Operations Manager', departmentName: 'Hospital Operations', role: 'R' },
-      { userId: 'usr-mdo-002', userName: 'Het Bhatt', userRoleTitle: 'MD Office Lead', departmentName: 'MD Office', role: 'A' },
-      { userId: 'usr-emp-005', userName: 'Priyesh Shah', userRoleTitle: 'Senior Systems Engineer', departmentName: 'IT & Digital Health', role: 'C' },
-      { userId: 'usr-md-001', userName: 'Managing Director', userRoleTitle: 'Managing Director', departmentName: 'MD Office', role: 'I' },
-    ],
-    priority: 'HIGH',
-    status: 'IN_PROGRESS',
-    progressPercent: 70,
-    dueDate: '2026-08-22',
-    createdAt: '2026-08-10',
-    isStuck: false,
-  },
-  {
-    id: 'cm-2026-090',
-    code: 'CM-2026-090',
-    title: 'Establish Direct PACS Digital MRI Requisition Link',
-    description: 'Bypass manual paper radiologist requests by enabling digital API requisitions between OPD spine clinics and radiology.',
-    monthlyPriorityId: 'mp-2026-08-02',
-    weeklyMilestoneId: 'wm-2026-w34-02',
-    sourceType: 'MEETING_DECISION',
-    sourceTitle: 'Major Meeting — Digital Health & PACS Integration',
-    responsibleId: 'usr-emp-005',
-    responsibleName: 'Priyesh Shah',
-    accountableId: 'usr-mdo-002',
-    accountableName: 'Het Bhatt',
-    raci: [
-      { userId: 'usr-emp-005', userName: 'Priyesh Shah', userRoleTitle: 'Senior Systems Engineer', departmentName: 'IT & Digital Health', role: 'R' },
-      { userId: 'usr-mdo-002', userName: 'Het Bhatt', userRoleTitle: 'MD Office Lead', departmentName: 'MD Office', role: 'A' },
-      { userId: 'usr-dh-003', userName: 'Dr. Rohan Sharma', userRoleTitle: 'Spine Surgery Head', departmentName: 'Spine Surgery', role: 'C' },
-    ],
-    priority: 'CRITICAL',
-    status: 'BLOCKED',
-    progressPercent: 40,
-    dueDate: '2026-08-25',
-    createdAt: '2026-08-12',
-    isStuck: true,
-    stuckReason: 'Waiting for vendor PACS API authentication credentials',
-    escalationLevel: 2,
-  },
-  {
-    id: 'cm-2026-091',
-    code: 'CM-2026-091',
-    title: 'Publish Standardized Lumbar Microdiscectomy Rehab Protocol',
-    description: 'Document and train nursing and physiotherapy staff on standardized 4-week recovery protocols.',
-    monthlyPriorityId: 'mp-2026-08-03',
-    weeklyMilestoneId: 'wm-2026-w34-03',
-    sourceType: 'MONTHLY_PRIORITY',
-    sourceTitle: 'Monthly Priority — Spine Rehab Standardization',
-    responsibleId: 'usr-dh-003',
-    responsibleName: 'Dr. Rohan Sharma',
-    accountableId: 'usr-md-001',
-    accountableName: 'Managing Director',
-    raci: [
-      { userId: 'usr-dh-003', userName: 'Dr. Rohan Sharma', userRoleTitle: 'Spine Surgery Head', departmentName: 'Spine Surgery', role: 'R' },
-      { userId: 'usr-md-001', userName: 'Managing Director', userRoleTitle: 'Managing Director', departmentName: 'MD Office', role: 'A' },
-    ],
-    priority: 'MEDIUM',
-    status: 'COMPLETED',
-    progressPercent: 100,
-    dueDate: '2026-08-18',
-    createdAt: '2026-08-01',
-    completedAt: '2026-08-18',
-    outcome: 'Standardized protocol signed by MD and distributed to nursing & physiotherapy teams.',
-    isStuck: false,
-  },
-];
+// Initial zero baseline state
+export let MOCK_COMMITMENTS: Commitment[] = [];
+export let MOCK_TASKS: Task[] = [];
+export let MOCK_STUCK_NEEDS: StuckNeedItem[] = [];
+export let MOCK_ESCALATIONS: Escalation[] = [];
 
-export const MOCK_TASKS: Task[] = [
-  {
-    id: 'tk-2026-401',
-    code: 'TK-2026-401',
-    commitmentId: 'cm-2026-089',
-    weeklyMilestoneId: 'wm-2026-w34-01',
-    title: 'Configure OPD queue lobby display TV screens in main reception',
-    description: 'Setup HDMI digital signage controller and test websocket reconnect behavior.',
-    assigneeId: 'usr-emp-005',
-    assigneeName: 'Priyesh Shah',
-    assigneeRoleTitle: 'Senior Systems Engineer',
-    departmentId: 'dept-it',
-    departmentName: 'IT & Digital Health',
-    raci: [
-      { userId: 'usr-emp-005', userName: 'Priyesh Shah', userRoleTitle: 'Systems Engineer', departmentName: 'IT', role: 'R' },
-      { userId: 'usr-mgr-004', userName: 'Ananya Patel', userRoleTitle: 'Operations Manager', departmentName: 'Operations', role: 'A' },
-    ],
-    priority: 'HIGH',
-    status: 'IN_PROGRESS',
-    progressPercent: 80,
-    dueDate: '2026-08-20',
-    estimatedHours: 12,
-    loggedHours: 9,
-    isStuck: false,
-    hasDependency: false,
-  },
-  {
-    id: 'tk-2026-402',
-    code: 'TK-2026-402',
-    commitmentId: 'cm-2026-090',
-    weeklyMilestoneId: 'wm-2026-w34-02',
-    title: 'Configure OPD queue dashboard WebSocket endpoint and PACS payload',
-    description: 'Expose secure API endpoint for PACS digital requisition.',
-    assigneeId: 'usr-emp-005',
-    assigneeName: 'Priyesh Shah',
-    assigneeRoleTitle: 'Senior Systems Engineer',
-    departmentId: 'dept-it',
-    departmentName: 'IT & Digital Health',
-    raci: [
-      { userId: 'usr-emp-005', userName: 'Priyesh Shah', userRoleTitle: 'Systems Engineer', departmentName: 'IT', role: 'R' },
-      { userId: 'usr-mdo-002', userName: 'Het Bhatt', userRoleTitle: 'MD Office Lead', departmentName: 'MD Office', role: 'A' },
-    ],
-    priority: 'CRITICAL',
-    status: 'BLOCKED',
-    progressPercent: 35,
-    dueDate: '2026-08-19',
-    estimatedHours: 16,
-    loggedHours: 6,
-    isStuck: true,
-    stuckNeedId: 'sn-001',
-    hasDependency: true,
-  },
-  {
-    id: 'tk-2026-403',
-    code: 'TK-2026-403',
-    commitmentId: 'cm-2026-089',
-    weeklyMilestoneId: 'wm-2026-w34-01',
-    title: 'Conduct receptionist workflow briefing for token callout software',
-    description: 'Train 6 front desk staff on calling next patient token via lobby display system.',
-    assigneeId: 'usr-mgr-004',
-    assigneeName: 'Ananya Patel',
-    assigneeRoleTitle: 'Operations & Patient Flow Manager',
-    departmentId: 'dept-ops',
-    departmentName: 'Hospital Operations',
-    raci: [
-      { userId: 'usr-mgr-004', userName: 'Ananya Patel', userRoleTitle: 'Operations Manager', departmentName: 'Operations', role: 'R' },
-      { userId: 'usr-mdo-002', userName: 'Het Bhatt', userRoleTitle: 'MD Office Lead', departmentName: 'MD Office', role: 'A' },
-    ],
-    priority: 'MEDIUM',
-    status: 'NOT_STARTED',
-    progressPercent: 0,
-    dueDate: '2026-08-22',
-    estimatedHours: 4,
-    loggedHours: 0,
-    isStuck: false,
-    hasDependency: true,
-    prerequisiteTaskIds: ['tk-2026-401'],
-  },
-];
+type Listener = () => void;
+const listeners: Set<Listener> = new Set();
 
-export const MOCK_STUCK_NEEDS: StuckNeedItem[] = [
-  {
-    id: 'sn-001',
-    taskId: 'tk-2026-402',
-    taskTitle: 'Configure OPD queue dashboard WebSocket endpoint and PACS payload',
-    reportedByUserId: 'usr-emp-005',
-    reportedByUserName: 'Priyesh Shah',
-    stuckReasonCategory: 'VENDOR_DELAY',
-    stuckReasonDetails: 'External PACS vendor (MedTech Solutions) has not delivered OAuth API keys for production server.',
-    needDescription: 'Escalate to vendor account manager for emergency API key release.',
-    providedByUserId: 'usr-mdo-002',
-    providedByUserName: 'Het Bhatt',
-    requiredByDate: '2026-08-19',
-    businessImpact: 'Delays diagnostic MRI digital integration for Spine Surgery outpatient clinic by up to 5 days.',
-    status: 'OPEN',
-    createdAt: '2026-08-17T14:20:00+05:30',
-  },
-];
+const notify = () => {
+  listeners.forEach(fn => fn());
+};
 
-export const MOCK_ESCALATIONS: Escalation[] = [
-  {
-    id: 'esc-042',
-    code: 'ESC-042',
-    targetType: 'TASK',
-    targetId: 'tk-2026-402',
-    targetTitle: 'Configure OPD queue dashboard WebSocket endpoint and PACS payload',
-    level: 2,
-    levelName: 'L2 — Department / Escalated',
-    reason: 'Vendor OAuth API credentials overdue by 48 hours; critical path diagnostic integration blocked.',
-    impact: 'Spine Surgery MRI requisition cannot go live for scheduled OPD launch on Monday.',
-    reportedByUserId: 'usr-emp-005',
-    reportedByUserName: 'Priyesh Shah',
-    assignedToUserId: 'usr-mdo-002',
-    assignedToUserName: 'Het Bhatt',
-    status: 'OPEN',
-    createdAt: '2026-08-17T15:00:00+05:30',
+export const executionStore = {
+  subscribe(listener: Listener) {
+    listeners.add(listener);
+    return () => listeners.delete(listener);
   },
-];
+
+  getCommitments() {
+    return MOCK_COMMITMENTS;
+  },
+
+  getTasks() {
+    return MOCK_TASKS;
+  },
+
+  getStuckNeeds() {
+    return MOCK_STUCK_NEEDS;
+  },
+
+  getEscalations() {
+    return MOCK_ESCALATIONS;
+  },
+
+  /**
+   * Automated Commitment Creation with Auto-Task & RACI Generation
+   */
+  addCommitment(newCommitment: Partial<Commitment>, autoGenerateTasks = true): Commitment {
+    const id = `cm-${Date.now()}`;
+    const code = `CM-2026-${String(MOCK_COMMITMENTS.length + 1).padStart(3, '0')}`;
+    
+    const commitment: Commitment = {
+      id,
+      code,
+      title: newCommitment.title || 'Untitled Commitment',
+      description: newCommitment.description || '',
+      monthlyPriorityId: newCommitment.monthlyPriorityId || 'mp-001',
+      weeklyMilestoneId: newCommitment.weeklyMilestoneId || 'wm-001',
+      sourceType: newCommitment.sourceType || 'MD_INSTRUCTION',
+      sourceTitle: newCommitment.sourceTitle || 'Direct Management Directive',
+      responsibleId: newCommitment.responsibleId || 'usr-mgr-004',
+      responsibleName: newCommitment.responsibleName || 'Ananya Patel',
+      accountableId: newCommitment.accountableId || 'usr-mdo-002',
+      accountableName: newCommitment.accountableName || 'Het Bhatt',
+      raci: newCommitment.raci || [
+        { userId: newCommitment.responsibleId || 'usr-mgr-004', userName: newCommitment.responsibleName || 'Ananya Patel', userRoleTitle: 'Responsible Owner', departmentName: 'Operations', role: 'R' },
+        { userId: newCommitment.accountableId || 'usr-mdo-002', userName: newCommitment.accountableName || 'Het Bhatt', userRoleTitle: 'Accountable Executive', departmentName: 'MD Office', role: 'A' },
+      ],
+      priority: newCommitment.priority || 'HIGH',
+      status: 'IN_PROGRESS',
+      progressPercent: 0,
+      dueDate: newCommitment.dueDate || new Date(Date.now() + 604800000).toISOString().split('T')[0],
+      createdAt: new Date().toISOString().split('T')[0],
+      isStuck: false,
+    };
+
+    MOCK_COMMITMENTS.unshift(commitment);
+
+    // Automated Task Management: Derive initial execution task and RACI
+    if (autoGenerateTasks) {
+      const taskId = `tk-${Date.now()}`;
+      const taskCode = `TK-2026-${String(MOCK_TASKS.length + 1).padStart(3, '0')}`;
+      const autoTask: Task = {
+        id: taskId,
+        code: taskCode,
+        commitmentId: commitment.id,
+        weeklyMilestoneId: commitment.weeklyMilestoneId,
+        title: `Execute Initial Milestone: ${commitment.title}`,
+        description: `Primary execution task automatically generated for commitment ${commitment.code}.`,
+        assigneeId: commitment.responsibleId,
+        assigneeName: commitment.responsibleName,
+        assigneeRoleTitle: 'Responsible Lead',
+        departmentId: 'dept-ops',
+        departmentName: 'Hospital Operations',
+        raci: commitment.raci,
+        priority: commitment.priority,
+        status: 'IN_PROGRESS',
+        progressPercent: 0,
+        dueDate: commitment.dueDate,
+        estimatedHours: 10,
+        loggedHours: 0,
+        isStuck: false,
+        hasDependency: false,
+      };
+
+      MOCK_TASKS.unshift(autoTask);
+    }
+
+    notify();
+    return commitment;
+  },
+
+  /**
+   * Manual Task Creation
+   */
+  addTask(newTask: Partial<Task>): Task {
+    const id = `tk-${Date.now()}`;
+    const code = `TK-2026-${String(MOCK_TASKS.length + 1).padStart(3, '0')}`;
+
+    const task: Task = {
+      id,
+      code,
+      commitmentId: newTask.commitmentId || '',
+      weeklyMilestoneId: newTask.weeklyMilestoneId || '',
+      title: newTask.title || 'Untitled Execution Task',
+      description: newTask.description || '',
+      assigneeId: newTask.assigneeId || 'usr-mgr-004',
+      assigneeName: newTask.assigneeName || 'Ananya Patel',
+      assigneeRoleTitle: newTask.assigneeRoleTitle || 'Task Assignee',
+      departmentId: newTask.departmentId || 'dept-ops',
+      departmentName: newTask.departmentName || 'Operations',
+      raci: newTask.raci || [],
+      priority: newTask.priority || 'MEDIUM',
+      status: 'NOT_STARTED',
+      progressPercent: 0,
+      dueDate: newTask.dueDate || new Date(Date.now() + 432000000).toISOString().split('T')[0],
+      estimatedHours: newTask.estimatedHours || 8,
+      loggedHours: 0,
+      isStuck: false,
+      hasDependency: false,
+    };
+
+    MOCK_TASKS.unshift(task);
+
+    // Update parent commitment stats
+    if (task.commitmentId) {
+      const parent = MOCK_COMMITMENTS.find(c => c.id === task.commitmentId);
+      if (parent) {
+        const parentTasks = MOCK_TASKS.filter(t => t.commitmentId === parent.id);
+        const totalProgress = parentTasks.reduce((acc, t) => acc + t.progressPercent, 0);
+        parent.progressPercent = Math.round(totalProgress / parentTasks.length);
+      }
+    }
+
+    notify();
+    return task;
+  },
+
+  /**
+   * Automated Blocker / Stuck Reporting & Escalation Calculation
+   */
+  reportStuck(taskId: string, reasonCategory: string, reasonDetails: string, needDescription: string, businessImpact: string): StuckNeedItem {
+    const task = MOCK_TASKS.find(t => t.id === taskId);
+    if (!task) {
+      throw new Error('Task not found');
+    }
+
+    task.isStuck = true;
+    task.status = 'BLOCKED';
+
+    const stuckId = `sn-${Date.now()}`;
+    const stuckItem: StuckNeedItem = {
+      id: stuckId,
+      taskId: task.id,
+      taskTitle: task.title,
+      reportedByUserId: task.assigneeId,
+      reportedByUserName: task.assigneeName,
+      stuckReasonCategory: reasonCategory as any,
+      stuckReasonDetails: reasonDetails,
+      needDescription: needDescription,
+      providedByUserId: 'usr-mdo-002',
+      providedByUserName: 'Het Bhatt (MD Office Lead)',
+      requiredByDate: new Date(Date.now() + 172800000).toISOString().split('T')[0],
+      businessImpact: businessImpact,
+      status: 'OPEN',
+      createdAt: new Date().toISOString(),
+    };
+
+    MOCK_STUCK_NEEDS.unshift(stuckItem);
+
+    // Automated Escalation Engine: Calculate level based on priority & category
+    const level = task.priority === 'CRITICAL' ? 3 : (task.priority === 'HIGH' ? 2 : 1);
+    const levelNames: Record<number, string> = {
+      1: 'L1 — Department / Supervisor',
+      2: 'L2 — Management / Escalated',
+      3: 'L3 — MD Office Executive',
+    };
+
+    const escalation: Escalation = {
+      id: `esc-${Date.now()}`,
+      code: `ESC-2026-${String(MOCK_ESCALATIONS.length + 1).padStart(3, '0')}`,
+      targetType: 'TASK',
+      targetId: task.id,
+      targetTitle: task.title,
+      level,
+      levelName: levelNames[level],
+      reason: reasonDetails,
+      impact: businessImpact,
+      reportedByUserId: task.assigneeId,
+      reportedByUserName: task.assigneeName,
+      assignedToUserId: 'usr-mdo-002',
+      assignedToUserName: 'Het Bhatt (MD Office)',
+      status: 'OPEN',
+      createdAt: new Date().toISOString(),
+    };
+
+    MOCK_ESCALATIONS.unshift(escalation);
+
+    // Flag parent commitment as stuck
+    if (task.commitmentId) {
+      const parent = MOCK_COMMITMENTS.find(c => c.id === task.commitmentId);
+      if (parent) {
+        parent.isStuck = true;
+        parent.status = 'BLOCKED';
+        parent.stuckReason = reasonDetails;
+        parent.escalationLevel = level;
+      }
+    }
+
+    notify();
+    return stuckItem;
+  },
+
+  /**
+   * Reset store back to zero items
+   */
+  resetToZero() {
+    MOCK_COMMITMENTS = [];
+    MOCK_TASKS = [];
+    MOCK_STUCK_NEEDS = [];
+    MOCK_ESCALATIONS = [];
+    notify();
+  },
+};

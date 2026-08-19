@@ -2,7 +2,7 @@ import React from 'react';
 import { Loader2 } from 'lucide-react';
 
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'destructive';
+  variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'destructive' | 'danger';
   size?: 'sm' | 'md' | 'lg';
   isLoading?: boolean;
   leftIcon?: React.ReactNode;
@@ -23,6 +23,8 @@ export const Button: React.FC<ButtonProps> = ({
   const baseStyles =
     'inline-flex items-center justify-center font-medium rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-brand-blue disabled:opacity-50 disabled:pointer-events-none';
 
+  const selectedVariant = variant === 'danger' ? 'destructive' : variant;
+
   const variantStyles = {
     primary: 'bg-brand-blue text-white hover:bg-brand-blue-hover active:bg-brand-blue-hover shadow-subtle',
     secondary: 'bg-workspace-subtle text-text-primary hover:bg-slate-200 border border-workspace-border',
@@ -39,7 +41,7 @@ export const Button: React.FC<ButtonProps> = ({
 
   return (
     <button
-      className={`${baseStyles} ${variantStyles[variant]} ${sizeStyles[size]} ${className}`}
+      className={`${baseStyles} ${variantStyles[selectedVariant]} ${sizeStyles[size]} ${className}`}
       disabled={disabled || isLoading}
       {...props}
     >

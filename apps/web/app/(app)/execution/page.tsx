@@ -21,10 +21,12 @@ import { ProgressBar } from '../../../components/ui/ProgressBar';
 import { Button } from '../../../components/ui/Button';
 import { Badge } from '../../../components/ui/Badge';
 import { Drawer } from '../../../components/ui/Modal';
-import { Modal } from '../../../components/ui/Modal';
-import { apiClient } from '../../../lib/api/client';
+import { EmptyState } from '../../../components/ui/States';
 import { Commitment, Task, StuckNeedItem } from '../../../types/execution';
 import { useAuth } from '../../../lib/auth/AuthContext';
+import { executionStore } from '../../../lib/mocks/executionMock';
+import { CreateCommitmentModal } from '../../../components/modals/CreateCommitmentModal';
+import { ReportStuckModal } from '../../../components/modals/ReportStuckModal';
 
 export default function ExecutionPage() {
   const { user, can } = useAuth();
@@ -33,22 +35,23 @@ export default function ExecutionPage() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [stuckItems, setStuckItems] = useState<StuckNeedItem[]>([]);
 
-  // Selected item drawer
+  // Modals
   const [selectedCommitment, setSelectedCommitment] = useState<Commitment | null>(null);
-  const [showStuckModal, setShowStuckModal] = useState(false);
-  const [stuckReason, setStuckReason] = useState('');
-  const [needDesc, setNeedDesc] = useState('');
+  const [isCommitmentModalOpen, setIsCommitmentModalOpen] = useState(false);
+  const [isStuckModalOpen, setIsStuckModalOpen] = useState(false);
+
+  const refreshData = () => {
+    setCommitments([...executionStore.getCommitments()]);
+    setTasks([...executionStore.getTasks()]);
+    setStuckItems([...executionStore.getStuckNeeds()]);
+  };
 
   useEffect(() => {
-    Promise.all([
-      apiClient.execution.getCommitments(),
-      apiClient.execution.getTasks(),
-      apiClient.execution.getStuckNeeds(),
-    ]).then(([cRes, tRes, sRes]) => {
-      setCommitments(cRes);
-      setTasks(tRes);
-      setStuckItems(sRes);
-    });
+    refreshData();
+    const unsubscribe = executionStore.subscribe(refreshData);
+    return () => {
+      unsubscribe();
+    };
   }, []);
 
   const tabs = [
@@ -99,7 +102,7 @@ export default function ExecutionPage() {
     {
       key: 'accountableName',
       header: 'Accountable (A)',
-      render: row => <span className="font-medium text-brand-blue">{row.accountableName}</span>,
+      render: row => <span className="font-medium text-text-secondary">{row.accountableName}</span>,
     },
     {
       key: 'status',
@@ -109,11 +112,11 @@ export default function ExecutionPage() {
     {
       key: 'progressPercent',
       header: 'Progress',
-      render: row => <ProgressBar value={row.progressPercent} showLabel={false} size="sm" className="w-20" />,
+      render: row => <ProgressBar value={row.progressPercent} showLabel={true} size="sm" className="w-24" />,
     },
     {
       key: 'dueDate',
-      header: 'Due Date',
+      header: 'Target Date',
       sortable: true,
       render: row => <span className="font-medium text-text-secondary">{row.dueDate}</span>,
     },
@@ -122,13 +125,13 @@ export default function ExecutionPage() {
   const taskColumns: Column<Task>[] = [
     {
       key: 'code',
-      header: 'Task ID',
+      header: 'Task Code',
       sortable: true,
-      render: row => <span className="font-bold text-brand-blue">{row.code}</span>,
+      render: row => <span className="font-mono text-xs font-bold text-brand-blue">{row.code}</span>,
     },
     {
       key: 'title',
-      header: 'Task Description',
+      header: 'Task & Department',
       render: row => (
         <div>
           <p className="font-semibold text-text-primary">{row.title}</p>
@@ -139,7 +142,17 @@ export default function ExecutionPage() {
     {
       key: 'assigneeName',
       header: 'Assignee',
-      render: row => <span className="font-medium text-text-primary">{row.assigneeName}</span>,
+      render: row => (
+        <div>
+          <p className="font-medium text-text-primary">{row.assigneeName}</p>
+          <p className="text-[10px] text-text-muted">{row.assigneeRoleTitle}</p>
+        </div>
+      ),
+    },
+    {
+      key: 'priority',
+      header: 'Priority',
+      render: row => <Badge variant={row.priority === 'CRITICAL' ? 'danger' : 'neutral'}>{row.priority}</Badge>,
     },
     {
       key: 'status',
@@ -148,134 +161,159 @@ export default function ExecutionPage() {
     },
     {
       key: 'dueDate',
-      header: 'Deadline',
-      render: row => <span className="font-medium text-text-secondary">{row.dueDate}</span>,
+      header: 'Due Date',
+      render: row => <span className="text-xs text-text-secondary">{row.dueDate}</span>,
+    },
+  ];
+
+  const stuckColumns: Column<StuckNeedItem>[] = [
+    {
+      key: 'id',
+      header: 'ID',
+      render: row => <span className="font-mono text-xs font-bold text-brand-red">{row.id}</span>,
+    },
+    {
+      key: 'taskTitle',
+      header: 'Blocked Task',
+      render: row => <span className="font-semibold text-text-primary">{row.taskTitle}</span>,
+    },
+    {
+      key: 'stuckReasonCategory',
+      header: 'Reason Category',
+      render: row => <Badge variant="warning">{row.stuckReasonCategory.replace('_', ' ')}</Badge>,
+    },
+    {
+      key: 'needDescription',
+      header: 'What is Needed',
+      render: row => <p className="text-xs text-text-primary">{row.needDescription}</p>,
+    },
+    {
+      key: 'providedByUserName',
+      header: 'Provider',
+      render: row => <span className="font-medium text-text-primary">{row.providedByUserName}</span>,
+    },
+    {
+      key: 'status',
+      header: 'Status',
+      render: row => <StatusBadge status={row.status} size="sm" />,
     },
   ];
 
   return (
     <div className="space-y-6">
-      {/* Header Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white border border-workspace-border rounded-lg p-6 shadow-card">
+      {/* HEADER */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white border border-workspace-border rounded-lg p-6 shadow-card">
         <div>
-          <h2 className="text-xl font-bold text-text-primary tracking-tight">Execution & Work Tracker</h2>
+          <h2 className="text-2xl font-bold text-text-primary tracking-tight">Execution Engine & Commitment Tracking</h2>
           <p className="text-xs text-text-secondary mt-1">
-            Track commitments, task assignments, RACI matrices, and operational blockers.
+            Track organizational commitments, RACI accountability matrices, tasks, and stuck/need escalations.
           </p>
         </div>
+
         <div className="flex items-center gap-3">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowStuckModal(true)}
-            leftIcon={<AlertTriangle className="w-4 h-4 text-brand-red" />}
-          >
-            Report Stuck / Need
-          </Button>
           {can('commitment.create') && (
-            <Button size="sm" leftIcon={<Plus className="w-4 h-4" />}>
-              Create Commitment
+            <Button size="sm" leftIcon={<Plus className="w-4 h-4" />} onClick={() => setIsCommitmentModalOpen(true)}>
+              New Commitment
+            </Button>
+          )}
+          {can('stuck.create') && (
+            <Button variant="danger" size="sm" leftIcon={<AlertTriangle className="w-4 h-4" />} onClick={() => setIsStuckModalOpen(true)}>
+              Report Blocker / Stuck
             </Button>
           )}
         </div>
       </div>
 
-      {/* Tabs */}
+      {/* TABS */}
       <Tabs tabs={tabs} activeTab={activeTab} onChange={setActiveTab} />
 
-      {/* Tab Contents */}
+      {/* COMMITMENTS TAB */}
       {activeTab === 'commitments' && (
-        <DataTable
-          columns={commitmentColumns}
-          data={commitments}
-          searchPlaceholder="Filter commitments by title, owner, status..."
-          onRowClick={row => setSelectedCommitment(row)}
-        />
-      )}
-
-      {activeTab === 'tasks' && (
-        <DataTable
-          columns={taskColumns}
-          data={tasks}
-          searchPlaceholder="Filter tasks by assignee, code, department..."
-        />
-      )}
-
-      {activeTab === 'stuck' && (
-        <div className="space-y-4">
-          {stuckItems.map(item => (
-            <div key={item.id} className="p-5 bg-white border border-red-200 rounded-lg shadow-card space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="px-2.5 py-1 bg-red-100 text-brand-red font-bold text-xs rounded uppercase">
-                  Category: {item.stuckReasonCategory.replace('_', ' ')}
-                </span>
-                <span className="text-xs text-text-muted">Required By: <strong className="text-text-primary">{item.requiredByDate}</strong></span>
-              </div>
-              <div>
-                <h4 className="text-base font-bold text-text-primary">{item.taskTitle}</h4>
-                <p className="text-xs text-red-900 mt-1">{item.stuckReasonDetails}</p>
-              </div>
-              <div className="p-3 bg-slate-50 border border-workspace-border rounded-md text-xs space-y-1">
-                <p className="font-semibold text-brand-blue">Need: {item.needDescription}</p>
-                <p className="text-text-muted">Provider: <strong className="text-text-primary">{item.providedByUserName}</strong> | Reported by: {item.reportedByUserName}</p>
-                <p className="text-text-muted">Impact: {item.businessImpact}</p>
-              </div>
-              {can('stuck.resolve') && (
-                <div className="flex justify-end">
-                  <Button size="sm" variant="outline">
-                    Resolve Blocker
-                  </Button>
-                </div>
-              )}
-            </div>
-          ))}
+        <div>
+          {commitments.length === 0 ? (
+            <EmptyState
+              title="No Commitments Recorded"
+              description="Start by creating an organizational commitment to automate sub-task generation and RACI assignments."
+              action={<Button size="sm" onClick={() => setIsCommitmentModalOpen(true)}>+ Create Commitment</Button>}
+            />
+          ) : (
+            <DataTable
+              columns={commitmentColumns}
+              data={commitments}
+              onRowClick={row => setSelectedCommitment(row)}
+            />
+          )}
         </div>
       )}
 
-      {/* Selected Commitment Drawer */}
+      {/* TASKS TAB */}
+      {activeTab === 'tasks' && (
+        <div>
+          {tasks.length === 0 ? (
+            <EmptyState
+              title="No Execution Tasks"
+              description="No sub-tasks currently assigned. Creating a commitment will automatically derive initial execution tasks."
+              action={<Button size="sm" onClick={() => setIsCommitmentModalOpen(true)}>+ Create Commitment</Button>}
+            />
+          ) : (
+            <DataTable columns={taskColumns} data={tasks} />
+          )}
+        </div>
+      )}
+
+      {/* STUCK ITEMS TAB */}
+      {activeTab === 'stuck' && (
+        <div>
+          {stuckItems.length === 0 ? (
+            <div className="p-8 text-center bg-white border border-workspace-border rounded-lg shadow-card space-y-3">
+              <div className="w-12 h-12 bg-emerald-50 border border-emerald-200 rounded-full flex items-center justify-center mx-auto text-emerald-600 font-bold">
+                ✓
+              </div>
+              <h3 className="text-base font-bold text-text-primary">Zero Blocked Workflows</h3>
+              <p className="text-xs text-text-secondary max-w-md mx-auto">
+                No tasks are currently flagged as stuck. Use &quot;Report Blocker / Stuck&quot; if an operational task encounters a vendor, resource, or decision blocker.
+              </p>
+              <Button variant="outline" size="sm" onClick={() => setIsStuckModalOpen(true)}>
+                Report Blocker / Stuck
+              </Button>
+            </div>
+          ) : (
+            <DataTable columns={stuckColumns} data={stuckItems} />
+          )}
+        </div>
+      )}
+
+      {/* COMMITMENT DETAIL DRAWER */}
       {selectedCommitment && (
         <Drawer
-          isOpen={!!selectedCommitment}
+          isOpen={Boolean(selectedCommitment)}
           onClose={() => setSelectedCommitment(null)}
-          title={`Commitment: ${selectedCommitment.code}`}
-          subtitle={selectedCommitment.title}
+          title={`${selectedCommitment.code} — Commitment Details`}
         >
-          <div className="space-y-6 text-xs">
-            <div className="space-y-1">
-              <span className="text-text-muted">Status</span>
-              <div><StatusBadge status={selectedCommitment.status} /></div>
+          <div className="space-y-6">
+            <div>
+              <span className="text-xs text-brand-blue font-bold uppercase">{selectedCommitment.sourceTitle}</span>
+              <h3 className="text-lg font-bold text-text-primary mt-1">{selectedCommitment.title}</h3>
+              <p className="text-xs text-text-secondary mt-2 leading-relaxed">{selectedCommitment.description}</p>
             </div>
 
-            <div className="space-y-1">
-              <span className="text-text-muted font-bold uppercase tracking-wider">Description</span>
-              <p className="text-text-primary leading-relaxed bg-slate-50 p-3 rounded border border-workspace-border">
-                {selectedCommitment.description}
-              </p>
-            </div>
-
-            {/* RACI Breakdown */}
-            <div className="space-y-3">
-              <h4 className="font-bold text-text-primary uppercase tracking-wider">RACI Assignment Set</h4>
-              <div className="space-y-2">
-                {selectedCommitment.raci.map(member => (
-                  <div key={member.userId} className="p-2.5 bg-white border border-workspace-border rounded-md flex items-center justify-between">
-                    <div>
-                      <p className="font-semibold text-text-primary">{member.userName}</p>
-                      <p className="text-[10px] text-text-muted">{member.userRoleTitle} ({member.departmentName})</p>
-                    </div>
-                    <Badge variant={member.role === 'A' ? 'primary' : member.role === 'R' ? 'warning' : 'neutral'}>
-                      {member.role} — {member.role === 'R' ? 'Responsible' : member.role === 'A' ? 'Accountable' : member.role === 'C' ? 'Consulted' : 'Informed'}
-                    </Badge>
-                  </div>
-                ))}
+            {/* RACI Matrix Breakdown */}
+            <div className="p-4 bg-slate-50 border border-slate-200 rounded-lg space-y-3">
+              <h4 className="text-xs font-bold text-text-primary uppercase tracking-wider">RACI Accountability Matrix</h4>
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <div className="p-2 bg-white border border-slate-200 rounded">
+                  <span className="font-bold text-brand-blue">R (Responsible): </span>
+                  <span>{selectedCommitment.responsibleName}</span>
+                </div>
+                <div className="p-2 bg-white border border-slate-200 rounded">
+                  <span className="font-bold text-emerald-700">A (Accountable): </span>
+                  <span>{selectedCommitment.accountableName}</span>
+                </div>
               </div>
             </div>
 
-            <div className="pt-4 border-t border-workspace-border flex justify-end gap-2">
-              {can('commitment.approve') && selectedCommitment.status === 'PENDING_APPROVAL' && (
-                <Button size="sm">Approve Commitment</Button>
-              )}
-              <Button variant="outline" size="sm" onClick={() => setSelectedCommitment(null)}>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setSelectedCommitment(null)}>
                 Close
               </Button>
             </div>
@@ -283,56 +321,18 @@ export default function ExecutionPage() {
         </Drawer>
       )}
 
-      {/* Report Stuck Modal */}
-      <Modal
-        isOpen={showStuckModal}
-        onClose={() => setShowStuckModal(false)}
-        title="Report Execution Blocker (Stuck / Need)"
-        subtitle="Log what is blocking work progress and who can resolve it"
-      >
-        <div className="space-y-4 text-xs">
-          <div>
-            <label className="block font-bold uppercase text-text-secondary mb-1">Stuck Category</label>
-            <select className="w-full p-2 border border-workspace-border rounded-md text-xs bg-white">
-              <option>VENDOR_DELAY — Vendor or External Delay</option>
-              <option>WAITING_DECISION — Waiting for Management Decision</option>
-              <option>TECHNICAL — Technical / IT Blocker</option>
-              <option>WAITING_PERSON — Waiting for Person</option>
-            </select>
-          </div>
+      {/* MODALS */}
+      <CreateCommitmentModal
+        isOpen={isCommitmentModalOpen}
+        onClose={() => setIsCommitmentModalOpen(false)}
+        onSuccess={refreshData}
+      />
 
-          <div>
-            <label className="block font-bold uppercase text-text-secondary mb-1">Reason Details</label>
-            <textarea
-              rows={3}
-              value={stuckReason}
-              onChange={e => setStuckReason(e.target.value)}
-              placeholder="Describe why the task or commitment is currently stuck..."
-              className="w-full p-2 border border-workspace-border rounded-md text-xs bg-white"
-            />
-          </div>
-
-          <div>
-            <label className="block font-bold uppercase text-text-secondary mb-1">What is Needed to Resume?</label>
-            <input
-              type="text"
-              value={needDesc}
-              onChange={e => setNeedDesc(e.target.value)}
-              placeholder="Explicit requirement (e.g. API authentication keys)"
-              className="w-full p-2 border border-workspace-border rounded-md text-xs bg-white"
-            />
-          </div>
-
-          <div className="flex justify-end gap-2 pt-2">
-            <Button variant="outline" size="sm" onClick={() => setShowStuckModal(false)}>
-              Cancel
-            </Button>
-            <Button size="sm" onClick={() => setShowStuckModal(false)} leftIcon={<Send className="w-3.5 h-3.5" />}>
-              Submit Blocker Report
-            </Button>
-          </div>
-        </div>
-      </Modal>
+      <ReportStuckModal
+        isOpen={isStuckModalOpen}
+        onClose={() => setIsStuckModalOpen(false)}
+        onSuccess={refreshData}
+      />
     </div>
   );
 }

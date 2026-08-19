@@ -1,0 +1,95 @@
+[project]
+name = "lakshya-api"
+version = "0.1.0"
+description = "LAKSHYA API — MD Office Management Operating System (identity, access and audit foundation)"
+requires-python = ">=3.10,<3.13"
+license = { text = "Proprietary" }
+
+dependencies = [
+    "fastapi>=0.115,<0.116",
+    "uvicorn[standard]>=0.32,<0.35",
+    "pydantic>=2.9,<3",
+    "pydantic-settings>=2.6,<3",
+    # Backs pydantic's EmailStr, used to validate user email addresses.
+    "email-validator>=2.2,<3",
+    "sqlalchemy>=2.0.36,<2.1",
+    "alembic>=1.14,<2",
+    "psycopg[binary]>=3.2,<4",
+    "argon2-cffi>=23.1,<25",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3,<9",
+    "httpx>=0.27,<0.29",
+    "ruff>=0.8,<0.13",
+    "mypy>=1.13,<2",
+]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["app*"]
+
+# ---------------------------------------------------------------------------
+# Formatting and linting
+# ---------------------------------------------------------------------------
+
+[tool.ruff]
+target-version = "py310"
+line-length = 100
+src = ["."]
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "B",   # flake8-bugbear
+    "UP",  # pyupgrade
+    "S",   # flake8-bandit
+    "C4",  # flake8-comprehensions
+    "T20", # flake8-print
+    "RUF",
+]
+ignore = [
+    "B008", # FastAPI dependency injection uses callables in defaults
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["S101", "S105", "S106"] # asserts and test-only literal secrets
+"alembic/versions/*" = ["E501"]
+"app/scripts/*" = ["T20"] # the local bootstrap script prints instructions
+
+[tool.ruff.lint.isort]
+known-first-party = ["app"]
+
+# ---------------------------------------------------------------------------
+# Type checking
+# ---------------------------------------------------------------------------
+
+[tool.mypy]
+python_version = "3.10"
+plugins = ["pydantic.mypy"]
+strict = true
+warn_unreachable = true
+exclude = "^(alembic/versions/|build/)"
+
+[[tool.mypy.overrides]]
+module = ["tests.*"]
+disallow_untyped_defs = false
+
+# ---------------------------------------------------------------------------
+# Tests
+# ---------------------------------------------------------------------------
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q --strict-markers"
+markers = [
+    "db: test requires a real PostgreSQL database (LAKSHYA_TEST_DATABASE_URL)",
+]
+filterwarnings = ["error::DeprecationWarning"]

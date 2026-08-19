@@ -1,117 +1,79 @@
 import { QuarterlyDirection, MonthlyPriority, WeeklyMilestone } from '../../types/strategy';
 
-export const MOCK_QUARTERLY_DIRECTIONS: QuarterlyDirection[] = [
-  {
-    id: 'qd-2026-q3',
-    year: 2026,
-    quarter: 'Q3',
-    title: 'OPD Flow Optimization & Patient Experience Excellence',
-    description: 'Transform outpatient waiting times, streamline diagnostic queueing, and integrate real-time operational intelligence across Stavya Spine Hospital.',
-    objective: 'Reduce average OPD patient wait time from 45 mins to under 18 mins while elevating clinical satisfaction scores above 95%.',
-    progressPercent: 68,
-    status: 'ACTIVE',
-    targetDate: '2026-09-30',
-  },
-  {
-    id: 'qd-2026-q4',
-    year: 2026,
-    quarter: 'Q4',
-    title: 'Advanced Surgical Suite Digital Integration & Rehabilitation Protocol',
-    description: 'Deploy real-time surgical scheduling telemetry and standardized post-operative physiotherapy pathways.',
-    objective: 'Increase surgical slot utilization by 22% and shorten inpatient length of stay by 1.2 days.',
-    progressPercent: 15,
-    status: 'ACTIVE',
-    targetDate: '2026-12-31',
-  },
-];
+export let MOCK_QUARTERLY_DIRECTIONS: QuarterlyDirection[] = [];
+export let MOCK_MONTHLY_PRIORITIES: MonthlyPriority[] = [];
+export let MOCK_WEEKLY_MILESTONES: WeeklyMilestone[] = [];
 
-export const MOCK_MONTHLY_PRIORITIES: MonthlyPriority[] = [
-  {
-    id: 'mp-2026-08-01',
-    quarterlyDirectionId: 'qd-2026-q3',
-    month: 'August 2026',
-    title: 'Improve OPD Patient Flow & Waiting Time Tracking',
-    description: 'Deploy real-time waiting-time data integration, digital token displays, and automated triage alerts in outpatient reception.',
-    ownerId: 'usr-mgr-004',
-    ownerName: 'Ananya Patel',
-    departmentId: 'dept-ops',
-    departmentName: 'Hospital Operations',
-    status: 'ACTIVE',
-    progressPercent: 74,
-    targetCompletionDate: '2026-08-31',
-    milestonesCount: 4,
-    commitmentsCount: 3,
-  },
-  {
-    id: 'mp-2026-08-02',
-    quarterlyDirectionId: 'qd-2026-q3',
-    month: 'August 2026',
-    title: 'Complete Hospital MRI & Diagnostics Workflow Integration',
-    description: 'Establish direct electronic requisition between OPD spine consultations and MRI scanning suites to remove manual paper handoffs.',
-    ownerId: 'usr-emp-005',
-    ownerName: 'Priyesh Shah',
-    departmentId: 'dept-it',
-    departmentName: 'IT & Digital Health',
-    status: 'AT_RISK',
-    progressPercent: 45,
-    targetCompletionDate: '2026-08-28',
-    milestonesCount: 3,
-    commitmentsCount: 2,
-  },
-  {
-    id: 'mp-2026-08-03',
-    quarterlyDirectionId: 'qd-2026-q3',
-    month: 'August 2026',
-    title: 'Standardize Post-Operative Spine Rehab Pathways',
-    description: 'Define evidence-based inpatient & outpatient physiotherapy protocols across all lumbar and cervical surgical recovery cases.',
-    ownerId: 'usr-dh-003',
-    ownerName: 'Dr. Rohan Sharma',
-    departmentId: 'dept-surgery',
-    departmentName: 'Spine Surgery',
-    status: 'ACTIVE',
-    progressPercent: 82,
-    targetCompletionDate: '2026-08-25',
-    milestonesCount: 4,
-    commitmentsCount: 3,
-  },
-];
+type Listener = () => void;
+const listeners: Set<Listener> = new Set();
 
-export const MOCK_WEEKLY_MILESTONES: WeeklyMilestone[] = [
-  {
-    id: 'wm-2026-w34-01',
-    monthlyPriorityId: 'mp-2026-08-01',
-    weekNumber: 34,
-    weekLabel: 'Week 34 (Aug 17 - Aug 23)',
-    title: 'Complete waiting-time data API integration and reception counter testing',
-    ownerId: 'usr-mgr-004',
-    ownerName: 'Ananya Patel',
-    status: 'IN_PROGRESS',
-    dueDate: '2026-08-21',
-    tasksCount: 4,
+const notify = () => {
+  listeners.forEach(fn => fn());
+};
+
+export const strategyStore = {
+  subscribe(listener: Listener) {
+    listeners.add(listener);
+    return () => listeners.delete(listener);
   },
-  {
-    id: 'wm-2026-w34-02',
-    monthlyPriorityId: 'mp-2026-08-02',
-    weekNumber: 34,
-    weekLabel: 'Week 34 (Aug 17 - Aug 23)',
-    title: 'Resolve PACS vendor API authentication and test digital MRI requisition payload',
-    ownerId: 'usr-emp-005',
-    ownerName: 'Priyesh Shah',
-    status: 'BLOCKED',
-    dueDate: '2026-08-20',
-    tasksCount: 3,
+
+  getQuarterlyDirections() {
+    return MOCK_QUARTERLY_DIRECTIONS;
   },
-  {
-    id: 'wm-2026-w34-03',
-    monthlyPriorityId: 'mp-2026-08-03',
-    weekNumber: 34,
-    weekLabel: 'Week 34 (Aug 17 - Aug 23)',
-    title: 'Finalize Lumbar Microdiscectomy 4-week rehab regimen document with physio team',
-    ownerId: 'usr-dh-003',
-    ownerName: 'Dr. Rohan Sharma',
-    status: 'COMPLETED',
-    dueDate: '2026-08-18',
-    completionOutcome: 'Regimen document signed off by Spine Surgery and Physiotherapy heads.',
-    tasksCount: 2,
+
+  getMonthlyPriorities() {
+    return MOCK_MONTHLY_PRIORITIES;
   },
-];
+
+  getWeeklyMilestones() {
+    return MOCK_WEEKLY_MILESTONES;
+  },
+
+  addQuarterlyDirection(newDir: Partial<QuarterlyDirection>): QuarterlyDirection {
+    const id = `qd-${Date.now()}`;
+    const direction: QuarterlyDirection = {
+      id,
+      year: newDir.year || 2026,
+      quarter: newDir.quarter || 'Q3',
+      title: newDir.title || 'Untitled Strategic Direction',
+      description: newDir.description || '',
+      objective: newDir.objective || '',
+      progressPercent: 0,
+      status: 'ACTIVE',
+      targetDate: newDir.targetDate || '2026-09-30',
+    };
+    MOCK_QUARTERLY_DIRECTIONS.unshift(direction);
+    notify();
+    return direction;
+  },
+
+  addMonthlyPriority(newPriority: Partial<MonthlyPriority>): MonthlyPriority {
+    const id = `mp-${Date.now()}`;
+    const priority: MonthlyPriority = {
+      id,
+      quarterlyDirectionId: newPriority.quarterlyDirectionId || 'qd-default',
+      month: newPriority.month || 'August 2026',
+      title: newPriority.title || 'Untitled Monthly Priority',
+      description: newPriority.description || '',
+      ownerId: newPriority.ownerId || 'usr-mgr-004',
+      ownerName: newPriority.ownerName || 'Ananya Patel',
+      departmentId: newPriority.departmentId || 'dept-ops',
+      departmentName: newPriority.departmentName || 'Operations',
+      status: 'ACTIVE',
+      progressPercent: 0,
+      targetCompletionDate: newPriority.targetCompletionDate || '2026-08-31',
+      milestonesCount: 0,
+      commitmentsCount: 0,
+    };
+    MOCK_MONTHLY_PRIORITIES.unshift(priority);
+    notify();
+    return priority;
+  },
+
+  resetToZero() {
+    MOCK_QUARTERLY_DIRECTIONS = [];
+    MOCK_MONTHLY_PRIORITIES = [];
+    MOCK_WEEKLY_MILESTONES = [];
+    notify();
+  },
+};

@@ -1,4 +1,4 @@
-export type MeetingType = 'MAJOR' | 'CROSS_FUNCTIONAL' | 'ONE_ON_ONE' | 'SCHEDULED' | 'NON_SCHEDULED';
+export type MeetingType = 'MAJOR' | 'CROSS_FUNCTIONAL' | 'ONE_ON_ONE' | 'DEPARTMENTAL' | 'SCHEDULED' | 'NON_SCHEDULED';
 
 export type MeetingStatus = 'SCHEDULED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
 

@@ -4,11 +4,29 @@ import { MOCK_MEETINGS, MOCK_DECISIONS } from './meetingsMock';
 import { MOCK_AUDIT_EVENTS } from './organizationMock';
 
 export function getMDOverviewData() {
+  const activePriorities = MOCK_MONTHLY_PRIORITIES.filter(p => p.status === 'ACTIVE');
+  const completedMilestones = MOCK_WEEKLY_MILESTONES.filter(m => m.status === 'COMPLETED');
+  const milestonesPercent = MOCK_WEEKLY_MILESTONES.length > 0 
+    ? Math.round((completedMilestones.length / MOCK_WEEKLY_MILESTONES.length) * 100) 
+    : 0;
+
+  const currentDirection = MOCK_QUARTERLY_DIRECTIONS[0] || {
+    id: 'qd-zero',
+    year: 2026,
+    quarter: 'Q3',
+    title: 'No Active Strategic Direction Set',
+    description: 'Create a new quarterly direction or monthly priority to begin organizational tracking.',
+    objective: 'Define initial executive targets for Stavya Spine Hospital.',
+    progressPercent: 0,
+    status: 'ACTIVE',
+    targetDate: '2026-09-30',
+  };
+
   return {
-    greeting: 'Good morning, Managing Director',
-    roleLabel: 'Managing Director & MD Office Operating View',
-    currentDate: 'Tuesday, 18 August 2026',
-    direction: MOCK_QUARTERLY_DIRECTIONS[0],
+    greeting: 'Good afternoon, Executive Leadership',
+    roleLabel: 'LAKSHYA MD Office Operating System — Active Workspace',
+    currentDate: new Date().toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }),
+    direction: currentDirection,
     priorities: MOCK_MONTHLY_PRIORITIES,
     milestones: MOCK_WEEKLY_MILESTONES,
     commitments: MOCK_COMMITMENTS,
@@ -19,10 +37,10 @@ export function getMDOverviewData() {
     pendingDecisions: MOCK_DECISIONS.filter(d => d.status === 'PENDING_APPROVAL' || d.status === 'APPROVED'),
     recentActivities: MOCK_AUDIT_EVENTS,
     stats: {
-      activePrioritiesCount: MOCK_MONTHLY_PRIORITIES.filter(p => p.status === 'ACTIVE').length,
-      milestonesCompletionPercent: 66,
+      activePrioritiesCount: activePriorities.length,
+      milestonesCompletionPercent: milestonesPercent,
       commitmentsCount: MOCK_COMMITMENTS.length,
-      overdueItemsCount: 1,
+      overdueItemsCount: MOCK_TASKS.filter(t => t.status === 'OVERDUE').length,
       blockedItemsCount: MOCK_STUCK_NEEDS.length,
       escalationsCount: MOCK_ESCALATIONS.length,
     },
