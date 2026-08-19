@@ -65,15 +65,15 @@ export default function ExecutionPage() {
       key: 'code',
       header: 'Code',
       sortable: true,
-      render: row => <span className="font-bold text-brand-blue">{row.code}</span>,
+      render: row => <span className="font-bold text-brand-blue font-mono">{row.code}</span>,
     },
     {
       key: 'title',
       header: 'Title & Source',
       render: row => (
         <div>
-          <p className="font-semibold text-text-primary">{row.title}</p>
-          <p className="text-[11px] text-text-muted">{row.sourceTitle}</p>
+          <p className="font-semibold text-slate-900">{row.title}</p>
+          <p className="text-[11px] text-slate-500">{row.sourceTitle}</p>
         </div>
       ),
     },
@@ -97,12 +97,12 @@ export default function ExecutionPage() {
     {
       key: 'responsibleName',
       header: 'Responsible (R)',
-      render: row => <span className="font-medium text-text-primary">{row.responsibleName}</span>,
+      render: row => <span className="font-medium text-slate-900">{row.responsibleName}</span>,
     },
     {
       key: 'accountableName',
       header: 'Accountable (A)',
-      render: row => <span className="font-medium text-text-secondary">{row.accountableName}</span>,
+      render: row => <span className="font-medium text-slate-600">{row.accountableName}</span>,
     },
     {
       key: 'status',
@@ -118,7 +118,7 @@ export default function ExecutionPage() {
       key: 'dueDate',
       header: 'Target Date',
       sortable: true,
-      render: row => <span className="font-medium text-text-secondary">{row.dueDate}</span>,
+      render: row => <span className="font-medium text-slate-600 font-mono text-xs">{row.dueDate}</span>,
     },
   ];
 
@@ -134,8 +134,8 @@ export default function ExecutionPage() {
       header: 'Task & Department',
       render: row => (
         <div>
-          <p className="font-semibold text-text-primary">{row.title}</p>
-          <p className="text-[11px] text-text-muted">{row.departmentName}</p>
+          <p className="font-semibold text-slate-900">{row.title}</p>
+          <p className="text-[11px] text-slate-500">{row.departmentName}</p>
         </div>
       ),
     },
@@ -144,8 +144,8 @@ export default function ExecutionPage() {
       header: 'Assignee',
       render: row => (
         <div>
-          <p className="font-medium text-text-primary">{row.assigneeName}</p>
-          <p className="text-[10px] text-text-muted">{row.assigneeRoleTitle}</p>
+          <p className="font-medium text-slate-900">{row.assigneeName}</p>
+          <p className="text-[10px] text-slate-500">{row.assigneeRoleTitle}</p>
         </div>
       ),
     },
@@ -162,7 +162,7 @@ export default function ExecutionPage() {
     {
       key: 'dueDate',
       header: 'Due Date',
-      render: row => <span className="text-xs text-text-secondary">{row.dueDate}</span>,
+      render: row => <span className="text-xs font-mono text-slate-600">{row.dueDate}</span>,
     },
   ];
 
@@ -175,7 +175,7 @@ export default function ExecutionPage() {
     {
       key: 'taskTitle',
       header: 'Blocked Task',
-      render: row => <span className="font-semibold text-text-primary">{row.taskTitle}</span>,
+      render: row => <span className="font-semibold text-slate-900">{row.taskTitle}</span>,
     },
     {
       key: 'stuckReasonCategory',
@@ -185,12 +185,12 @@ export default function ExecutionPage() {
     {
       key: 'needDescription',
       header: 'What is Needed',
-      render: row => <p className="text-xs text-text-primary">{row.needDescription}</p>,
+      render: row => <p className="text-xs text-slate-800">{row.needDescription}</p>,
     },
     {
       key: 'providedByUserName',
       header: 'Provider',
-      render: row => <span className="font-medium text-text-primary">{row.providedByUserName}</span>,
+      render: row => <span className="font-medium text-slate-900">{row.providedByUserName}</span>,
     },
     {
       key: 'status',
@@ -202,10 +202,10 @@ export default function ExecutionPage() {
   return (
     <div className="space-y-6">
       {/* HEADER */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white border border-workspace-border rounded-lg p-6 shadow-card">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white border border-slate-200 rounded-xl p-6 shadow-card">
         <div>
-          <h2 className="text-2xl font-bold text-text-primary tracking-tight">Execution Engine & Commitment Tracking</h2>
-          <p className="text-xs text-text-secondary mt-1">
+          <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Execution Engine & Commitment Tracking</h2>
+          <p className="text-xs text-slate-600 font-medium mt-1">
             Track organizational commitments, RACI accountability matrices, tasks, and stuck/need escalations.
           </p>
         </div>
@@ -265,12 +265,12 @@ export default function ExecutionPage() {
       {activeTab === 'stuck' && (
         <div>
           {stuckItems.length === 0 ? (
-            <div className="p-8 text-center bg-white border border-workspace-border rounded-lg shadow-card space-y-3">
+            <div className="p-8 text-center bg-white border border-slate-200 rounded-xl shadow-card space-y-3">
               <div className="w-12 h-12 bg-emerald-50 border border-emerald-200 rounded-full flex items-center justify-center mx-auto text-emerald-600 font-bold">
                 ✓
               </div>
-              <h3 className="text-base font-bold text-text-primary">Zero Blocked Workflows</h3>
-              <p className="text-xs text-text-secondary max-w-md mx-auto">
+              <h3 className="text-base font-bold text-slate-900">Zero Blocked Workflows</h3>
+              <p className="text-xs font-medium text-slate-600 max-w-md mx-auto">
                 No tasks are currently flagged as stuck. Use &quot;Report Blocker / Stuck&quot; if an operational task encounters a vendor, resource, or decision blocker.
               </p>
               <Button variant="outline" size="sm" onClick={() => setIsStuckModalOpen(true)}>
@@ -293,21 +293,21 @@ export default function ExecutionPage() {
           <div className="space-y-6">
             <div>
               <span className="text-xs text-brand-blue font-bold uppercase">{selectedCommitment.sourceTitle}</span>
-              <h3 className="text-lg font-bold text-text-primary mt-1">{selectedCommitment.title}</h3>
-              <p className="text-xs text-text-secondary mt-2 leading-relaxed">{selectedCommitment.description}</p>
+              <h3 className="text-lg font-bold text-slate-900 mt-1">{selectedCommitment.title}</h3>
+              <p className="text-xs text-slate-600 mt-2 leading-relaxed">{selectedCommitment.description}</p>
             </div>
 
             {/* RACI Matrix Breakdown */}
             <div className="p-4 bg-slate-50 border border-slate-200 rounded-lg space-y-3">
-              <h4 className="text-xs font-bold text-text-primary uppercase tracking-wider">RACI Accountability Matrix</h4>
+              <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider">RACI Accountability Matrix</h4>
               <div className="grid grid-cols-2 gap-2 text-xs">
                 <div className="p-2 bg-white border border-slate-200 rounded">
                   <span className="font-bold text-brand-blue">R (Responsible): </span>
-                  <span>{selectedCommitment.responsibleName}</span>
+                  <span className="text-slate-900">{selectedCommitment.responsibleName}</span>
                 </div>
                 <div className="p-2 bg-white border border-slate-200 rounded">
                   <span className="font-bold text-emerald-700">A (Accountable): </span>
-                  <span>{selectedCommitment.accountableName}</span>
+                  <span className="text-slate-900">{selectedCommitment.accountableName}</span>
                 </div>
               </div>
             </div>

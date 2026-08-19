@@ -62,9 +62,9 @@ export function DataTable<T extends Record<string, any>>({
   };
 
   return (
-    <div className="w-full bg-white border border-workspace-border rounded-lg shadow-card overflow-hidden">
+    <div className="w-full bg-white border border-slate-200 rounded-xl shadow-card overflow-hidden">
       {/* Search Bar */}
-      <div className="p-4 border-b border-workspace-border flex items-center justify-between bg-workspace-subtle/50">
+      <div className="p-4 border-b border-slate-200 flex items-center justify-between bg-slate-50/50">
         <input
           type="text"
           value={searchTerm}
@@ -73,42 +73,42 @@ export function DataTable<T extends Record<string, any>>({
             setCurrentPage(1);
           }}
           placeholder={searchPlaceholder}
-          className="w-full max-w-xs px-3 py-1.5 text-xs bg-white border border-workspace-border rounded-md shadow-subtle focus:border-brand-blue focus:ring-1 focus:ring-brand-blue"
+          className="w-full max-w-xs px-3 py-1.5 text-xs bg-white border border-slate-200 rounded-lg shadow-sm text-slate-900 placeholder-slate-400 focus:border-brand-blue focus:ring-1 focus:ring-brand-blue"
         />
-        <div className="text-xs text-text-muted font-medium">
-          Showing <span className="font-semibold text-text-primary">{sortedData.length}</span> entries
+        <div className="text-xs text-slate-500 font-semibold">
+          Showing <span className="font-bold text-slate-900">{sortedData.length}</span> entries
         </div>
       </div>
 
       {/* Table */}
       <div className="overflow-x-auto">
         <table className="w-full text-left text-xs">
-          <thead className="bg-workspace-subtle uppercase tracking-wider text-text-muted border-b border-workspace-border font-semibold">
+          <thead className="bg-slate-50/80 uppercase tracking-wider text-slate-600 border-b border-slate-200 font-bold">
             <tr>
               {columns.map(col => (
                 <th
                   key={col.key}
-                  className={`px-4 py-3 ${col.className || ''} ${
-                    col.sortable ? 'cursor-pointer select-none hover:text-text-primary' : ''
+                  className={`px-4 py-3.5 ${col.className || ''} ${
+                    col.sortable ? 'cursor-pointer select-none hover:text-slate-900' : ''
                   }`}
                   onClick={() => col.sortable && handleSort(col.key)}
                 >
                   <div className="flex items-center gap-1.5">
                     <span>{col.header}</span>
-                    {col.sortable && <ArrowUpDown className="w-3 h-3" />}
+                    {col.sortable && <ArrowUpDown className="w-3 h-3 text-slate-400" />}
                   </div>
                 </th>
               ))}
             </tr>
           </thead>
-          <tbody className="divide-y divide-workspace-border">
+          <tbody className="divide-y divide-slate-200">
             {paginatedData.length === 0 ? (
               <tr>
-                <td colSpan={columns.length} className="px-4 py-12 text-center text-text-muted">
+                <td colSpan={columns.length} className="px-4 py-12 text-center text-slate-500">
                   <div className="flex flex-col items-center justify-center space-y-2">
-                    <Inbox className="w-8 h-8 text-slate-300" />
-                    <p className="font-medium text-sm text-text-secondary">No records found</p>
-                    <p className="text-xs text-text-muted">Try refining your filter parameters</p>
+                    <Inbox className="w-8 h-8 text-slate-400" />
+                    <p className="font-bold text-sm text-slate-900">No records found</p>
+                    <p className="text-xs text-slate-500">Try refining your search filter</p>
                   </div>
                 </td>
               </tr>
@@ -117,10 +117,10 @@ export function DataTable<T extends Record<string, any>>({
                 <tr
                   key={row.id || idx}
                   onClick={() => onRowClick && onRowClick(row)}
-                  className={`hover:bg-slate-50/80 transition-colors ${onRowClick ? 'cursor-pointer' : ''}`}
+                  className={`hover:bg-slate-50 transition-colors ${onRowClick ? 'cursor-pointer' : ''}`}
                 >
                   {columns.map(col => (
-                    <td key={col.key} className={`px-4 py-3 text-text-primary ${col.className || ''}`}>
+                    <td key={col.key} className={`px-4 py-3.5 text-slate-900 font-medium ${col.className || ''}`}>
                       {col.render ? col.render(row) : row[col.key]}
                     </td>
                   ))}
@@ -133,24 +133,24 @@ export function DataTable<T extends Record<string, any>>({
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="p-3 border-t border-workspace-border flex items-center justify-between text-xs bg-white">
-          <span className="text-text-muted">
+        <div className="p-3.5 border-t border-slate-200 flex items-center justify-between text-xs bg-white">
+          <span className="text-slate-500 font-medium">
             Page {currentPage} of {totalPages}
           </span>
           <div className="flex items-center gap-2">
             <button
               onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
               disabled={currentPage === 1}
-              className="p-1 border border-workspace-border rounded-md hover:bg-workspace-subtle disabled:opacity-40"
+              className="p-1.5 border border-slate-200 rounded-md hover:bg-slate-50 disabled:opacity-40"
             >
-              <ChevronLeft className="w-4 h-4" />
+              <ChevronLeft className="w-4 h-4 text-slate-600" />
             </button>
             <button
               onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
               disabled={currentPage === totalPages}
-              className="p-1 border border-workspace-border rounded-md hover:bg-workspace-subtle disabled:opacity-40"
+              className="p-1.5 border border-slate-200 rounded-md hover:bg-slate-50 disabled:opacity-40"
             >
-              <ChevronRight className="w-4 h-4" />
+              <ChevronRight className="w-4 h-4 text-slate-600" />
             </button>
           </div>
         </div>

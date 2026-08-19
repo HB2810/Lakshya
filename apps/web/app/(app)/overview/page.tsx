@@ -31,8 +31,10 @@ export default function OverviewPage() {
   const [isCommitmentModalOpen, setIsCommitmentModalOpen] = useState(false);
 
   const refreshData = () => {
-    setData(apiClient.dashboard.getMDOverview());
-    setLoading(false);
+    Promise.resolve(apiClient.dashboard.getMDOverview()).then(res => {
+      setData(res);
+      setLoading(false);
+    });
   };
 
   useEffect(() => {
@@ -96,6 +98,21 @@ export default function OverviewPage() {
     },
   ];
 
+  const stats = data?.stats || {
+    activePrioritiesCount: 0,
+    milestonesCompletionPercent: 0,
+    commitmentsCount: 0,
+    blockedItemsCount: 0,
+    escalationsCount: 0,
+  };
+
+  const direction = data?.direction || {
+    title: 'No Active Strategic Direction Set',
+    description: 'Create a new quarterly direction or monthly priority to begin operational tracking.',
+    objective: 'Define initial executive targets.',
+    progressPercent: 0,
+  };
+
   return (
     <div className="space-y-6">
       {/* EXECUTIVE HERO BANNER */}
@@ -103,11 +120,11 @@ export default function OverviewPage() {
         <div>
           <div className="flex items-center gap-2">
             <span className="px-3 py-0.5 bg-blue-50 text-brand-blue border border-blue-200 text-[10px] font-bold rounded-full uppercase tracking-wider">
-              {data.roleLabel}
+              {data?.roleLabel || 'MD Office View'}
             </span>
-            <span className="text-xs text-slate-500 font-mono">• {data.currentDate}</span>
+            <span className="text-xs text-slate-500 font-mono">• {data?.currentDate || 'Today'}</span>
           </div>
-          <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight mt-1">{data.greeting}</h2>
+          <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight mt-1">{data?.greeting || 'Executive Dashboard'}</h2>
           <p className="text-xs text-slate-600 mt-0.5">
             Operational snapshot for Stavya Spine Hospital commitments, priorities, and exception tracking.
           </p>
@@ -129,29 +146,29 @@ export default function OverviewPage() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <Stat
           label="Active Monthly Priorities"
-          value={data.stats.activePrioritiesCount}
+          value={stats.activePrioritiesCount}
           change="Target Baseline"
           changeType="positive"
           icon={<Target className="w-5 h-5" />}
         />
         <Stat
           label="Weekly Milestones Progress"
-          value={`${data.stats.milestonesCompletionPercent}%`}
+          value={`${stats.milestonesCompletionPercent}%`}
           change="Active Week"
           changeType="positive"
           icon={<CheckSquare className="w-5 h-5" />}
         />
         <Stat
           label="Active Commitments"
-          value={data.stats.commitmentsCount}
+          value={stats.commitmentsCount}
           subtext="Under execution"
           icon={<TrendingUp className="w-5 h-5" />}
         />
         <Stat
           label="Attention / Blocked Items"
-          value={data.stats.blockedItemsCount}
-          change={`${data.stats.escalationsCount} Escalated`}
-          changeType={data.stats.blockedItemsCount > 0 ? 'negative' : 'neutral'}
+          value={stats.blockedItemsCount}
+          change={`${stats.escalationsCount} Escalated`}
+          changeType={stats.blockedItemsCount > 0 ? 'negative' : 'neutral'}
           icon={<AlertTriangle className="w-5 h-5" />}
         />
       </div>
@@ -163,16 +180,16 @@ export default function OverviewPage() {
       >
         <div className="space-y-4">
           <div>
-            <h3 className="text-lg font-bold text-slate-900">{data.direction.title}</h3>
-            <p className="text-xs text-slate-600 mt-1 leading-relaxed">{data.direction.description}</p>
+            <h3 className="text-lg font-bold text-slate-900">{direction.title}</h3>
+            <p className="text-xs text-slate-600 mt-1 leading-relaxed">{direction.description}</p>
           </div>
 
           <div className="p-3.5 bg-blue-50/60 border border-blue-100 rounded-lg">
             <p className="text-[10px] font-bold text-brand-blue uppercase tracking-wider">Strategic Objective</p>
-            <p className="text-xs font-semibold text-slate-800 mt-0.5">{data.direction.objective}</p>
+            <p className="text-xs font-semibold text-slate-800 mt-0.5">{direction.objective}</p>
           </div>
 
-          <ProgressBar value={data.direction.progressPercent} size="md" color="blue" />
+          <ProgressBar value={direction.progressPercent} size="md" color="blue" />
         </div>
       </Card>
 
@@ -181,7 +198,7 @@ export default function OverviewPage() {
         {/* Left 2 Cols: Monthly Priorities & Active Commitments */}
         <div className="lg:col-span-2 space-y-6">
           <Card title="Monthly Priorities">
-            {data.priorities.length === 0 ? (
+            {!data?.priorities || data.priorities.length === 0 ? (
               <EmptyState title="No Priorities Defined" description="No monthly priorities defined for this active period." />
             ) : (
               <div className="space-y-4">
@@ -205,7 +222,7 @@ export default function OverviewPage() {
 
           {/* Active Commitments Table */}
           <Card title="Active Commitments & Execution Work">
-            {data.commitments.length === 0 ? (
+            {!data?.commitments || data.commitments.length === 0 ? (
               <div className="py-6">
                 <EmptyState
                   title="No Commitments Recorded"
@@ -223,13 +240,13 @@ export default function OverviewPage() {
         <div className="space-y-6">
           {/* Attention Required Card */}
           <Card title="Attention Required" subtitle="Exceptions, Blockers & Escalations">
-            {data.stuckNeeds.length === 0 && data.escalations.length === 0 ? (
+            {(!data?.stuckNeeds || data.stuckNeeds.length === 0) && (!data?.escalations || data.escalations.length === 0) ? (
               <div className="p-4 text-center text-xs font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-lg">
                 ✓ All execution workflows operating cleanly. 0 Blocked or Escalated items.
               </div>
             ) : (
               <div className="space-y-3">
-                {data.stuckNeeds.map((sn: any) => (
+                {data?.stuckNeeds?.map((sn: any) => (
                   <div key={sn.id} className="p-3.5 bg-red-50 border border-red-200 rounded-lg space-y-1">
                     <div className="flex items-center justify-between">
                       <span className="px-2 py-0.5 bg-brand-red text-white text-[10px] font-bold rounded uppercase">
@@ -242,7 +259,7 @@ export default function OverviewPage() {
                   </div>
                 ))}
 
-                {data.escalations.map((esc: any) => (
+                {data?.escalations?.map((esc: any) => (
                   <div key={esc.id} className="p-3.5 bg-amber-50 border border-amber-200 rounded-lg space-y-1">
                     <div className="flex items-center justify-between">
                       <span className="px-2 py-0.5 bg-amber-600 text-white text-[10px] font-bold rounded uppercase">
@@ -260,7 +277,7 @@ export default function OverviewPage() {
 
           {/* Upcoming Meetings */}
           <Card title="Upcoming Meetings & Decisions">
-            {data.upcomingMeetings.length === 0 ? (
+            {!data?.upcomingMeetings || data.upcomingMeetings.length === 0 ? (
               <EmptyState title="No Meetings Scheduled" description="No operational meetings currently scheduled." />
             ) : (
               <div className="space-y-3">

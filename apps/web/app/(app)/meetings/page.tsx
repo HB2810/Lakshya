@@ -34,10 +34,10 @@ export default function MeetingsPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white border border-workspace-border rounded-lg p-6 shadow-card">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white border border-slate-200 rounded-xl p-6 shadow-card">
         <div>
-          <h2 className="text-xl font-bold text-text-primary tracking-tight">Meetings & Decision Register</h2>
-          <p className="text-xs text-text-secondary mt-1">
+          <h2 className="text-xl font-bold text-slate-900 tracking-tight">Meetings & Decision Register</h2>
+          <p className="text-xs text-slate-600 font-medium mt-1">
             Traceable meeting management: Major, Cross Functional, 1:1, Decisions & Action Commitments.
           </p>
         </div>
@@ -59,16 +59,16 @@ export default function MeetingsPage() {
             <div
               key={m.id}
               onClick={() => setSelectedMeeting(m)}
-              className="bg-white border border-workspace-border rounded-lg p-5 shadow-card hover:border-brand-blue transition-colors cursor-pointer space-y-4 flex flex-col justify-between"
+              className="bg-white border border-slate-200 rounded-xl p-5 shadow-card hover:border-brand-blue transition-colors cursor-pointer space-y-4 flex flex-col justify-between"
             >
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <Badge variant="primary">{m.type.replace('_', ' ')}</Badge>
                   <StatusBadge status={m.status} size="sm" />
                 </div>
-                <h3 className="text-sm font-bold text-text-primary line-clamp-2">{m.title}</h3>
-                <div className="space-y-1 text-xs text-text-muted">
-                  <p className="flex items-center gap-1.5">
+                <h3 className="text-sm font-bold text-slate-900 line-clamp-2">{m.title}</h3>
+                <div className="space-y-1 text-xs text-slate-600">
+                  <p className="flex items-center gap-1.5 font-mono">
                     <Clock className="w-3.5 h-3.5 text-brand-blue" />
                     <span>{new Date(m.scheduledAt).toLocaleDateString()}</span>
                   </p>
@@ -83,7 +83,7 @@ export default function MeetingsPage() {
                 </div>
               </div>
 
-              <div className="pt-3 border-t border-workspace-border flex items-center justify-between text-xs font-semibold text-brand-blue">
+              <div className="pt-3 border-t border-slate-200 flex items-center justify-between text-xs font-semibold text-brand-blue">
                 <span>{m.decisions.length} Decisions Recorded</span>
                 <span>View Details &rarr;</span>
               </div>
@@ -102,14 +102,14 @@ export default function MeetingsPage() {
         ) : (
           <div className="space-y-4">
             {decisions.map(d => (
-              <div key={d.id} className="p-4 bg-slate-50 border border-workspace-border rounded-lg space-y-2">
+              <div key={d.id} className="p-4 bg-slate-50 border border-slate-200 rounded-lg space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="font-bold text-brand-blue text-xs">{d.code}</span>
+                  <span className="font-bold text-brand-blue text-xs font-mono">{d.code}</span>
                   <StatusBadge status={d.status} size="sm" />
                 </div>
-                <h4 className="text-sm font-bold text-text-primary">{d.title}</h4>
-                <p className="text-xs text-text-secondary leading-relaxed">{d.context}</p>
-                <div className="pt-2 border-t border-slate-200 text-xs text-text-muted flex items-center justify-between">
+                <h4 className="text-sm font-bold text-slate-900">{d.title}</h4>
+                <p className="text-xs text-slate-600 leading-relaxed">{d.context}</p>
+                <div className="pt-2 border-t border-slate-200 text-xs text-slate-500 flex items-center justify-between font-medium">
                   <span>Decision Maker: {d.decisionMakerUserName}</span>
                   <span>Approved By: {d.approvedByUserName}</span>
                 </div>
@@ -129,12 +129,12 @@ export default function MeetingsPage() {
           <div className="space-y-6">
             <div className="space-y-2">
               <Badge variant="primary">{selectedMeeting.type}</Badge>
-              <p className="text-xs text-text-muted">Organizer: {selectedMeeting.organizerUserName}</p>
+              <p className="text-xs text-slate-600">Organizer: {selectedMeeting.organizerUserName}</p>
             </div>
 
             <div className="space-y-2">
-              <h4 className="text-xs font-bold text-text-primary uppercase tracking-wider">Agenda Topics</h4>
-              <ul className="space-y-1 text-xs text-text-secondary list-disc pl-4">
+              <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider">Agenda Topics</h4>
+              <ul className="space-y-1 text-xs text-slate-600 list-disc pl-4">
                 {selectedMeeting.agendaItems.map((item, idx) => (
                   <li key={idx}>{item}</li>
                 ))}

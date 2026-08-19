@@ -34,10 +34,10 @@ export default function StrategyPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white border border-workspace-border rounded-lg p-6 shadow-card">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white border border-slate-200 rounded-xl p-6 shadow-card">
         <div>
-          <h2 className="text-xl font-bold text-text-primary tracking-tight">Strategic Direction & Priorities</h2>
-          <p className="text-xs text-text-secondary mt-1">
+          <h2 className="text-xl font-bold text-slate-900 tracking-tight">Strategic Direction & Priorities</h2>
+          <p className="text-xs text-slate-600 font-medium mt-1">
             Visual organizational alignment: Quarterly Direction &rarr; Monthly Priority &rarr; Weekly Milestone &rarr; Commitment.
           </p>
         </div>
@@ -64,10 +64,10 @@ export default function StrategyPage() {
           >
             <div className="space-y-6">
               {/* Direction Overview Box */}
-              <div className="p-4 bg-blue-50/50 border border-blue-100 rounded-lg space-y-3">
+              <div className="p-4 bg-blue-50/60 border border-blue-100 rounded-lg space-y-3">
                 <h3 className="text-lg font-extrabold text-brand-blue">{qd.title}</h3>
-                <p className="text-xs text-text-secondary leading-relaxed">{qd.description}</p>
-                <div className="flex items-center gap-4 text-xs font-semibold text-text-primary pt-1">
+                <p className="text-xs text-slate-600 leading-relaxed">{qd.description}</p>
+                <div className="flex items-center gap-4 text-xs font-semibold text-slate-900 pt-1">
                   <span>Objective: {qd.objective}</span>
                 </div>
                 <ProgressBar value={qd.progressPercent} size="md" />
@@ -75,7 +75,7 @@ export default function StrategyPage() {
 
               {/* Priorities List */}
               <div className="space-y-3">
-                <h4 className="text-xs font-bold text-text-primary uppercase tracking-wider">
+                <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
                   Associated Monthly Priorities
                 </h4>
 
@@ -85,21 +85,21 @@ export default function StrategyPage() {
                   priorities.map(p => (
                     <div
                       key={p.id}
-                      className="border border-workspace-border rounded-lg bg-workspace-subtle/30 overflow-hidden"
+                      className="border border-slate-200 rounded-lg bg-slate-50/50 overflow-hidden"
                     >
                       <div
                         onClick={() => setExpandedPriority(expandedPriority === p.id ? null : p.id)}
-                        className="p-4 flex items-center justify-between cursor-pointer hover:bg-workspace-subtle transition-colors"
+                        className="p-4 flex items-center justify-between cursor-pointer hover:bg-slate-100 transition-colors"
                       >
                         <div className="flex items-center gap-3">
                           {expandedPriority === p.id ? (
-                            <ChevronDown className="w-4 h-4 text-text-muted" />
+                            <ChevronDown className="w-4 h-4 text-slate-400" />
                           ) : (
-                            <ChevronRight className="w-4 h-4 text-text-muted" />
+                            <ChevronRight className="w-4 h-4 text-slate-400" />
                           )}
                           <div>
-                            <h5 className="text-sm font-bold text-text-primary">{p.title}</h5>
-                            <p className="text-xs text-text-muted">
+                            <h5 className="text-sm font-bold text-slate-900">{p.title}</h5>
+                            <p className="text-xs text-slate-500">
                               Owner: {p.ownerName} • {p.departmentName}
                             </p>
                           </div>

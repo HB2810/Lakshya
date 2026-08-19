@@ -78,14 +78,24 @@ export const Sidebar: React.FC = () => {
         <div className="h-16 px-4 border-b border-slate-200 flex items-center justify-between">
           <Link href="/overview" className="flex items-center gap-3 overflow-hidden">
             {isCollapsed ? (
-              <div className="w-9 h-9 rounded-lg bg-brand-blue text-white flex items-center justify-center font-black text-sm shadow-md">
-                L
-              </div>
+              /* eslint-disable-next-line @next/next/no-img-element */
+              <img
+                src="/brand/stavya-logo.png"
+                alt="Stavya Spine Hospital"
+                height="32"
+                style={{ maxHeight: '32px', height: '32px', width: 'auto' }}
+                className="h-8 w-auto shrink-0 object-contain"
+              />
             ) : (
               <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-lg bg-brand-blue text-white flex items-center justify-center font-black text-sm shadow-md">
-                  L
-                </div>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="/brand/stavya-logo.png"
+                  alt="Stavya Spine Hospital"
+                  height="36"
+                  style={{ maxHeight: '36px', height: '36px', width: 'auto' }}
+                  className="h-9 w-auto shrink-0 object-contain"
+                />
                 <div className="flex flex-col">
                   <span className="text-base font-extrabold tracking-wider text-brand-blue leading-none">
                     LAKSHYA
