@@ -1,4 +1,4 @@
-export type WorkItemStatus = 'todo' | 'in_progress' | 'completed' | 'stuck' | 'cancelled';
+export type WorkItemStatus = 'todo' | 'in_progress' | 'completed' | 'stuck' | 'blocked' | 'cancelled';
 export type WorkItemPriority = 'low' | 'medium' | 'high' | 'urgent';
 
 export interface IntakeRequestPayload {
@@ -49,6 +49,9 @@ export interface WorkItem {
   owner_id?: string | null;
   created_by: string;
   due_at?: string | null;
+  completed_at?: string | null;
+  blocked_at?: string | null;
+  blocked_reason?: string | null;
   origin_meeting_id?: string | null;
   source_type?: string;
   created_at: string;
@@ -63,6 +66,7 @@ export interface WorkItemPatchPayload {
   priority?: WorkItemPriority;
   owner_id?: string | null;
   due_at?: string | null;
+  blocked_reason?: string | null;
 }
 
 export interface WorkItemListResponse {

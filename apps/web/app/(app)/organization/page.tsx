@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Building2, Users, Shield, Check, Lock, Plus } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { Tabs } from '../../../components/ui/Tabs';
 import { Card } from '../../../components/ui/Card';
 import { Badge } from '../../../components/ui/Badge';
@@ -42,23 +42,23 @@ export default function OrganizationPage() {
       key: 'code',
       header: 'Code',
       sortable: true,
-      render: row => <span className="font-bold text-brand-blue">{row.code}</span>,
+      render: row => <span className="font-bold text-indigo-600 dark:text-indigo-400">{row.code}</span>,
     },
     {
       key: 'name',
       header: 'Department Name',
       sortable: true,
-      render: row => <span className="font-semibold text-text-primary">{row.name}</span>,
+      render: row => <span className="font-semibold text-slate-900 dark:text-white">{row.name}</span>,
     },
     {
       key: 'headUserName',
       header: 'Department Head',
-      render: row => <span className="font-medium text-text-primary">{row.headUserName}</span>,
+      render: row => <span className="font-medium text-slate-900 dark:text-white">{row.headUserName}</span>,
     },
     {
       key: 'membersCount',
       header: 'Personnel Count',
-      render: row => <span className="font-medium text-text-secondary">{row.membersCount} staff</span>,
+      render: row => <span className="font-medium text-slate-600 dark:text-slate-400">{row.membersCount} staff</span>,
     },
     {
       key: 'activeTasksCount',
@@ -73,15 +73,15 @@ export default function OrganizationPage() {
       header: 'Name & Title',
       render: row => (
         <div>
-          <p className="font-bold text-text-primary">{row.name}</p>
-          <p className="text-[11px] text-text-muted">{row.roleTitle}</p>
+          <p className="font-bold text-slate-900 dark:text-white">{row.name}</p>
+          <p className="text-[11px] text-slate-500 dark:text-slate-400">{row.roleTitle}</p>
         </div>
       ),
     },
     {
       key: 'email',
       header: 'Email',
-      render: row => <span className="font-mono text-text-secondary">{row.email}</span>,
+      render: row => <span className="font-mono text-slate-600 dark:text-slate-400">{row.email}</span>,
     },
     {
       key: 'role',
@@ -91,17 +91,17 @@ export default function OrganizationPage() {
     {
       key: 'departmentName',
       header: 'Department',
-      render: row => <span className="font-medium text-text-primary">{row.departmentName}</span>,
+      render: row => <span className="font-medium text-slate-900 dark:text-white">{row.departmentName}</span>,
     },
   ];
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white border border-workspace-border rounded-lg p-6 shadow-card">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6 shadow-sm">
         <div>
-          <h2 className="text-xl font-bold text-text-primary tracking-tight">Organization & RBAC Directory</h2>
-          <p className="text-xs text-text-secondary mt-1">
+          <h2 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">Organization & RBAC Directory</h2>
+          <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
             Stavya Spine Hospital organizational structure, departments, users, and role permissions.
           </p>
         </div>
@@ -128,14 +128,14 @@ export default function OrganizationPage() {
           {roles.map(r => (
             <Card key={r.name} title={r.title} action={<Badge variant="purple">{r.name}</Badge>}>
               <div className="space-y-3 text-xs">
-                <p className="text-text-secondary">{r.description}</p>
-                <div className="pt-2 border-t border-workspace-border space-y-1">
-                  <p className="font-bold text-text-primary uppercase tracking-wider text-[11px]">
+                <p className="text-slate-600 dark:text-slate-400">{r.description}</p>
+                <div className="pt-2 border-t border-slate-200 dark:border-slate-800 space-y-1">
+                  <p className="font-bold text-slate-900 dark:text-white uppercase tracking-wider text-[11px]">
                     Granted Capabilities:
                   </p>
                   <div className="flex flex-wrap gap-1.5 pt-1">
                     {r.allowedCapabilities.map(cap => (
-                      <span key={cap} className="px-2 py-0.5 bg-blue-50 text-brand-blue font-mono border border-blue-100 rounded text-[10px]">
+                      <span key={cap} className="px-2 py-0.5 bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 font-mono border border-indigo-100 dark:border-indigo-900/50 rounded text-[10px]">
                         {cap}
                       </span>
                     ))}

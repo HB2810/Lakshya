@@ -3,7 +3,7 @@ import { ExecutionStatus } from '../../types/execution';
 import { PriorityStatus } from '../../types/strategy';
 import { MeetingStatus } from '../../types/meeting';
 
-export type StatusType = ExecutionStatus | PriorityStatus | MeetingStatus | 'DRAFT' | 'SUPERSEDED' | 'ACKNOWLEDGED' | 'APPROVED' | 'PENDING_APPROVAL' | 'OPEN' | 'RESOLVED' | 'todo' | 'in_progress' | 'completed' | 'stuck' | 'cancelled';
+export type StatusType = ExecutionStatus | PriorityStatus | MeetingStatus | 'DRAFT' | 'SUPERSEDED' | 'ACKNOWLEDGED' | 'APPROVED' | 'PENDING_APPROVAL' | 'OPEN' | 'RESOLVED' | 'todo' | 'in_progress' | 'completed' | 'stuck' | 'blocked' | 'cancelled';
 
 interface StatusBadgeProps {
   status: StatusType;

@@ -7,6 +7,7 @@ import {
   CheckCircle2,
   Clock,
   PlusCircle,
+  ShieldAlert,
 } from 'lucide-react';
 import { Card, Stat } from '../../../components/ui/Card';
 import { StatusBadge } from '../../../components/ui/StatusBadge';
@@ -18,6 +19,7 @@ import { ReviewablePlanCard } from '../../../components/intake/ReviewablePlanCar
 import { MeetingList } from '../../../components/meetings/MeetingList';
 import { CreateMeetingModal } from '../../../components/modals/CreateMeetingModal';
 import { MeetingIntakeModal } from '../../../components/modals/MeetingIntakeModal';
+import { ReportStuckModal } from '../../../components/modals/ReportStuckModal';
 import {
   ApprovePlanPayload,
   ReviewablePlan,
@@ -43,6 +45,7 @@ export default function OverviewPage() {
   // Modals state
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
   const [isMeetingIntakeOpen, setIsMeetingIntakeOpen] = useState(false);
+  const [stuckModalItemId, setStuckModalItemId] = useState<string | null>(null);
 
   const fetchUsers = useCallback(async () => {
     try {
@@ -59,7 +62,7 @@ export default function OverviewPage() {
       setWorkItems(response.items || []);
     } catch {
       // ignore
-    } fontFinally: {
+    } finally {
       setLoading(false);
     }
   }, []);
@@ -101,6 +104,11 @@ export default function OverviewPage() {
   };
 
   const handleStatusChange = async (itemId: string, newStatus: WorkItemStatus) => {
+    if (newStatus === 'stuck' || newStatus === 'blocked') {
+      setStuckModalItemId(itemId);
+      return;
+    }
+
     try {
       await apiClient.workItems.patch(itemId, { status: newStatus });
       fetchWorkItems();
@@ -127,7 +135,7 @@ export default function OverviewPage() {
 
   const attentionQueue = workItems.filter((item) => {
     const isOverdue = item.due_at && item.due_at < now.toISOString() && item.status !== 'completed';
-    const isStuck = item.status === 'stuck';
+    const isStuck = item.status === 'stuck' || item.status === 'blocked';
     const isUrgent = item.priority === 'urgent' || item.priority === 'high';
     return (isOverdue || isStuck || isUrgent) && item.status !== 'completed';
   });
@@ -173,7 +181,16 @@ export default function OverviewPage() {
         </div>
 
         {/* HEADER ACTIONS */}
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setStuckModalItemId('')}
+            className="flex items-center gap-1 text-red-600 dark:text-red-400 border-red-200 dark:border-red-900 hover:bg-red-50 dark:hover:bg-red-950"
+          >
+            <ShieldAlert className="w-3.5 h-3.5" />
+            Report Blocker
+          </Button>
           <Button
             variant="outline"
             size="sm"
@@ -181,7 +198,7 @@ export default function OverviewPage() {
             className="flex items-center gap-1.5"
           >
             <Calendar className="w-3.5 h-3.5" />
-            + Schedule Meeting
+            Schedule Meeting
           </Button>
           <Button
             variant="primary"
@@ -280,9 +297,7 @@ export default function OverviewPage() {
                 >
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
-                      <span className="px-2 py-0.5 bg-amber-600 text-white text-[10px] font-bold rounded uppercase">
-                        {isOverdue ? 'Overdue' : item.status.toUpperCase()}
-                      </span>
+                      <StatusBadge status={item.status} size="sm" />
                       <span className="px-2 py-0.5 bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-[10px] font-bold rounded uppercase">
                         {item.priority} priority
                       </span>
@@ -295,7 +310,12 @@ export default function OverviewPage() {
                     <p className="text-sm font-bold text-slate-900 dark:text-white">
                       {item.title}
                     </p>
-                    {item.description && (
+                    {item.blocked_reason && (
+                      <p className="text-xs font-semibold text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/40 p-1.5 rounded border border-red-100 dark:border-red-900/50">
+                        Blocker: {item.blocked_reason}
+                      </p>
+                    )}
+                    {item.description && !item.blocked_reason && (
                       <p className="text-xs text-slate-600 dark:text-slate-400 line-clamp-1">
                         {item.description}
                       </p>
@@ -310,7 +330,7 @@ export default function OverviewPage() {
                     >
                       <option value="todo">To Do</option>
                       <option value="in_progress">In Progress</option>
-                      <option value="stuck">Stuck</option>
+                      <option value="stuck">Stuck / Blocked</option>
                       <option value="completed">Completed</option>
                     </select>
                   </div>
@@ -384,7 +404,12 @@ export default function OverviewPage() {
                     <h4 className="text-sm font-semibold text-slate-900 dark:text-white">
                       {item.title}
                     </h4>
-                    {item.description && (
+                    {item.blocked_reason && (
+                      <p className="text-xs font-semibold text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/40 p-1.5 rounded border border-red-100 dark:border-red-900/50">
+                        Blocker: {item.blocked_reason}
+                      </p>
+                    )}
+                    {item.description && !item.blocked_reason && (
                       <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-1">
                         {item.description}
                       </p>
@@ -393,6 +418,9 @@ export default function OverviewPage() {
                       <span>Owner: <strong className="text-slate-700 dark:text-slate-300">{ownerName}</strong></span>
                       {item.due_at && (
                         <span>Due: <strong className="text-slate-700 dark:text-slate-300">{item.due_at.substring(0, 10)}</strong></span>
+                      )}
+                      {item.completed_at && (
+                        <span>Completed: <strong className="text-emerald-600 dark:text-emerald-400">{item.completed_at.substring(0, 10)}</strong></span>
                       )}
                     </div>
                   </div>
@@ -405,7 +433,7 @@ export default function OverviewPage() {
                     >
                       <option value="todo">To Do</option>
                       <option value="in_progress">In Progress</option>
-                      <option value="stuck">Stuck</option>
+                      <option value="stuck">Stuck / Blocked</option>
                       <option value="completed">Completed</option>
                     </select>
                   </div>
@@ -428,6 +456,13 @@ export default function OverviewPage() {
         onClose={() => setIsMeetingIntakeOpen(false)}
         users={users}
         onWorkCreated={fetchWorkItems}
+      />
+
+      <ReportStuckModal
+        isOpen={stuckModalItemId !== null}
+        onClose={() => setStuckModalItemId(null)}
+        taskId={stuckModalItemId || undefined}
+        onSuccess={fetchWorkItems}
       />
     </div>
   );
