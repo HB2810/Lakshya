@@ -13,6 +13,8 @@ import { User } from '../../types/auth';
 interface ReviewablePlanCardProps {
   initialPlan: ReviewablePlan;
   users?: User[];
+  originMeetingId?: string;
+  sourceType?: string;
   onApprove: (approvedPlan: ApprovePlanPayload) => Promise<void>;
   onCancel: () => void;
   isLoading?: boolean;
@@ -21,6 +23,8 @@ interface ReviewablePlanCardProps {
 export const ReviewablePlanCard: React.FC<ReviewablePlanCardProps> = ({
   initialPlan,
   users = [],
+  originMeetingId,
+  sourceType,
   onApprove,
   onCancel,
   isLoading = false,
@@ -85,6 +89,8 @@ export const ReviewablePlanCard: React.FC<ReviewablePlanCardProps> = ({
       priority: mainPriority,
       owner_id: mainOwnerId || null,
       due_at: mainDueDate ? new Date(mainDueDate).toISOString() : null,
+      origin_meeting_id: originMeetingId || null,
+      source_type: sourceType || (originMeetingId ? 'meeting' : 'intake'),
       items: validItems,
     };
 

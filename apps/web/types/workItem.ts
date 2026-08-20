@@ -33,6 +33,8 @@ export interface ApprovePlanPayload {
   due_at?: string | null;
   priority: WorkItemPriority;
   owner_id?: string | null;
+  origin_meeting_id?: string | null;
+  source_type?: string;
   items: ReviewablePlanItem[];
 }
 
@@ -47,6 +49,8 @@ export interface WorkItem {
   owner_id?: string | null;
   created_by: string;
   due_at?: string | null;
+  origin_meeting_id?: string | null;
+  source_type?: string;
   created_at: string;
   updated_at: string;
   version: number;

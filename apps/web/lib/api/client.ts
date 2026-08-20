@@ -98,6 +98,17 @@ async function apiFetch<T>(endpoint: string, options: RequestInit = {}): Promise
  * Service Layer Client for LAKSHYA Frontend.
  * Integrates with FastAPI auth endpoints with fallback for offline demo development.
  */
+import {
+  AgendaItemCreatePayload,
+  DecisionCreatePayload,
+  Meeting,
+  MeetingAgendaItem,
+  MeetingCreatePayload,
+  MeetingDecision,
+  MeetingDetail,
+  MeetingListResponse,
+} from '../../types/meeting';
+
 export const apiClient = {
   auth: {
     async getMe(): Promise<{ response: CurrentUserResponse; user: User }> {
@@ -266,11 +277,40 @@ export const apiClient = {
   },
 
   meetings: {
-    async getMeetings() {
-      return MOCK_MEETINGS;
+    async list(status?: string): Promise<MeetingListResponse> {
+      const query = status ? `?status=${encodeURIComponent(status)}` : '';
+      return await apiFetch<MeetingListResponse>(`/meetings${query}`, { method: 'GET' });
     },
-    async getDecisions() {
-      return MOCK_DECISIONS;
+
+    async create(payload: MeetingCreatePayload): Promise<Meeting> {
+      return await apiFetch<Meeting>('/meetings', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+    },
+
+    async getDetail(id: string): Promise<MeetingDetail> {
+      return await apiFetch<MeetingDetail>(`/meetings/${id}`, { method: 'GET' });
+    },
+
+    async addAgenda(id: string, payload: AgendaItemCreatePayload): Promise<MeetingAgendaItem> {
+      return await apiFetch<MeetingAgendaItem>(`/meetings/${id}/agenda`, {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+    },
+
+    async logDecision(id: string, payload: DecisionCreatePayload): Promise<MeetingDecision> {
+      return await apiFetch<MeetingDecision>(`/meetings/${id}/decisions`, {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+    },
+
+    async extractWork(id: string): Promise<StructuredPlanRecommendation> {
+      return await apiFetch<StructuredPlanRecommendation>(`/meetings/${id}/extract-work`, {
+        method: 'POST',
+      });
     },
   },
 

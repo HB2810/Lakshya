@@ -3,9 +3,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   AlertTriangle,
+  Calendar,
   CheckCircle2,
   Clock,
-  Filter,
+  PlusCircle,
 } from 'lucide-react';
 import { Card, Stat } from '../../../components/ui/Card';
 import { StatusBadge } from '../../../components/ui/StatusBadge';
@@ -14,25 +15,34 @@ import { apiClient } from '../../../lib/api/client';
 import { useAuth } from '../../../lib/auth/AuthContext';
 import { SmartIntakeBox } from '../../../components/intake/SmartIntakeBox';
 import { ReviewablePlanCard } from '../../../components/intake/ReviewablePlanCard';
+import { MeetingList } from '../../../components/meetings/MeetingList';
+import { CreateMeetingModal } from '../../../components/modals/CreateMeetingModal';
+import { MeetingIntakeModal } from '../../../components/modals/MeetingIntakeModal';
 import {
   ApprovePlanPayload,
   ReviewablePlan,
   WorkItem,
-  WorkItemPriority,
   WorkItemStatus,
 } from '../../../types/workItem';
+import { Meeting } from '../../../types/meeting';
 import { User } from '../../../types/auth';
 
 export default function OverviewPage() {
   const { user } = useAuth();
   const [workItems, setWorkItems] = useState<WorkItem[]>([]);
+  const [meetings, setMeetings] = useState<Meeting[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMeetings, setLoadingMeetings] = useState(true);
   const [activePlan, setActivePlan] = useState<ReviewablePlan | null>(null);
   const [isIntakeLoading, setIsIntakeLoading] = useState(false);
   const [isApproving, setIsApproving] = useState(false);
   const [activeTab, setActiveTab] = useState<'all' | 'today' | 'upcoming' | 'completed'>('all');
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  // Modals state
+  const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
+  const [isMeetingIntakeOpen, setIsMeetingIntakeOpen] = useState(false);
 
   const fetchUsers = useCallback(async () => {
     try {
@@ -49,15 +59,27 @@ export default function OverviewPage() {
       setWorkItems(response.items || []);
     } catch {
       // ignore
-    } finally {
+    } fontFinally: {
       setLoading(false);
+    }
+  }, []);
+
+  const fetchMeetings = useCallback(async () => {
+    try {
+      const response = await apiClient.meetings.list();
+      setMeetings(response.items || []);
+    } catch {
+      // ignore
+    } finally {
+      setLoadingMeetings(false);
     }
   }, []);
 
   useEffect(() => {
     fetchUsers();
     fetchWorkItems();
-  }, [fetchUsers, fetchWorkItems]);
+    fetchMeetings();
+  }, [fetchUsers, fetchWorkItems, fetchMeetings]);
 
   const handlePlanGenerated = (plan: ReviewablePlan) => {
     setActivePlan(plan);
@@ -84,6 +106,18 @@ export default function OverviewPage() {
       fetchWorkItems();
     } catch {
       // ignore
+    }
+  };
+
+  const handleExtractWorkFromMeeting = async (meeting: Meeting) => {
+    try {
+      const rec = await apiClient.meetings.extractWork(meeting.id);
+      setActivePlan(rec.plan);
+      setSuccessMessage(`Loaded candidate work plan from meeting "${meeting.title}".`);
+      setTimeout(() => setSuccessMessage(null), 5000);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Failed to extract work from meeting.';
+      alert(msg);
     }
   };
 
@@ -137,6 +171,28 @@ export default function OverviewPage() {
             Natural work intake, AI-assisted structuring, and execution tracking for Stavya Spine Hospital.
           </p>
         </div>
+
+        {/* HEADER ACTIONS */}
+        <div className="flex items-center gap-2.5">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setIsScheduleModalOpen(true)}
+            className="flex items-center gap-1.5"
+          >
+            <Calendar className="w-3.5 h-3.5" />
+            + Schedule Meeting
+          </Button>
+          <Button
+            variant="primary"
+            size="sm"
+            onClick={() => setIsMeetingIntakeOpen(true)}
+            className="flex items-center gap-1.5"
+          >
+            <PlusCircle className="w-3.5 h-3.5" />
+            + Add from Meeting
+          </Button>
+        </div>
       </div>
 
       {/* SUCCESS CONFIRMATION BANNER */}
@@ -188,6 +244,28 @@ export default function OverviewPage() {
         />
       </div>
 
+      {/* OPERATIONAL MEETINGS SECTION */}
+      <Card
+        title="Operational Meetings"
+        subtitle="Recent & scheduled meetings (Extract candidate work items directly into SSIE)"
+        action={
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setIsScheduleModalOpen(true)}
+          >
+            + Schedule Meeting
+          </Button>
+        }
+      >
+        <MeetingList
+          meetings={meetings}
+          isLoading={loadingMeetings}
+          onExtractWork={handleExtractWorkFromMeeting}
+          onScheduleClick={() => setIsScheduleModalOpen(true)}
+        />
+      </Card>
+
       {/* MIDDLE: ATTENTION QUEUE */}
       {attentionQueue.length > 0 && (
         <Card title="Attention Queue" subtitle="Overdue, Stuck & High Priority Items">
@@ -208,6 +286,11 @@ export default function OverviewPage() {
                       <span className="px-2 py-0.5 bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-[10px] font-bold rounded uppercase">
                         {item.priority} priority
                       </span>
+                      {item.source_type === 'meeting' && (
+                        <span className="px-2 py-0.5 bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-400 text-[10px] font-bold rounded uppercase">
+                          From Meeting
+                        </span>
+                      )}
                     </div>
                     <p className="text-sm font-bold text-slate-900 dark:text-white">
                       {item.title}
@@ -269,7 +352,7 @@ export default function OverviewPage() {
               No work items found in this view.
             </p>
             <p className="text-xs text-slate-500 dark:text-slate-400">
-              Use the Smart Work Intake box above to type or paste a new task.
+              Use the Smart Work Intake box or &quot;+ Add from Meeting&quot; above to add work items.
             </p>
           </div>
         ) : (
@@ -287,8 +370,13 @@ export default function OverviewPage() {
                       <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
                         {item.priority} Priority
                       </span>
-                      {item.parent_id && (
+                      {item.source_type === 'meeting' && (
                         <span className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950 px-1.5 py-0.5 rounded">
+                          From Meeting
+                        </span>
+                      )}
+                      {item.parent_id && (
+                        <span className="text-[10px] font-bold text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded">
                           Subtask
                         </span>
                       )}
@@ -327,6 +415,20 @@ export default function OverviewPage() {
           </div>
         )}
       </Card>
+
+      {/* MODALS */}
+      <CreateMeetingModal
+        isOpen={isScheduleModalOpen}
+        onClose={() => setIsScheduleModalOpen(false)}
+        onSuccess={fetchMeetings}
+      />
+
+      <MeetingIntakeModal
+        isOpen={isMeetingIntakeOpen}
+        onClose={() => setIsMeetingIntakeOpen(false)}
+        users={users}
+        onWorkCreated={fetchWorkItems}
+      />
     </div>
   );
 }

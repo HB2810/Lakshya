@@ -1,42 +1,93 @@
-export type MeetingType = 'MAJOR' | 'CROSS_FUNCTIONAL' | 'ONE_ON_ONE' | 'DEPARTMENTAL' | 'SCHEDULED' | 'NON_SCHEDULED';
+export type MeetingStatus = 'scheduled' | 'in_progress' | 'completed' | 'cancelled';
+export type AgendaStatus = 'pending' | 'in_progress' | 'completed';
+export type DecisionStatus = 'draft' | 'approved' | 'assigned' | 'completed';
+export type DecisionPriority = 'low' | 'medium' | 'high' | 'urgent';
 
-export type MeetingStatus = 'SCHEDULED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
-
-export interface MeetingParticipant {
-  userId: string;
-  userName: string;
-  userRoleTitle: string;
-  departmentName: string;
-  attended: boolean;
+export interface MeetingCreatePayload {
+  title: string;
+  meeting_date: string;
+  start_time?: string;
+  duration_minutes?: number;
+  location?: string | null;
 }
 
-export interface Decision {
-  id: string;
-  meetingId?: string;
-  meetingTitle?: string;
-  code: string; // e.g. "DEC-2026-031"
+export interface AgendaItemCreatePayload {
   title: string;
-  context: string;
-  decisionMakerUserId: string;
-  decisionMakerUserName: string;
-  status: 'DRAFT' | 'PENDING_APPROVAL' | 'APPROVED' | 'SUPERSEDED';
-  approvedAt?: string;
-  approvedByUserName?: string;
-  impactSummary: string;
-  linkedCommitmentId?: string;
+  description?: string | null;
+  sort_order?: number;
+}
+
+export interface DecisionCreatePayload {
+  title: string;
+  description?: string | null;
+  suggested_owner_id?: string | null;
+  department_id?: string | null;
+  priority?: DecisionPriority;
+}
+
+export interface MeetingAgendaItem {
+  id: string;
+  organization_id: string;
+  meeting_id: string;
+  title: string;
+  description?: string | null;
+  sort_order: number;
+  status: AgendaStatus;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface MeetingDecision {
+  id: string;
+  organization_id: string;
+  meeting_id: string;
+  title: string;
+  description?: string | null;
+  suggested_owner_id?: string | null;
+  department_id?: string | null;
+  priority: DecisionPriority;
+  status: DecisionStatus;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface MeetingSummary {
+  id: string;
+  organization_id: string;
+  meeting_id: string;
+  summary?: string | null;
+  decisions_snapshot: Record<string, unknown>[];
+  work_snapshot: Record<string, unknown>[];
+  blockers_snapshot: Record<string, unknown>[];
+  created_at: string;
+  updated_at: string;
 }
 
 export interface Meeting {
   id: string;
+  organization_id: string;
   title: string;
-  type: MeetingType;
-  scheduledAt: string;
-  locationOrLink: string;
-  organizerUserId: string;
-  organizerUserName: string;
+  meeting_date: string;
+  start_time: string;
+  duration_minutes: number;
+  location?: string | null;
   status: MeetingStatus;
-  agendaItems: string[];
-  participants: MeetingParticipant[];
-  decisions: Decision[];
-  actionItemsCount: number;
+  executive_notes?: string | null;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+  version: number;
+}
+
+export interface MeetingDetail {
+  meeting: Meeting;
+  agenda: MeetingAgendaItem[];
+  decisions: MeetingDecision[];
+  summary?: MeetingSummary | null;
+}
+
+export interface MeetingListResponse {
+  items: Meeting[];
+  total: number;
 }

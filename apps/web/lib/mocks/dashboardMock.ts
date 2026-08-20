@@ -33,8 +33,8 @@ export function getMDOverviewData() {
     tasks: MOCK_TASKS,
     stuckNeeds: MOCK_STUCK_NEEDS,
     escalations: MOCK_ESCALATIONS,
-    upcomingMeetings: MOCK_MEETINGS.filter(m => m.status === 'SCHEDULED'),
-    pendingDecisions: MOCK_DECISIONS.filter(d => d.status === 'PENDING_APPROVAL' || d.status === 'APPROVED'),
+    upcomingMeetings: MOCK_MEETINGS.filter(m => m.status === 'scheduled'),
+    pendingDecisions: MOCK_DECISIONS.filter(d => d.status === 'draft' || d.status === 'approved'),
     recentActivities: MOCK_AUDIT_EVENTS,
     stats: {
       activePrioritiesCount: activePriorities.length,
