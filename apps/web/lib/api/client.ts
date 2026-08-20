@@ -202,93 +202,26 @@ export const apiClient = {
 
   workItems: {
     async intake(text: string): Promise<StructuredPlanRecommendation> {
-      try {
-        return await apiFetch<StructuredPlanRecommendation>('/work-items/intake', {
-          method: 'POST',
-          body: JSON.stringify({ text }),
-        });
-      } catch (err) {
-        if (process.env.NODE_ENV === 'development') {
-          const lines = text.trim().split('\n').filter(Boolean);
-          const title = lines[0] || text;
-          const subItems = lines.slice(1).map((line, idx) => ({
-            client_id: `item-${idx + 1}`,
-            title: line.replace(/^[-*•\d+.]+\s*/, ''),
-            priority: 'medium' as const,
-          }));
-          return {
-            plan: {
-              title: title.length > 150 ? title.substring(0, 147) + '...' : title,
-              description: lines.length > 1 ? text : null,
-              priority: 'medium',
-              items: subItems,
-            },
-          };
-        }
-        throw err;
-      }
+      return await apiFetch<StructuredPlanRecommendation>('/work-items/intake', {
+        method: 'POST',
+        body: JSON.stringify({ text }),
+      });
     },
 
     async approve(payload: ApprovePlanPayload): Promise<WorkItemListResponse> {
-      try {
-        return await apiFetch<WorkItemListResponse>('/work-items/approve', {
-          method: 'POST',
-          body: JSON.stringify(payload),
-        });
-      } catch (err) {
-        if (process.env.NODE_ENV === 'development') {
-          const now = new Date().toISOString();
-          const parentId = `wi-${Date.now()}`;
-          const parent: WorkItem = {
-            id: parentId,
-            organization_id: 'org-stavya-001',
-            title: payload.title,
-            description: payload.description,
-            parent_id: null,
-            status: 'todo',
-            priority: payload.priority,
-            owner_id: payload.owner_id || null,
-            created_by: 'dev-user-001',
-            due_at: payload.due_at || null,
-            created_at: now,
-            updated_at: now,
-            version: 1,
-          };
-          const children: WorkItem[] = payload.items.map((item, idx) => ({
-            id: `wi-child-${Date.now()}-${idx}`,
-            organization_id: 'org-stavya-001',
-            title: item.title,
-            description: item.description,
-            parent_id: parentId,
-            status: 'todo',
-            priority: item.priority,
-            owner_id: item.suggested_owner_id || payload.owner_id || null,
-            created_by: 'dev-user-001',
-            due_at: item.due_at || payload.due_at || null,
-            created_at: now,
-            updated_at: now,
-            version: 1,
-          }));
-          return { items: [parent, ...children], total: 1 + children.length };
-        }
-        throw err;
-      }
+      return await apiFetch<WorkItemListResponse>('/work-items/approve', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
     },
 
     async list(filters?: { owner_id?: string; status?: string; parent_id?: string }): Promise<WorkItemListResponse> {
-      try {
-        const queryParams = new URLSearchParams();
-        if (filters?.owner_id) queryParams.append('owner_id', filters.owner_id);
-        if (filters?.status) queryParams.append('status', filters.status);
-        if (filters?.parent_id) queryParams.append('parent_id', filters.parent_id);
-        const query = queryParams.toString() ? `?${queryParams.toString()}` : '';
-        return await apiFetch<WorkItemListResponse>(`/work-items${query}`, { method: 'GET' });
-      } catch (err) {
-        if (process.env.NODE_ENV === 'development') {
-          return { items: [], total: 0 };
-        }
-        throw err;
-      }
+      const queryParams = new URLSearchParams();
+      if (filters?.owner_id) queryParams.append('owner_id', filters.owner_id);
+      if (filters?.status) queryParams.append('status', filters.status);
+      if (filters?.parent_id) queryParams.append('parent_id', filters.parent_id);
+      const query = queryParams.toString() ? `?${queryParams.toString()}` : '';
+      return await apiFetch<WorkItemListResponse>(`/work-items${query}`, { method: 'GET' });
     },
 
     async patch(id: string, patch: WorkItemPatchPayload): Promise<WorkItem> {
