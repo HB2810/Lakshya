@@ -3,7 +3,7 @@ import { ExecutionStatus } from '../../types/execution';
 import { PriorityStatus } from '../../types/strategy';
 import { MeetingStatus } from '../../types/meeting';
 
-export type StatusType = ExecutionStatus | PriorityStatus | MeetingStatus | 'DRAFT' | 'SUPERSEDED' | 'ACKNOWLEDGED' | 'APPROVED' | 'PENDING_APPROVAL' | 'OPEN' | 'RESOLVED';
+export type StatusType = ExecutionStatus | PriorityStatus | MeetingStatus | 'DRAFT' | 'SUPERSEDED' | 'ACKNOWLEDGED' | 'APPROVED' | 'PENDING_APPROVAL' | 'OPEN' | 'RESOLVED' | 'todo' | 'in_progress' | 'completed' | 'stuck' | 'cancelled';
 
 interface StatusBadgeProps {
   status: StatusType;
@@ -19,8 +19,9 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({ status, size = 'md', c
 
   switch (normalized) {
     case 'OPEN':
-      style = 'bg-amber-50 text-amber-800 border-amber-300';
-      label = 'Open';
+    case 'TODO':
+      style = 'bg-slate-100 text-slate-800 border-slate-300';
+      label = normalized === 'TODO' ? 'To Do' : 'Open';
       break;
 
     case 'NOT_STARTED':
@@ -42,8 +43,9 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({ status, size = 'md', c
       break;
 
     case 'BLOCKED':
+    case 'STUCK':
       style = 'bg-red-50 text-red-700 border-red-200';
-      label = 'Blocked';
+      label = normalized === 'STUCK' ? 'Stuck' : 'Blocked';
       break;
 
     case 'PENDING_APPROVAL':
