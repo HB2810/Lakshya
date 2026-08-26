@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 500" fill="none">
+  <!-- Spine & Leaf Icon Mark -->
+  <!-- Top Red Swirl/Dot -->
+  <path d="M280 40 C 330 20, 360 80, 290 100 C 260 110, 240 70, 275 60 C 295 55, 305 70, 285 78" stroke="#D32F2F" stroke-width="24" stroke-linecap="round" fill="none"/>
+
+  <!-- Spine Vertebrae Column -->
+  <path d="M 280 110 C 260 180, 240 250, 280 320 C 300 355, 290 420, 260 480 C 255 490, 250 495, 245 498" stroke="#D32F2F" stroke-width="32" stroke-linecap="round" fill="none"/>
+
+  <!-- Vertebrae Processes / Blocks -->
+  <path d="M260 135 L310 125 C320 123 325 135 315 145 L262 165 Z" fill="#D32F2F"/>
+  <path d="M248 180 L305 170 C315 168 320 180 310 190 L250 210 Z" fill="#D32F2F"/>
+  <path d="M242 225 L302 215 C312 213 317 225 307 235 L244 255 Z" fill="#D32F2F"/>
+  <path d="M242 270 L305 260 C315 258 320 270 310 280 L246 300 Z" fill="#D32F2F"/>
+  <path d="M248 315 L312 305 C322 303 327 315 317 325 L252 345 Z" fill="#D32F2F"/>
+  <path d="M258 360 L320 350 C330 348 335 360 325 370 L262 390 Z" fill="#D32F2F"/>
+  <path d="M270 405 L328 395 C338 393 340 405 330 415 L272 432 Z" fill="#D32F2F"/>
+
+  <!-- Leaf Mark on Left -->
+  <path d="M 235 215 C 140 180, 50 110, 5 90 C 70 200, 160 220, 215 220 C 130 220, 60 210, 5 90 C 80 140, 160 170, 235 215 Z" fill="#7A1818"/>
+  <path d="M 60 165 C 110 165, 170 175, 230 205 C 170 185, 120 170, 60 165 Z" fill="#E65100"/>
+</svg>

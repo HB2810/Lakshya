@@ -1,0 +1,93 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --bg-workspace: #F8FAFC;
+    --surface: #FFFFFF;
+    --surface-subtle: #F1F5F9;
+    --border: #E2E8F0;
+
+    --primary: #1A60A7;
+    --primary-hover: #144D87;
+    --primary-muted: #EFF6FF;
+
+    --accent-red: #D32F2F;
+    --accent-red-hover: #B71C1C;
+
+    --text-primary: #0F172A;
+    --text-secondary: #475569;
+    --text-muted: #94A3B8;
+
+    --success: #15803D;
+    --warning: #B45309;
+    --danger: #B91C1C;
+    --info: #0284C7;
+  }
+
+  body {
+    background-color: #F8FAFC;
+    color: #0F172A;
+    font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+}
+
+/* White Theme Cards & Visual Accent Utilities */
+.white-card {
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  box-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.06), 0 1px 2px -1px rgba(15, 23, 42, 0.06);
+}
+
+.white-nav {
+  background: #FFFFFF;
+  border-bottom: 1px solid #E2E8F0;
+  box-shadow: 0 1px 2px 0 rgba(15, 23, 42, 0.04);
+}
+
+.glow-border-blue-light {
+  box-shadow: 0 0 12px -2px rgba(26, 96, 167, 0.15);
+}
+
+.hover-lift-light {
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease;
+}
+
+.hover-lift-light:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px -5px rgba(15, 23, 42, 0.1);
+}
+
+.bg-grid-pattern-light {
+  background-size: 28px 28px;
+  background-image: 
+    linear-gradient(to right, rgba(226, 232, 240, 0.6) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(226, 232, 240, 0.6) 1px, transparent 1px);
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #F1F5F9;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #CBD5E1;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94A3B8;
+}
+
+/* Focus styles */
+:focus-visible {
+  outline: 2px solid #1A60A7;
+  outline-offset: 2px;
+}
