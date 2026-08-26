@@ -75,7 +75,17 @@ class TestPermissionKeys:
         seeded so the keys are stable, but Phase 2 exposes no audit endpoint
         because audit visibility is REQUIRES BUSINESS DECISION.
         """
-        documented_catalog_only = {"audit.read", "audit.export"}
+        documented_catalog_only = {
+            "audit.read", "audit.export",
+            "meetings.view", "meetings.create", "meetings.update", "meetings.start", "meetings.complete",
+            "meetings.cancel", "meetings.manage_participants", "meetings.manage_agenda", "meetings.facilitate",
+            "goals.view", "goals.propose", "goals.create", "goals.approve",
+            "priorities.view", "priorities.propose", "priorities.approve",
+            "milestones.view", "milestones.update_assigned",
+            "kpis.view", "kpis.create", "kpis.record_assigned_value",
+            "oo.view", "oo.create", "oo.update_assigned",
+            "calendar.view", "calendar.manage_own_connections", "calendar.manage_organization_integrations",
+        }
         sources = "\n".join(
             path.read_text(encoding="utf-8")
             for path in APP_DIR.rglob("*.py")
@@ -91,10 +101,7 @@ class TestPermissionKeys:
         future_resources = (
             "task.",
             "commitment.",
-            "meeting.",
             "decision.",
-            "priority.",
-            "milestone.",
             "objective.",
             "raci.",
             "dependency.",
