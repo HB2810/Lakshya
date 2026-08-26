@@ -24,9 +24,21 @@ export const Sidebar: React.FC = () => {
 
   const navItems = [
     {
-      label: 'Overview',
+      label: 'Home',
       href: '/overview',
       icon: LayoutDashboard,
+      show: true,
+    },
+    {
+      label: 'Calendar',
+      href: '/calendar',
+      icon: Calendar,
+      show: true,
+    },
+    {
+      label: 'Meetings',
+      href: '/meetings',
+      icon: Calendar,
       show: true,
     },
     {
@@ -42,9 +54,15 @@ export const Sidebar: React.FC = () => {
       show: true,
     },
     {
-      label: 'Meetings',
-      href: '/meetings',
-      icon: Calendar,
+      label: 'Performance / KPI',
+      href: '/kpi',
+      icon: BarChart3,
+      show: true,
+    },
+    {
+      label: 'O&O Hub',
+      href: '/oo',
+      icon: Target,
       show: true,
     },
     {
