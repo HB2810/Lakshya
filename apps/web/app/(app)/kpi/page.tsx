@@ -15,10 +15,10 @@ import {
   Building2,
   Calendar,
 } from 'lucide-react';
-import { Button } from '../../components/ui/Button';
-import { Card } from '../../components/ui/Card';
-import { Badge } from '../../components/ui/Badge';
-import { ProgressBar } from '../../components/ui/ProgressBar';
+import { Button } from '../../../components/ui/Button';
+import { Card } from '../../../components/ui/Card';
+import { Badge } from '../../../components/ui/Badge';
+import { ProgressBar } from '../../../components/ui/ProgressBar';
 
 interface KPIItem {
   id: string;
@@ -277,7 +277,7 @@ export default function KPIPage() {
                   <span>Target Compliance Progress</span>
                   <span className="font-bold text-slate-700">{progress}%</span>
                 </div>
-                <ProgressBar progress={progress} size="md" />
+                <ProgressBar value={progress} size="md" />
               </div>
 
               <div className="pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-4 text-xs text-slate-500">
@@ -295,8 +295,8 @@ export default function KPIPage() {
                 </Button>
               </div>
             </Card>
-          ))}
-        </div>
+          );
+        })}
       </div>
     </div>
   );

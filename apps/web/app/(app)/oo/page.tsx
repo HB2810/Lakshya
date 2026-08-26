@@ -15,9 +15,9 @@ import {
   ArrowRight,
   ShieldCheck,
 } from 'lucide-react';
-import { Button } from '../../components/ui/Button';
-import { Card } from '../../components/ui/Card';
-import { Badge } from '../../components/ui/Badge';
+import { Button } from '../../../components/ui/Button';
+import { Card } from '../../../components/ui/Card';
+import { Badge } from '../../../components/ui/Badge';
 
 type OOType = 'OBSTACLE' | 'OPPORTUNITY';
 type ViewMode = 'kanban' | 'list';
@@ -120,7 +120,7 @@ export default function OOPage() {
       case 'HIGH':
         return <Badge variant="warning">High Impact</Badge>;
       case 'MEDIUM':
-        return <Badge variant="info">Medium Impact</Badge>;
+        return <Badge variant="purple">Medium Impact</Badge>;
       default:
         return <Badge variant="neutral">Low Impact</Badge>;
     }

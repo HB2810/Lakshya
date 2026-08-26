@@ -328,4 +328,21 @@ export const apiClient = {
       return MOCK_AUDIT_EVENTS;
     },
   },
+
+  calendar: {
+    async getEvents(params?: { start_time?: string; end_time?: string; event_type?: string }) {
+      const query = new URLSearchParams(params as Record<string, string>).toString();
+      const url = `/calendar/events${query ? `?${query}` : ''}`;
+      return await apiFetch<any[]>(url, { method: 'GET' });
+    },
+    async createEvent(payload: any) {
+      return await apiFetch<any>('/calendar/events', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+    },
+    async getIntegrationStatus() {
+      return await apiFetch<any>('/calendar/integrations', { method: 'GET' });
+    },
+  },
 };

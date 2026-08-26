@@ -1,8 +1,8 @@
 # LAKSHYA — Meeting, Strategy, KPI, O&O and Calendar Redevelopment (V1 Specification)
 
-**Document Version:** 1.0 Approved  
-**Status:** Approved Phase 0 Specification (Product Owner Signed-off)  
-**Implementation Gate:** Phase 0 specification review is complete and approved by Product Owner Het Bhatt. Phased implementation is authorized.  
+**Document Version:** 1.0 Draft (Proposed Specification)  
+**Status:** Awaiting Product Owner (Het Bhatt) Confirmation  
+**Implementation Gate:** Specification review report (PHASE_0_APPROVAL_REVIEW.md) submitted. Implementation phases 1-9 remain pending formal Product Owner sign-off.  
 **Target Environment:** Stavya Spine Hospital — MD Office & Leadership  
 **Authoritative Backend:** FastAPI, PostgreSQL, Alembic, Scoped RBAC, Audit Engine  
 **Product Owner:** Het Bhatt  

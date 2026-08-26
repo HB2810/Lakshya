@@ -33,7 +33,7 @@ export const Sidebar: React.FC = () => {
       label: 'Calendar',
       href: '/calendar',
       icon: Calendar,
-      show: true,
+      show: can('calendar.view'),
     },
     {
       label: 'Meetings',
@@ -57,13 +57,13 @@ export const Sidebar: React.FC = () => {
       label: 'Performance / KPI',
       href: '/kpi',
       icon: BarChart3,
-      show: true,
+      show: can('kpis.view'),
     },
     {
       label: 'O&O Hub',
       href: '/oo',
       icon: Target,
-      show: true,
+      show: can('oo.view'),
     },
     {
       label: 'Organization',
