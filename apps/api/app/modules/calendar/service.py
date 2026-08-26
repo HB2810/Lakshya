@@ -1,4 +1,4 @@
-"""Calendar domain service handling internal events, atomic outbox queueing, and audit logging."""
+"""Calendar domain service handling internal events, atomic outbox queueing, meeting linking, 1:1 privacy, and audit logging."""
 
 from __future__ import annotations
 
@@ -22,11 +22,13 @@ from app.modules.calendar.models import (
     UserCalendarIntegration,
 )
 from app.modules.calendar.schemas import (
+    CalendarEventCancel,
     CalendarEventCreate,
     CalendarEventUpdate,
     ConnectIntegrationRequest,
 )
 from app.modules.identity.models import User
+from app.modules.meeting.models import Meeting, MeetingParticipant
 
 
 class CalendarService:
@@ -36,7 +38,7 @@ class CalendarService:
     def create_event(db: Session, user: User, payload: CalendarEventCreate) -> CalendarEvent:
         """Create a new internal LAKSHYA calendar event with atomic audit and outbox enqueueing."""
         auth_context = AuthorizationService(db).load_context(user)
-        auth_context.require("calendar.view")
+        auth_context.require("meetings.create")
 
         if payload.end_time <= payload.start_time:
             raise HTTPException(
@@ -44,7 +46,23 @@ class CalendarService:
                 detail="Event end_time must be strictly after start_time",
             )
 
-        # Check for user integration without triggering auth permission error
+        is_instant = False
+        meeting: Meeting | None = None
+
+        if payload.meeting_id is not None:
+            meeting = db.scalar(
+                select(Meeting).where(
+                    Meeting.id == payload.meeting_id,
+                    Meeting.organization_id == user.organization_id,
+                )
+            )
+            if not meeting:
+                raise ResourceNotFoundError(f"Meeting {payload.meeting_id} not found in user's organization")
+
+            if meeting.meeting_type in ("ONE_ON_ONE_INSTANT", "ONE_ON_ONE_SCHEDULED") or meeting.is_instant:
+                is_instant = True
+
+        # Check for user integration without triggering permission check
         integration = db.scalar(
             select(UserCalendarIntegration).where(
                 UserCalendarIntegration.user_id == user.id,
@@ -52,10 +70,16 @@ class CalendarService:
             )
         )
 
-        # Scheduled meetings for non-instant events set status to SYNC_PENDING if integration active
+        # Standalone events or instant events are strictly internal to LAKSHYA
         sync_status = (
             CalendarSyncStatus.SYNC_PENDING.value
-            if (integration and integration.is_active and not payload.is_instant and payload.provider != CalendarProvider.LAKSHYA)
+            if (
+                integration
+                and integration.is_active
+                and not is_instant
+                and payload.meeting_id is not None
+                and payload.provider != CalendarProvider.LAKSHYA
+            )
             else CalendarSyncStatus.NOT_SYNCED.value
         )
 
@@ -69,7 +93,7 @@ class CalendarService:
             start_time=payload.start_time,
             end_time=payload.end_time,
             timezone=payload.timezone,
-            provider=payload.provider.value,
+            provider=CalendarProvider.LAKSHYA.value,  # Standalone/Phase 3 public events strictly LAKSHYA
             sync_status=sync_status,
             version=1,
         )
@@ -81,16 +105,16 @@ class CalendarService:
 
         # Scheduled (non-instant) meetings enqueue outbox item if sync requested
         if sync_status == CalendarSyncStatus.SYNC_PENDING.value:
-            # Check for existing idempotency key to prevent duplicates
             existing_outbox = db.scalar(
                 select(CalendarSyncOutbox).where(
                     CalendarSyncOutbox.organization_id == user.organization_id,
-                    CalendarSyncOutbox.payload["idempotency_key"].as_string() == idempotency_key,
+                    CalendarSyncOutbox.idempotency_key == idempotency_key,
                 )
             )
             if not existing_outbox:
                 outbox_item = CalendarSyncOutbox(
                     organization_id=user.organization_id,
+                    idempotency_key=idempotency_key,
                     event_type="CALENDAR_EVENT_CREATED",
                     payload={
                         "idempotency_key": idempotency_key,
@@ -131,6 +155,16 @@ class CalendarService:
         return event
 
     @staticmethod
+    def _is_user_meeting_participant(db: Session, meeting_id: uuid.UUID | None, user_id: uuid.UUID) -> bool:
+        if not meeting_id:
+            return False
+        stmt = select(MeetingParticipant).where(
+            MeetingParticipant.meeting_id == meeting_id,
+            MeetingParticipant.user_id == user_id,
+        )
+        return db.scalar(stmt) is not None
+
+    @staticmethod
     def list_events(
         db: Session,
         user: User,
@@ -138,15 +172,11 @@ class CalendarService:
         end_time: datetime | None = None,
         event_type: str | None = None,
     ) -> Sequence[CalendarEvent]:
-        """List calendar events enforcing tenant isolation and ownership/relationship scope."""
+        """List calendar events enforcing tenant isolation, relationship scoping, and 1:1 privacy."""
         auth_context = AuthorizationService(db).load_context(user)
         auth_context.require("calendar.view")
 
         stmt = select(CalendarEvent).where(CalendarEvent.organization_id == user.organization_id)
-
-        # Enforce relationship scope if user lacks org-wide scope
-        if not auth_context.has_organization_scope("calendar.view"):
-            stmt = stmt.where(CalendarEvent.user_id == user.id)
 
         if start_time:
             stmt = stmt.where(CalendarEvent.end_time >= start_time)
@@ -156,11 +186,37 @@ class CalendarService:
             stmt = stmt.where(CalendarEvent.event_type == event_type)
 
         stmt = stmt.order_by(CalendarEvent.start_time.asc())
-        return db.scalars(stmt).all()
+        events = db.scalars(stmt).all()
+
+        has_org_scope = auth_context.has_organization_scope("calendar.view")
+
+        # Filter events based on 1:1 privacy and relationship scope
+        accessible_events = []
+        for event in events:
+            # 1:1 Meeting Privacy Check
+            if event.meeting_id is not None:
+                meeting = db.get(Meeting, event.meeting_id)
+                if meeting and meeting.meeting_type in ("ONE_ON_ONE_INSTANT", "ONE_ON_ONE_SCHEDULED"):
+                    is_participant = (
+                        event.user_id == user.id
+                        or meeting.organizer_id == user.id
+                        or CalendarService._is_user_meeting_participant(db, event.meeting_id, user.id)
+                    )
+                    # 1:1 meetings are private strictly to participants
+                    if not is_participant:
+                        continue
+
+            # Scoping Check
+            if has_org_scope:
+                accessible_events.append(event)
+            elif event.user_id == user.id or CalendarService._is_user_meeting_participant(db, event.meeting_id, user.id):
+                accessible_events.append(event)
+
+        return accessible_events
 
     @staticmethod
     def get_event(db: Session, user: User, event_id: uuid.UUID) -> CalendarEvent:
-        """Get calendar event by ID ensuring tenancy and ownership scope."""
+        """Get calendar event by ID ensuring tenancy, relationship scope, and 1:1 privacy."""
         auth_context = AuthorizationService(db).load_context(user)
         auth_context.require("calendar.view")
 
@@ -172,8 +228,25 @@ class CalendarService:
         if not event:
             raise ResourceNotFoundError(f"Calendar event {event_id} not found")
 
-        # Ownership / relationship authorization check
-        if not auth_context.has_organization_scope("calendar.view") and event.user_id != user.id:
+        # 1:1 Meeting Privacy Check
+        if event.meeting_id is not None:
+            meeting = db.get(Meeting, event.meeting_id)
+            if meeting and meeting.meeting_type in ("ONE_ON_ONE_INSTANT", "ONE_ON_ONE_SCHEDULED"):
+                is_participant = (
+                    event.user_id == user.id
+                    or meeting.organizer_id == user.id
+                    or CalendarService._is_user_meeting_participant(db, event.meeting_id, user.id)
+                )
+                if not is_participant:
+                    raise PermissionDeniedError(f"Access denied to private 1:1 calendar event {event_id}")
+
+        # Relationship Authorization Check
+        has_org_scope = auth_context.has_organization_scope("calendar.view")
+        is_owner_or_participant = (
+            event.user_id == user.id
+            or CalendarService._is_user_meeting_participant(db, event.meeting_id, user.id)
+        )
+        if not has_org_scope and not is_owner_or_participant:
             raise PermissionDeniedError(f"Access denied to calendar event {event_id}")
 
         return event
@@ -188,7 +261,7 @@ class CalendarService:
     ) -> CalendarEvent:
         """Update calendar event with optimistic concurrency validation and atomic audit logging."""
         auth_context = AuthorizationService(db).load_context(user)
-        auth_context.require("calendar.view")
+        auth_context.require("meetings.update")
         event = CalendarService.get_event(db, user, event_id)
 
         # Optimistic concurrency check
@@ -238,23 +311,31 @@ class CalendarService:
         # Deterministic outbox update deduplication
         if event.sync_status in (CalendarSyncStatus.SYNCHRONIZED.value, CalendarSyncStatus.SYNC_PENDING.value):
             idempotency_key = f"evt_{event.id}_update_v{event.version}"
-            outbox_item = CalendarSyncOutbox(
-                organization_id=user.organization_id,
-                event_type="CALENDAR_EVENT_UPDATED",
-                payload={
-                    "idempotency_key": idempotency_key,
-                    "event_id": str(event.id),
-                    "external_event_id": event.external_event_id,
-                    "title": event.title,
-                    "start_time": event.start_time.isoformat(),
-                    "end_time": event.end_time.isoformat(),
-                },
-                status=CalendarOutboxStatus.PENDING.value,
-                attempts=0,
-                max_attempts=5,
-                next_attempt_at=datetime.now(timezone.utc),
+            existing = db.scalar(
+                select(CalendarSyncOutbox).where(
+                    CalendarSyncOutbox.organization_id == user.organization_id,
+                    CalendarSyncOutbox.idempotency_key == idempotency_key,
+                )
             )
-            db.add(outbox_item)
+            if not existing:
+                outbox_item = CalendarSyncOutbox(
+                    organization_id=user.organization_id,
+                    idempotency_key=idempotency_key,
+                    event_type="CALENDAR_EVENT_UPDATED",
+                    payload={
+                        "idempotency_key": idempotency_key,
+                        "event_id": str(event.id),
+                        "external_event_id": event.external_event_id,
+                        "title": event.title,
+                        "start_time": event.start_time.isoformat(),
+                        "end_time": event.end_time.isoformat(),
+                    },
+                    status=CalendarOutboxStatus.PENDING.value,
+                    attempts=0,
+                    max_attempts=5,
+                    next_attempt_at=datetime.now(timezone.utc),
+                )
+                db.add(outbox_item)
 
         # Atomic Audit Log Event
         recorder = AuditRecorder(db, source=AuditSource.API)
@@ -266,6 +347,83 @@ class CalendarService:
             entity_id=event.id,
             before=before_snapshot,
             after=after_snapshot,
+        )
+
+        db.commit()
+        db.refresh(event)
+        return event
+
+    @staticmethod
+    def cancel_event(
+        db: Session,
+        user: User,
+        event_id: uuid.UUID,
+        payload: CalendarEventCancel,
+        expected_version: int | None = None,
+    ) -> CalendarEvent:
+        """Cancel calendar event with audit logging and outbox cancellation notification."""
+        auth_context = AuthorizationService(db).load_context(user)
+        auth_context.require("meetings.cancel")
+        event = CalendarService.get_event(db, user, event_id)
+
+        if expected_version is not None and event.version != expected_version:
+            raise ConflictError(
+                f"Optimistic concurrency conflict for calendar event {event_id}: "
+                f"expected version {expected_version}, current version is {event.version}"
+            )
+
+        before_snapshot = {
+            "sync_status": event.sync_status,
+            "version": event.version,
+        }
+
+        event.sync_status = (
+            CalendarSyncStatus.SYNC_PENDING.value
+            if event.provider != CalendarProvider.LAKSHYA.value
+            else CalendarSyncStatus.NOT_SYNCED.value
+        )
+        event.version += 1
+
+        after_snapshot = {
+            "sync_status": event.sync_status,
+            "version": event.version,
+            "reason": payload.reason,
+        }
+
+        idempotency_key = f"evt_{event.id}_cancel_v{event.version}"
+        existing = db.scalar(
+            select(CalendarSyncOutbox).where(
+                CalendarSyncOutbox.organization_id == user.organization_id,
+                CalendarSyncOutbox.idempotency_key == idempotency_key,
+            )
+        )
+        if not existing:
+            outbox_item = CalendarSyncOutbox(
+                organization_id=user.organization_id,
+                idempotency_key=idempotency_key,
+                event_type="CALENDAR_EVENT_CANCELLED",
+                payload={
+                    "idempotency_key": idempotency_key,
+                    "event_id": str(event.id),
+                    "reason": payload.reason,
+                },
+                status=CalendarOutboxStatus.PENDING.value,
+                attempts=0,
+                max_attempts=5,
+                next_attempt_at=datetime.now(timezone.utc),
+            )
+            db.add(outbox_item)
+
+        recorder = AuditRecorder(db, source=AuditSource.API)
+        recorder.record(
+            action="calendar_event.cancelled",
+            entity_type="calendar_event",
+            actor=AuditActor.user(user.id),
+            organization_id=user.organization_id,
+            entity_id=event.id,
+            before=before_snapshot,
+            after=after_snapshot,
+            reason=payload.reason,
         )
 
         db.commit()

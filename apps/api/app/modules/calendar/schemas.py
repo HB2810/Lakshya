@@ -19,14 +19,37 @@ from app.modules.calendar.models import (
 
 class CalendarEventCreate(BaseModel):
     title: str = Field(..., min_length=1, max_length=255)
-    description: str | None = None
+    description: str | None = Field(default=None, max_length=2000)
     event_type: CalendarEventType = Field(default=CalendarEventType.LAKSHYA_MEETING)
     start_time: datetime
     end_time: datetime
     timezone: str = Field(default="Asia/Kolkata", max_length=50)
     meeting_id: uuid.UUID | None = None
     provider: CalendarProvider = Field(default=CalendarProvider.LAKSHYA)
-    is_instant: bool = Field(default=False, description="Instant meetings bypass external outbox sync")
+
+    @field_validator("title")
+    @classmethod
+    def validate_title(cls, v: str) -> str:
+        cleaned = v.strip()
+        if not cleaned:
+            raise ValueError("Title cannot be blank or whitespace-only")
+        return cleaned
+
+    @field_validator("description")
+    @classmethod
+    def validate_description(cls, v: str | None) -> str | None:
+        if v is None:
+            return None
+        return v.strip() or None
+
+    @field_validator("provider")
+    @classmethod
+    def validate_phase3_provider(cls, v: CalendarProvider) -> CalendarProvider:
+        if v != CalendarProvider.LAKSHYA:
+            raise ValueError(
+                "External calendar provider synchronization (GOOGLE) is disabled in Phase 3 until Phase 5 OAuth integration."
+            )
+        return v
 
     @field_validator("timezone")
     @classmethod
@@ -47,10 +70,28 @@ class CalendarEventCreate(BaseModel):
 
 class CalendarEventUpdate(BaseModel):
     title: str | None = Field(default=None, min_length=1, max_length=255)
-    description: str | None = None
+    description: str | None = Field(default=None, max_length=2000)
     start_time: datetime | None = None
     end_time: datetime | None = None
     timezone: str | None = None
+
+    @field_validator("title")
+    @classmethod
+    def validate_title(cls, v: str | None) -> str | None:
+        if v is None:
+            return None
+        cleaned = v.strip()
+        if not cleaned:
+            raise ValueError("Title cannot be blank or whitespace-only")
+        return cleaned
+
+    @field_validator("description")
+    @classmethod
+    def validate_description(cls, v: str | None) -> str | None:
+        if v is None:
+            return None
+        return v.strip() or None
+
 
     @field_validator("timezone")
     @classmethod
@@ -69,6 +110,18 @@ class CalendarEventUpdate(BaseModel):
         if v is not None and (v.tzinfo is None or v.tzinfo.utcoffset(v) is None):
             raise ValueError("Timestamp must be timezone-aware (e.g. ISO 8601 with UTC offset or Z)")
         return v
+
+
+class CalendarEventCancel(BaseModel):
+    reason: str = Field(..., min_length=3, max_length=1000)
+
+    @field_validator("reason")
+    @classmethod
+    def validate_reason(cls, v: str) -> str:
+        cleaned = v.strip()
+        if not cleaned:
+            raise ValueError("Cancellation reason cannot be blank")
+        return cleaned
 
 
 class CalendarEventResponse(BaseModel):
@@ -99,6 +152,7 @@ class CalendarSyncOutboxResponse(BaseModel):
 
     id: uuid.UUID
     organization_id: uuid.UUID
+    idempotency_key: str
     event_type: str
     payload: dict[str, Any]
     status: str

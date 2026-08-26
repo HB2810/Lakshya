@@ -64,6 +64,7 @@ AUDIT_FIELD_ALLOWLIST: dict[str, frozenset[str]] = {
             "timezone",
             "provider",
             "sync_status",
+            "reason",
             "version",
         }
     ),

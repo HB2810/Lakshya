@@ -59,6 +59,21 @@ _TRUNCATE_TABLES = (
     "role_permissions",
     "departments",
     "users",
+    "calendar_events",
+    "calendar_sync_outbox",
+    "user_calendar_integrations",
+    "meeting_headlines",
+    "meeting_checkins",
+    "meeting_agendas",
+    "meeting_participants",
+    "meetings",
+    "o_and_o_items",
+    "kpi_values",
+    "kpi_definitions",
+    "weekly_milestones",
+    "monthly_priorities",
+    "quarterly_priorities",
+    "annual_goals",
 )
 
 

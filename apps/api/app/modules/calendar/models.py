@@ -114,11 +114,13 @@ class CalendarSyncOutbox(Base, TimestampMixin):
     __tablename__ = "calendar_sync_outbox"
     __table_args__ = (
         CheckConstraint(f"status IN {OUTBOX_STATUSES}", name="ck_calendar_sync_outbox_status"),
+        UniqueConstraint("organization_id", "idempotency_key", name="uq_calendar_sync_outbox_org_idempotency"),
         Index("ix_calendar_sync_outbox_status_next_attempt", "status", "next_attempt_at"),
     )
 
     id: Mapped[uuid.UUID] = uuid_pk()
     organization_id: Mapped[uuid.UUID] = uuid_fk("organizations.id")
+    idempotency_key: Mapped[str] = mapped_column(String(255), nullable=False)
     event_type: Mapped[str] = mapped_column(String(100), nullable=False)
     
     payload: Mapped[dict] = mapped_column(JSONB, nullable=False)

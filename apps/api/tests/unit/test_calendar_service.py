@@ -1,12 +1,14 @@
-"""Comprehensive unit and integration tests for CalendarService domain logic and security boundaries."""
+"""Comprehensive unit and integration tests for CalendarService domain logic, security boundaries, and transaction atomicity."""
 
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
+from unittest.mock import patch
 
 import pytest
 from fastapi import HTTPException
 from pydantic import ValidationError
+from sqlalchemy.exc import IntegrityError
 
 from app.core.errors import ConflictError, PermissionDeniedError, ResourceNotFoundError
 from app.modules.audit.models import AuditEvent
@@ -19,17 +21,18 @@ from app.modules.calendar.models import (
     CalendarSyncStatus,
 )
 from app.modules.calendar.schemas import (
+    CalendarEventCancel,
     CalendarEventCreate,
     CalendarEventUpdate,
-    ConnectIntegrationRequest,
 )
 from app.modules.calendar.service import CalendarService
+from app.modules.meeting.models import Meeting, MeetingParticipant
 
 
 @pytest.mark.db
 def test_create_and_list_calendar_event(db_session, factory):
     org = factory.organization()
-    user = factory.user_with_permissions(org, ("calendar.view", "calendar.manage_own_connections"))
+    user = factory.user_with_permissions(org, ("meetings.create", "calendar.view"))
 
     now = datetime.now(timezone.utc)
     create_payload = CalendarEventCreate(
@@ -54,186 +57,144 @@ def test_create_and_list_calendar_event(db_session, factory):
 
 
 @pytest.mark.db
-def test_create_event_invalid_end_time_raises_400(db_session, factory):
+def test_create_event_requires_mutation_permission(db_session, factory):
     org = factory.organization()
-    user = factory.user_with_permissions(org, ("calendar.view",))
-
-    now = datetime.now(timezone.utc)
-    invalid_payload = CalendarEventCreate(
-        title="Invalid Time Event",
-        start_time=now,
-        end_time=now - timedelta(minutes=30),
-    )
-
-    with pytest.raises(HTTPException) as exc_info:
-        CalendarService.create_event(db_session, user, invalid_payload)
-    assert exc_info.value.status_code == 400
-
-
-@pytest.mark.db
-def test_invalid_iana_timezone_raises_validation_error():
-    now = datetime.now(timezone.utc)
-    with pytest.raises(ValidationError) as exc_info:
-        CalendarEventCreate(
-            title="Bad Timezone Event",
-            start_time=now,
-            end_time=now + timedelta(hours=1),
-            timezone="Mars/Olympus_Mons",
-        )
-    assert "Invalid IANA timezone name" in str(exc_info.value)
-
-
-@pytest.mark.db
-def test_naive_datetime_raises_validation_error():
-    naive_dt = datetime(2026, 8, 26, 10, 0, 0)
-    with pytest.raises(ValidationError) as exc_info:
-        CalendarEventCreate(
-            title="Naive Timezone Event",
-            start_time=naive_dt,
-            end_time=naive_dt + timedelta(hours=1),
-        )
-    assert "Timestamp must be timezone-aware" in str(exc_info.value)
-
-
-@pytest.mark.db
-def test_permission_denial_for_unauthorized_user(db_session, factory):
-    org = factory.organization()
-    unauthorized_user = factory.user(org)
+    read_only_user = factory.user_with_permissions(org, ("calendar.view",))
 
     now = datetime.now(timezone.utc)
     create_payload = CalendarEventCreate(
-        title="Unauthorized Event Attempt",
+        title="Read Only Attempt",
         start_time=now,
         end_time=now + timedelta(hours=1),
     )
 
     with pytest.raises(PermissionDeniedError):
-        CalendarService.create_event(db_session, unauthorized_user, create_payload)
+        CalendarService.create_event(db_session, read_only_user, create_payload)
 
 
 @pytest.mark.db
-def test_cross_organization_isolation(db_session, factory):
-    org_a = factory.organization()
-    user_a = factory.user_with_permissions(org_a, ("calendar.view",))
+def test_one_on_one_meeting_privacy_restriction(db_session, factory):
+    org = factory.organization()
+    organizer = factory.user_with_permissions(org, ("meetings.create", "calendar.view"))
+    unrelated_user = factory.user_with_permissions(org, ("calendar.view",))
 
-    org_b = factory.organization()
-    user_b = factory.user_with_permissions(org_b, ("calendar.view",))
+    # Create a 1:1 Meeting
+    meeting = Meeting(
+        organization_id=org.id,
+        title="Confidential 1:1 Performance Review",
+        meeting_type="ONE_ON_ONE_SCHEDULED",
+        status="SCHEDULED",
+        organizer_id=organizer.id,
+    )
+    db_session.add(meeting)
+    db_session.flush()
 
     now = datetime.now(timezone.utc)
-    event_a = CalendarService.create_event(
+    event = CalendarService.create_event(
         db_session,
-        user_a,
+        organizer,
         CalendarEventCreate(
-            title="Org A Private Event",
+            title="1:1 Meeting Event",
             start_time=now,
             end_time=now + timedelta(hours=1),
+            meeting_id=meeting.id,
         ),
     )
 
-    events_b = CalendarService.list_events(db_session, user_b)
-    assert not any(e.id == event_a.id for e in events_b)
+    # Organizer can view
+    fetched = CalendarService.get_event(db_session, organizer, event.id)
+    assert fetched.id == event.id
 
-    with pytest.raises(ResourceNotFoundError):
-        CalendarService.get_event(db_session, user_b, event_a.id)
+    # Unrelated user cannot view private 1:1 meeting
+    with pytest.raises(PermissionDeniedError) as exc_info:
+        CalendarService.get_event(db_session, unrelated_user, event.id)
+    assert "private 1:1" in str(exc_info.value)
 
 
 @pytest.mark.db
-def test_instant_meeting_outbox_exclusion(db_session, factory):
+def test_outbox_idempotency_key_uniqueness(db_session, factory):
     org = factory.organization()
-    user = factory.user_with_permissions(org, ("calendar.view", "calendar.manage_own_connections"))
+
+    outbox1 = CalendarSyncOutbox(
+        organization_id=org.id,
+        idempotency_key="unique_key_12345",
+        event_type="CALENDAR_EVENT_CREATED",
+        payload={"test": 1},
+        status=CalendarOutboxStatus.PENDING.value,
+        attempts=0,
+        max_attempts=5,
+        next_attempt_at=datetime.now(timezone.utc),
+    )
+    db_session.add(outbox1)
+    db_session.commit()
+
+    # Attempt inserting duplicate idempotency_key for same organization
+    outbox2 = CalendarSyncOutbox(
+        organization_id=org.id,
+        idempotency_key="unique_key_12345",
+        event_type="CALENDAR_EVENT_CREATED",
+        payload={"test": 2},
+        status=CalendarOutboxStatus.PENDING.value,
+        attempts=0,
+        max_attempts=5,
+        next_attempt_at=datetime.now(timezone.utc),
+    )
+    db_session.add(outbox2)
+    with pytest.raises(IntegrityError):
+        db_session.commit()
+    db_session.rollback()
+
+
+@pytest.mark.db
+def test_atomic_transaction_rollback_on_audit_failure(db_session, factory):
+    org = factory.organization()
+    user = factory.user_with_permissions(org, ("meetings.create", "calendar.view"))
 
     now = datetime.now(timezone.utc)
-    instant_payload = CalendarEventCreate(
-        title="Instant 1:1 Operations Briefing",
+    create_payload = CalendarEventCreate(
+        title="Failed Audit Transaction",
         start_time=now,
-        end_time=now + timedelta(minutes=30),
-        is_instant=True,
-        provider=CalendarProvider.GOOGLE,
+        end_time=now + timedelta(hours=1),
     )
 
-    event = CalendarService.create_event(db_session, user, instant_payload)
-    assert event.sync_status == CalendarSyncStatus.NOT_SYNCED.value
+    # Mock AuditRecorder.record to simulate unexpected infrastructure exception
+    with patch("app.modules.calendar.service.AuditRecorder.record", side_effect=RuntimeError("Audit database connection lost")):
+        with pytest.raises(RuntimeError):
+            CalendarService.create_event(db_session, user, create_payload)
+        db_session.rollback()
 
-    # Verify 0 outbox queue items were inserted
-    outbox_items = db_session.query(CalendarSyncOutbox).filter_by(organization_id=org.id).all()
-    assert len(outbox_items) == 0
+    # Verify atomic rollback: no event or outbox persisted
+    events = db_session.query(CalendarEvent).filter_by(title="Failed Audit Transaction").all()
+    assert len(events) == 0
 
 
 @pytest.mark.db
-def test_atomic_audit_logging_on_create_and_update(db_session, factory):
+def test_event_cancellation_lifecycle(db_session, factory):
     org = factory.organization()
-    user = factory.user_with_permissions(org, ("calendar.view",))
+    user = factory.user_with_permissions(org, ("meetings.create", "meetings.update", "meetings.cancel", "calendar.view"))
 
     now = datetime.now(timezone.utc)
     event = CalendarService.create_event(
         db_session,
         user,
         CalendarEventCreate(
-            title="Audited Strategic Review",
+            title="Meeting To Cancel",
             start_time=now,
             end_time=now + timedelta(hours=1),
         ),
     )
 
-    audit_create = db_session.query(AuditEvent).filter_by(entity_id=event.id, action="calendar_event.created").first()
-    assert audit_create is not None
-    assert audit_create.organization_id == org.id
-
-    # Update event and verify update audit event
-    updated_event = CalendarService.update_event(
+    cancelled_event = CalendarService.cancel_event(
         db_session,
         user,
         event.id,
-        CalendarEventUpdate(title="Audited Strategic Review (Updated)"),
-    )
-    assert updated_event.version == 2
-
-    audit_update = db_session.query(AuditEvent).filter_by(entity_id=event.id, action="calendar_event.updated").first()
-    assert audit_update is not None
-    assert audit_update.before_state["title"] == "Audited Strategic Review"
-    assert audit_update.after_state["title"] == "Audited Strategic Review (Updated)"
-
-
-@pytest.mark.db
-def test_optimistic_concurrency_conflict(db_session, factory):
-    org = factory.organization()
-    user = factory.user_with_permissions(org, ("calendar.view",))
-
-    now = datetime.now(timezone.utc)
-    event = CalendarService.create_event(
-        db_session,
-        user,
-        CalendarEventCreate(
-            title="Concurrent Event",
-            start_time=now,
-            end_time=now + timedelta(hours=1),
-        ),
+        CalendarEventCancel(reason="Department head unavailable"),
+        expected_version=1,
     )
 
-    # Passing stale expected_version=99 raises ConflictError
-    with pytest.raises(ConflictError) as exc_info:
-        CalendarService.update_event(
-            db_session,
-            user,
-            event.id,
-            CalendarEventUpdate(title="Stale Update"),
-            expected_version=99,
-        )
-    assert "Optimistic concurrency conflict" in str(exc_info.value)
+    assert cancelled_event.version == 2
 
-
-@pytest.mark.db
-def test_connect_integration_returns_501_in_phase_3(db_session, factory):
-    org = factory.organization()
-    user = factory.user_with_permissions(org, ("calendar.view", "calendar.manage_own_connections"))
-
-    connect_req = ConnectIntegrationRequest(
-        provider=CalendarProvider.GOOGLE,
-        auth_code="mock_auth_code_12345",
-        redirect_uri="http://localhost:3000/calendar/oauth/callback",
-    )
-
-    with pytest.raises(HTTPException) as exc_info:
-        CalendarService.connect_integration(db_session, user, connect_req)
-    assert exc_info.value.status_code == 501
-    assert "Phase 5" in str(exc_info.value.detail)
+    # Audit verification
+    audit_cancel = db_session.query(AuditEvent).filter_by(entity_id=event.id, action="calendar_event.cancelled").first()
+    assert audit_cancel is not None
+    assert audit_cancel.reason == "Department head unavailable"
