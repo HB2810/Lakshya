@@ -5,19 +5,44 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 from typing import Any
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
+
+from app.modules.calendar.models import (
+    CalendarEventType,
+    CalendarOutboxStatus,
+    CalendarProvider,
+    CalendarSyncStatus,
+)
 
 
 class CalendarEventCreate(BaseModel):
     title: str = Field(..., min_length=1, max_length=255)
     description: str | None = None
-    event_type: str = Field(default="LAKSHYA_MEETING", max_length=50)
+    event_type: CalendarEventType = Field(default=CalendarEventType.LAKSHYA_MEETING)
     start_time: datetime
     end_time: datetime
     timezone: str = Field(default="Asia/Kolkata", max_length=50)
     meeting_id: uuid.UUID | None = None
-    provider: str = Field(default="LAKSHYA", max_length=50)
+    provider: CalendarProvider = Field(default=CalendarProvider.LAKSHYA)
+    is_instant: bool = Field(default=False, description="Instant meetings bypass external outbox sync")
+
+    @field_validator("timezone")
+    @classmethod
+    def validate_iana_timezone(cls, v: str) -> str:
+        try:
+            ZoneInfo(v)
+        except (ZoneInfoNotFoundError, ValueError, TypeError):
+            raise ValueError(f"Invalid IANA timezone name: '{v}'")
+        return v
+
+    @field_validator("start_time", "end_time")
+    @classmethod
+    def validate_tz_aware(cls, v: datetime) -> datetime:
+        if v.tzinfo is None or v.tzinfo.utcoffset(v) is None:
+            raise ValueError("Timestamp must be timezone-aware (e.g. ISO 8601 with UTC offset or Z)")
+        return v
 
 
 class CalendarEventUpdate(BaseModel):
@@ -26,7 +51,24 @@ class CalendarEventUpdate(BaseModel):
     start_time: datetime | None = None
     end_time: datetime | None = None
     timezone: str | None = None
-    sync_status: str | None = None
+
+    @field_validator("timezone")
+    @classmethod
+    def validate_iana_timezone(cls, v: str | None) -> str | None:
+        if v is None:
+            return v
+        try:
+            ZoneInfo(v)
+        except (ZoneInfoNotFoundError, ValueError, TypeError):
+            raise ValueError(f"Invalid IANA timezone name: '{v}'")
+        return v
+
+    @field_validator("start_time", "end_time")
+    @classmethod
+    def validate_tz_aware(cls, v: datetime | None) -> datetime | None:
+        if v is not None and (v.tzinfo is None or v.tzinfo.utcoffset(v) is None):
+            raise ValueError("Timestamp must be timezone-aware (e.g. ISO 8601 with UTC offset or Z)")
+        return v
 
 
 class CalendarEventResponse(BaseModel):
@@ -47,6 +89,7 @@ class CalendarEventResponse(BaseModel):
     external_calendar_id: str | None = None
     sync_status: str
     last_synced_at: datetime | None = None
+    version: int
     created_at: datetime
     updated_at: datetime
 
@@ -64,7 +107,6 @@ class CalendarSyncOutboxResponse(BaseModel):
     last_error: str | None = None
     next_attempt_at: datetime | None = None
     created_at: datetime
-    processed_at: datetime | None = None
 
 
 class UserCalendarIntegrationResponse(BaseModel):
@@ -81,6 +123,6 @@ class UserCalendarIntegrationResponse(BaseModel):
 
 
 class ConnectIntegrationRequest(BaseModel):
-    provider: str = Field(default="GOOGLE", max_length=50)
+    provider: CalendarProvider = Field(default=CalendarProvider.GOOGLE)
     auth_code: str = Field(..., min_length=1)
     redirect_uri: str = Field(..., min_length=1)

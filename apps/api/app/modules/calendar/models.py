@@ -24,6 +24,34 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import UTC_TIMESTAMP, UUID_PK, Base, TimestampMixin, VersionMixin, uuid_fk, uuid_pk
 
+from enum import Enum
+
+class CalendarEventType(str, Enum):
+    LAKSHYA_MEETING = "LAKSHYA_MEETING"
+    MILESTONE_REVIEW = "MILESTONE_REVIEW"
+    STRATEGY_REVIEW = "STRATEGY_REVIEW"
+    EXTERNAL_EVENT = "EXTERNAL_EVENT"
+
+
+class CalendarProvider(str, Enum):
+    LAKSHYA = "LAKSHYA"
+    GOOGLE = "GOOGLE"
+
+
+class CalendarSyncStatus(str, Enum):
+    NOT_SYNCED = "NOT_SYNCED"
+    SYNC_PENDING = "SYNC_PENDING"
+    SYNCHRONIZED = "SYNCHRONIZED"
+    SYNC_FAILED = "SYNC_FAILED"
+
+
+class CalendarOutboxStatus(str, Enum):
+    PENDING = "PENDING"
+    PROCESSING = "PROCESSING"
+    COMPLETED = "COMPLETED"
+    FAILED = "FAILED"
+
+
 CALENDAR_EVENT_TYPES = (
     "LAKSHYA_MEETING",
     "MILESTONE_REVIEW",

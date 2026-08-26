@@ -53,6 +53,20 @@ AUDIT_FIELD_ALLOWLIST: dict[str, frozenset[str]] = {
             "version",
         }
     ),
+    "calendar_event": frozenset(
+        {
+            "id",
+            "title",
+            "description",
+            "event_type",
+            "start_time",
+            "end_time",
+            "timezone",
+            "provider",
+            "sync_status",
+            "version",
+        }
+    ),
     "role": frozenset({"key", "name", "description", "is_active", "template_key", "version"}),
     "role_permission": frozenset({"role_id", "permission_key"}),
     "role_assignment": frozenset(
