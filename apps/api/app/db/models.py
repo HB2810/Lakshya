@@ -9,20 +9,40 @@ from __future__ import annotations
 from app.db.base import Base
 from app.modules.access.models import Permission, Role, RoleAssignment, RolePermission
 from app.modules.audit.models import AuditEvent
+from app.modules.calendar.models import CalendarEvent, CalendarSyncOutbox, UserCalendarIntegration
 from app.modules.identity.models import Credential, User, UserSession
+from app.modules.kpi.models import KPIDefinition, KPIValue
+from app.modules.meeting.models import Meeting, MeetingAgenda, MeetingCheckin, MeetingHeadline, MeetingParticipant
+from app.modules.oo.models import OAndOItem
 from app.modules.organization.models import Department, DepartmentMembership, Organization
+from app.modules.strategy.models import AnnualGoal, MonthlyPriority, QuarterlyPriority, WeeklyMilestone
 
 __all__ = [
+    "AnnualGoal",
     "AuditEvent",
     "Base",
+    "CalendarEvent",
+    "CalendarSyncOutbox",
     "Credential",
     "Department",
     "DepartmentMembership",
+    "KPIDefinition",
+    "KPIValue",
+    "Meeting",
+    "MeetingAgenda",
+    "MeetingCheckin",
+    "MeetingHeadline",
+    "MeetingParticipant",
+    "MonthlyPriority",
+    "OAndOItem",
     "Organization",
     "Permission",
+    "QuarterlyPriority",
     "Role",
     "RoleAssignment",
     "RolePermission",
     "User",
+    "UserCalendarIntegration",
     "UserSession",
+    "WeeklyMilestone",
 ]

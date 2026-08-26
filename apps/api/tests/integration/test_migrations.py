@@ -36,6 +36,21 @@ EXPECTED_TABLES = {
     "role_permissions",
     "role_assignments",
     "audit_events",
+    "meetings",
+    "meeting_participants",
+    "meeting_agendas",
+    "meeting_checkins",
+    "meeting_headlines",
+    "calendar_events",
+    "calendar_sync_outbox",
+    "user_calendar_integrations",
+    "annual_goals",
+    "quarterly_priorities",
+    "monthly_priorities",
+    "weekly_milestones",
+    "o_and_o_items",
+    "kpi_definitions",
+    "kpi_values",
 }
 
 
@@ -49,7 +64,7 @@ def _alembic_config(url: str) -> Config:
 
 
 def test_all_expected_tables_exist(engine: Engine) -> None:
-    """The V0.1 identity/access tables from DATABASE.md §2, plus audit."""
+    """The V0.1 identity/access tables from DATABASE.md §2, plus audit and meeting/strategy."""
     tables = set(inspect(engine).get_table_names())
     assert EXPECTED_TABLES <= tables
 
@@ -60,10 +75,7 @@ def test_no_future_module_tables_exist(engine: Engine) -> None:
     premature = tables & {
         "tasks",
         "commitments",
-        "meetings",
         "decisions",
-        "monthly_priorities",
-        "weekly_milestones",
         "objectives",
         "quarterly_directions",
         "raci_assignments",
@@ -104,7 +116,7 @@ def test_schema_matches_the_models(engine: Engine) -> None:
 def test_migration_head_is_recorded(engine: Engine) -> None:
     with engine.connect() as connection:
         revision = connection.execute(text("SELECT version_num FROM alembic_version")).scalar_one()
-    assert revision == "0003"
+    assert revision == "0004"
 
 
 def test_permission_catalog_is_seeded(engine: Engine) -> None:
