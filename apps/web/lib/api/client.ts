@@ -122,7 +122,7 @@ export const apiClient = {
         }
         // Fallback for dev mode when backend is unreachable
         if (process.env.NODE_ENV === 'development') {
-          const fallbackUser = DEMO_USERS.MD;
+          const fallbackUser = DEMO_USERS.EMPLOYEE;
           const mockResponse: CurrentUserResponse = {
             user: {
               id: fallbackUser.id,
@@ -139,12 +139,9 @@ export const apiClient = {
               expires_at: new Date(Date.now() + 86400000).toISOString(),
               last_activity_at: new Date().toISOString(),
             },
-            roles: ['md'],
+            roles: ['employee'],
             permissions: [
-              'user.read', 'user.create', 'department.read', 'objective.read',
-              'priority.read', 'priority.create', 'milestone.read', 'meeting.read',
-              'decision.read', 'commitment.read', 'task.read', 'dashboard.md.read',
-              'organization.read', 'identity.user.read'
+              'user.read', 'department.read', 'task.read', 'task.create', 'task.complete', 'stuck.create'
             ],
             department_ids: [fallbackUser.departmentId],
             must_change_password: false,

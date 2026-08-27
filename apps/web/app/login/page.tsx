@@ -9,7 +9,7 @@ import { useAuth } from '../../lib/auth/AuthContext';
 export default function LoginPage() {
   const router = useRouter();
   const { login, isLoading: authLoading } = useAuth();
-  const [email, setEmail] = useState('md@stavyaspine.com');
+  const [email, setEmail] = useState('priyesh.shah@stavyaspine.com');
   const [password, setPassword] = useState('••••••••••••');
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -97,7 +97,7 @@ export default function LoginPage() {
                 type="email"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
-                placeholder="user@stavyaspine.com"
+                placeholder="priyesh.shah@stavyaspine.com"
                 required
                 className="w-full pl-10 pr-3 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-lg text-slate-900 placeholder-slate-400 focus:bg-white focus:border-brand-blue focus:ring-1 focus:ring-brand-blue transition-colors"
               />
@@ -153,40 +153,23 @@ export default function LoginPage() {
           </div>
         </form>
 
-        {/* Quick Demo Sign-Ins */}
+        {/* Quick Demo Sign-In (Employee Only) */}
         {process.env.NODE_ENV === 'development' && (
           <div className="bg-slate-50 p-5 border-t border-slate-200">
             <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500 text-center mb-3">
-              Quick Persona Sign-In Demo (Development Only)
+              Employee Sign-In (Development Demo)
             </p>
-            <div className="grid grid-cols-2 gap-2 text-xs">
+            <div>
               <button
                 type="button"
-                onClick={() => handleQuickLogin(DEMO_USERS.MD.email)}
-                className="p-2.5 bg-white border border-slate-200 rounded-lg hover:border-brand-blue hover:bg-blue-50/50 text-left font-medium text-slate-800 transition-all"
+                onClick={() => handleQuickLogin(DEMO_USERS.EMPLOYEE.email)}
+                className="w-full p-2.5 bg-white border border-slate-200 rounded-lg hover:border-brand-blue hover:bg-blue-50/50 text-left font-medium text-slate-800 transition-all flex items-center justify-between"
               >
-                👑 <span className="font-bold">MD</span> (Managing Director)
-              </button>
-              <button
-                type="button"
-                onClick={() => handleQuickLogin(DEMO_USERS.MD_OFFICE.email)}
-                className="p-2.5 bg-white border border-slate-200 rounded-lg hover:border-brand-blue hover:bg-blue-50/50 text-left font-medium text-slate-800 transition-all"
-              >
-                🏛️ <span className="font-bold">MD Office</span> (Het Bhatt)
-              </button>
-              <button
-                type="button"
-                onClick={() => handleQuickLogin(DEMO_USERS.DEPARTMENT_HEAD.email)}
-                className="p-2.5 bg-white border border-slate-200 rounded-lg hover:border-brand-blue hover:bg-blue-50/50 text-left font-medium text-slate-800 transition-all"
-              >
-                🏥 <span className="font-bold">Dept Head</span> (Dr. Sharma)
-              </button>
-              <button
-                type="button"
-                onClick={() => handleQuickLogin(DEMO_USERS.MANAGER.email)}
-                className="p-2.5 bg-white border border-slate-200 rounded-lg hover:border-brand-blue hover:bg-blue-50/50 text-left font-medium text-slate-800 transition-all"
-              >
-                📋 <span className="font-bold">Manager</span> (Ananya)
+                <div>
+                  <span className="font-bold text-xs">👤 Employee</span>
+                  <p className="text-[11px] text-slate-500">Priyesh Shah (priyesh.shah@stavyaspine.com)</p>
+                </div>
+                <span className="text-[10px] font-bold bg-blue-50 text-brand-blue px-2 py-1 rounded">Quick Login</span>
               </button>
             </div>
           </div>

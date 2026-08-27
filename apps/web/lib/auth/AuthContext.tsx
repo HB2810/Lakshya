@@ -21,8 +21,8 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [activePersona, setActivePersona] = useState<Persona>('MD');
-  const [user, setUser] = useState<User>(DEMO_USERS.MD);
+  const [activePersona, setActivePersona] = useState<Persona>('EMPLOYEE');
+  const [user, setUser] = useState<User>(DEMO_USERS.EMPLOYEE);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(true);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [mustChangePassword, setMustChangePassword] = useState<boolean>(false);
@@ -117,15 +117,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 };
 
 const defaultAuthContext: AuthContextType = {
-  user: DEMO_USERS.MD,
+  user: DEMO_USERS.EMPLOYEE,
   isAuthenticated: false,
   isLoading: false,
-  activePersona: 'MD',
+  activePersona: 'EMPLOYEE',
   mustChangePassword: false,
   login: async () => {},
   logout: async () => {},
   switchPersona: () => {},
-  can: (capability: Capability) => canHelper(capability, DEMO_USERS.MD),
+  can: (capability: Capability) => canHelper(capability, DEMO_USERS.EMPLOYEE),
 };
 
 export const useAuth = () => {
