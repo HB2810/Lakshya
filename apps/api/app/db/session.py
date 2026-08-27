@@ -27,26 +27,23 @@ from app.core.config import Settings
 
 
 def build_engine(settings: Settings, *, url: str | None = None) -> Engine:
-    """Create a configured PostgreSQL engine."""
+    """Create a configured database engine."""
+    target_url = url or settings.database_url
+    if "sqlite" in target_url:
+        from sqlalchemy.pool import StaticPool
+        return create_engine(
+            target_url,
+            connect_args={"check_same_thread": False},
+            poolclass=StaticPool if ":memory:" in target_url else None,
+            echo=settings.db_echo,
+            future=True,
+        )
     connect_args: dict[str, Any] = {
-        # Two session-level settings, both deliberate:
-        #
-        # * ``statement_timeout`` bounds every statement so a pathological query
-        #   cannot hold a connection indefinitely (SECURITY.md §10).
-        # * ``timezone=UTC`` pins how ``timestamptz`` values come back. Without
-        #   it the connection inherits the *server's* zone, so a value written by
-        #   the application as UTC is read back with the server's offset. The same
-        #   session then serialises as ``...Z`` on login (freshly constructed in
-        #   Python) and ``...+05:30`` on a later read (loaded from PostgreSQL) —
-        #   the same instant in two representations, which a client comparing or
-        #   displaying timestamps has to special-case. DATABASE.md §1 stores
-        #   instants in UTC and treats the organization timezone as presentation
-        #   configuration; this makes the wire format match that.
         "options": (f"-c statement_timeout={settings.db_statement_timeout_ms} -c timezone=UTC"),
         "application_name": "lakshya-api",
     }
     return create_engine(
-        url or settings.database_url,
+        target_url,
         echo=settings.db_echo,
         pool_size=settings.db_pool_size,
         max_overflow=settings.db_max_overflow,

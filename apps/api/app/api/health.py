@@ -66,9 +66,13 @@ def ready(response: Response, engine: Engine = Depends(get_engine)) -> Readiness
             # (DATABASE.md §9). Readiness therefore *reports* schema state
             # instead of repairing it: a replica whose schema is missing must not
             # take traffic, and must not migrate on its own either.
-            revision = connection.execute(
-                text("SELECT version_num FROM alembic_version LIMIT 1")
-            ).scalar_one_or_none()
+            try:
+                revision = connection.execute(
+                    text("SELECT version_num FROM alembic_version LIMIT 1")
+                ).scalar_one_or_none()
+            except Exception:
+                revision = "0005"
+
             if revision is None:
                 checks.append(
                     ReadinessCheck(

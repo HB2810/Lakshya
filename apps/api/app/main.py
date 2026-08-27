@@ -68,7 +68,21 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         configure, and the rate limiter must be a single instance or its counters
         would reset on every request.
         """
-        engine = build_engine(resolved)
+        try:
+            engine = build_engine(resolved)
+            with engine.connect() as conn:
+                from sqlalchemy import text
+                conn.execute(text("SELECT 1"))
+        except Exception as exc:
+            if resolved.environment.is_local:
+                logger.warning(
+                    "postgresql_unavailable_falling_back_to_in_memory_db",
+                    extra={"error": str(exc)},
+                )
+                from app.db.memory_bootstrap import build_memory_engine_and_bootstrap
+                engine = build_memory_engine_and_bootstrap(resolved)
+            else:
+                raise
         app.state.settings = resolved
         app.state.engine = engine
         session_factory = build_session_factory(engine)
