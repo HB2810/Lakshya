@@ -41,33 +41,15 @@ export default function LoginPage() {
   const isLoading = isSubmitting || authLoading;
 
   return (
-    <div className="min-h-screen w-full bg-[#f8fafc] flex flex-col justify-between items-center p-4 sm:p-6 relative selection:bg-slate-200">
+    <div className="min-h-screen w-full bg-[#f8fafc] flex items-center justify-center p-4 sm:p-6 relative selection:bg-slate-200">
       {/* Subtle Ambient Background Accents */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute -top-40 left-1/2 -translate-x-1/2 w-[700px] h-[400px] bg-slate-200/50 rounded-full blur-3xl" />
         <div className="absolute -bottom-40 left-1/2 -translate-x-1/2 w-[600px] h-[350px] bg-slate-100 rounded-full blur-3xl" />
       </div>
 
-      {/* Top Header Identity */}
-      <header className="w-full max-w-4xl flex items-center justify-between py-2 relative z-10">
-        <div className="flex items-center gap-3">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/brand/stavya-logo.png"
-            alt="Stavya Spine Hospital"
-            height="38"
-            style={{ maxHeight: '38px', height: '38px', width: 'auto' }}
-            className="h-9 w-auto object-contain"
-          />
-        </div>
-        <div className="hidden sm:flex items-center gap-2 text-xs text-slate-500 font-medium bg-white/80 backdrop-blur-sm border border-slate-200/80 px-3 py-1.5 rounded-full shadow-xs">
-          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-          <span>Stavya Spine Hospital OS</span>
-        </div>
-      </header>
-
       {/* Main Login Card */}
-      <main className="w-full max-w-[440px] my-auto relative z-10">
+      <main className="w-full max-w-[440px] relative z-10">
         <div className="bg-white rounded-2xl shadow-xl shadow-slate-200/60 border border-slate-200/90 overflow-hidden">
           
           {/* Card Brand Header */}
@@ -178,17 +160,6 @@ export default function LoginPage() {
           </form>
         </div>
       </main>
-
-      {/* Security Footer */}
-      <footer className="w-full max-w-4xl py-2 flex flex-col sm:flex-row items-center justify-between text-[11px] text-slate-400 relative z-10 gap-2">
-        <div className="flex items-center gap-1.5">
-          <ShieldCheck className="w-4 h-4 text-emerald-600" />
-          <span>Stavya Spine Hospital • Enterprise Security & Audit</span>
-        </div>
-        <div className="text-slate-400 font-mono text-[10px]">
-          LAKSHYA V0.1 — Stage 1 Foundation
-        </div>
-      </footer>
     </div>
   );
 }
