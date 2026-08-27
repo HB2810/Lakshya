@@ -40,14 +40,6 @@ export default function LoginPage() {
 
   const isLoading = isSubmitting || authLoading;
 
-  const supportedRoles = [
-    { name: 'STAVYANS', desc: 'Employees & Staff', badge: 'Active' },
-    { name: 'Managing Director', desc: 'Executive Office', badge: 'Tier 1' },
-    { name: 'Admin', desc: 'Master System Access', badge: 'System' },
-    { name: 'HR', desc: 'Human Resources', badge: 'Staffing' },
-    { name: 'Leaders', desc: 'Department & Clinical Leads', badge: 'Ops' },
-  ];
-
   return (
     <div className="min-h-screen w-full bg-[#f8fafc] flex flex-col justify-between items-center p-4 sm:p-6 relative selection:bg-slate-200">
       {/* Subtle Ambient Background Accents */}
@@ -184,24 +176,6 @@ export default function LoginPage() {
               )}
             </button>
           </form>
-
-          {/* RBAC Scope Matrix Summary */}
-          <div className="bg-slate-50/70 border-t border-slate-100 p-5">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 text-center mb-3">
-              Role-Based Access Control (RBAC) System
-            </p>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
-              {supportedRoles.map((role) => (
-                <div
-                  key={role.name}
-                  className="p-2 bg-white border border-slate-200/70 rounded-lg text-left"
-                >
-                  <p className="text-[11px] font-bold text-slate-800 truncate">{role.name}</p>
-                  <p className="text-[9px] text-slate-400 truncate">{role.desc}</p>
-                </div>
-              ))}
-            </div>
-          </div>
         </div>
       </main>
 
