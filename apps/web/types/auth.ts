@@ -1,4 +1,14 @@
-export type Persona = 'MD' | 'MD_OFFICE' | 'DEPARTMENT_HEAD' | 'MANAGER' | 'EMPLOYEE';
+export type Persona =
+  | 'STAVYANS'
+  | 'MANAGING_DIRECTOR'
+  | 'ADMIN'
+  | 'HR'
+  | 'LEADERS'
+  | 'MD'
+  | 'MD_OFFICE'
+  | 'DEPARTMENT_HEAD'
+  | 'MANAGER'
+  | 'EMPLOYEE';
 
 export interface BackendUser {
   id: string;

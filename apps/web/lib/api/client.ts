@@ -152,9 +152,9 @@ export const apiClient = {
       }
     },
 
-    async login(email: string, password?: string, organization_slug?: string): Promise<{ response: CurrentUserResponse; user: User }> {
+    async login(emailOrId: string, password?: string, organization_slug?: string): Promise<{ response: CurrentUserResponse; user: User }> {
       try {
-        const body: Record<string, string> = { email, password: password || 'password' };
+        const body: Record<string, string> = { email: emailOrId, password: password || '1234' };
         if (organization_slug) {
           body.organization_slug = organization_slug;
         }
@@ -164,36 +164,78 @@ export const apiClient = {
         });
         return { response: data, user: mapBackendUserToFrontendUser(data) };
       } catch (err: unknown) {
-        // Fallback for dev demo quick login when backend returns 401 or network error
+        // Fallback for dev demo when backend is offline
         if (process.env.NODE_ENV === 'development') {
-          const matchKey = (Object.keys(DEMO_USERS).find(k => DEMO_USERS[k as Persona].email === email) || 'MD') as Persona;
-          const demoUser = DEMO_USERS[matchKey];
-          const mockResponse: CurrentUserResponse = {
-            user: {
-              id: demoUser.id,
-              email: demoUser.email,
-              full_name: demoUser.name,
-              is_active: true,
+          const normalized = emailOrId.trim().toUpperCase();
+          
+          // Validate credentials: STAVYANS-101 with password 1234
+          if (normalized === 'STAVYANS-101' || normalized === 'PRIYESH.SHAH@STAVYASPINE.COM') {
+            if (password && password !== '1234' && password !== '••••••••••••') {
+              throw new Error('Invalid password for STAVYANS-101. (Expected: 1234)');
+            }
+            const demoUser = DEMO_USERS.STAVYANS;
+            const mockResponse: CurrentUserResponse = {
+              user: {
+                id: demoUser.id,
+                email: demoUser.email,
+                full_name: demoUser.name,
+                is_active: true,
+                organization_id: 'org-stavya-001',
+              },
               organization_id: 'org-stavya-001',
-            },
-            organization_id: 'org-stavya-001',
-            organization_slug: 'stavya-spine',
-            session: {
-              id: `sess-${demoUser.id}`,
-              issued_at: new Date().toISOString(),
-              expires_at: new Date(Date.now() + 86400000).toISOString(),
-              last_activity_at: new Date().toISOString(),
-            },
-            roles: [demoUser.role.toLowerCase()],
-            permissions: [
-              'user.read', 'department.read', 'objective.read', 'priority.read',
-              'milestone.read', 'meeting.read', 'decision.read', 'commitment.read',
-              'task.read', 'dashboard.md.read'
-            ],
-            department_ids: [demoUser.departmentId],
-            must_change_password: false,
-          };
-          return { response: mockResponse, user: mapBackendUserToFrontendUser(mockResponse) };
+              organization_slug: 'stavya-spine',
+              session: {
+                id: `sess-${demoUser.id}`,
+                issued_at: new Date().toISOString(),
+                expires_at: new Date(Date.now() + 86400000).toISOString(),
+                last_activity_at: new Date().toISOString(),
+              },
+              roles: ['stavyans', 'employee'],
+              permissions: [
+                'user.read', 'department.read', 'task.read', 'task.create', 'task.complete', 'stuck.create'
+              ],
+              department_ids: [demoUser.departmentId],
+              must_change_password: false,
+            };
+            return { response: mockResponse, user: mapBackendUserToFrontendUser(mockResponse) };
+          }
+
+          // Check if it matches any other supported system role
+          const matchKey = Object.keys(DEMO_USERS).find(
+            k => DEMO_USERS[k].email.toUpperCase() === normalized || k.toUpperCase() === normalized
+          );
+
+          if (matchKey && DEMO_USERS[matchKey]) {
+            const demoUser = DEMO_USERS[matchKey];
+            const mockResponse: CurrentUserResponse = {
+              user: {
+                id: demoUser.id,
+                email: demoUser.email,
+                full_name: demoUser.name,
+                is_active: true,
+                organization_id: 'org-stavya-001',
+              },
+              organization_id: 'org-stavya-001',
+              organization_slug: 'stavya-spine',
+              session: {
+                id: `sess-${demoUser.id}`,
+                issued_at: new Date().toISOString(),
+                expires_at: new Date(Date.now() + 86400000).toISOString(),
+                last_activity_at: new Date().toISOString(),
+              },
+              roles: [demoUser.role.toLowerCase()],
+              permissions: [
+                'user.read', 'department.read', 'objective.read', 'priority.read',
+                'milestone.read', 'meeting.read', 'decision.read', 'commitment.read',
+                'task.read', 'dashboard.md.read'
+              ],
+              department_ids: [demoUser.departmentId],
+              must_change_password: false,
+            };
+            return { response: mockResponse, user: mapBackendUserToFrontendUser(mockResponse) };
+          }
+
+          throw new Error('Invalid Staff ID / Username. Please use STAVYANS-101 and password 1234.');
         }
         throw err;
       }

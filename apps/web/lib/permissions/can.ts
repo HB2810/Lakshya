@@ -9,13 +9,20 @@ export function can(capability: Capability, user: User | null): boolean {
   if (!user) return false;
 
   const { role } = user;
+  const isMD = role === 'MD' || role === 'MANAGING_DIRECTOR' || role === 'MD_OFFICE';
+  const isAdmin = role === 'ADMIN';
+  const isLeader = role === 'LEADERS' || role === 'DEPARTMENT_HEAD' || role === 'MANAGER';
+  const isHR = role === 'HR';
+  const isStaff = role === 'STAVYANS' || role === 'EMPLOYEE';
+
+  if (isAdmin) return true; // Master Admin has full platform access
 
   switch (capability) {
     // 1. Dashboards
     case 'dashboard.md.read':
-      return role === 'MD' || role === 'MD_OFFICE';
+      return isMD;
     case 'dashboard.department.read':
-      return role === 'MD' || role === 'MD_OFFICE' || role === 'DEPARTMENT_HEAD' || role === 'MANAGER';
+      return isMD || isLeader || isHR;
 
     // 2. Strategy & Priorities
     case 'quarterly_direction.read':
@@ -26,16 +33,14 @@ export function can(capability: Capability, user: User | null): boolean {
 
     case 'quarterly_direction.create':
     case 'objective.create':
-      return role === 'MD' || role === 'MD_OFFICE';
-
     case 'priority.create':
     case 'priority.change':
     case 'priority.activate':
-      return role === 'MD' || role === 'MD_OFFICE';
+      return isMD;
 
     case 'milestone.create':
     case 'milestone.complete':
-      return role === 'MD' || role === 'MD_OFFICE' || role === 'DEPARTMENT_HEAD' || role === 'MANAGER';
+      return isMD || isLeader;
 
     // 3. Commitments
     case 'commitment.read':
@@ -43,17 +48,17 @@ export function can(capability: Capability, user: User | null): boolean {
 
     case 'commitment.create':
     case 'commitment.submit':
-      return role !== 'EMPLOYEE';
+      return !isStaff;
 
     case 'commitment.approve':
     case 'commitment.completion.approve':
-      return role === 'MD' || role === 'MD_OFFICE' || role === 'DEPARTMENT_HEAD';
+      return isMD || isLeader;
 
     case 'commitment.owner.change':
     case 'commitment.deadline.change':
     case 'commitment.priority.change':
     case 'commitment.reopen':
-      return role === 'MD' || role === 'MD_OFFICE';
+      return isMD;
 
     // 4. Tasks & RACI
     case 'task.read':
@@ -61,21 +66,19 @@ export function can(capability: Capability, user: User | null): boolean {
       return true;
 
     case 'task.create':
-      return true; // Employee can create self-task; others by scope
+      return true; // Staff can create self-task; others by scope
 
     case 'task.assign':
     case 'task.deadline.change':
     case 'task.priority.change':
-      return role !== 'EMPLOYEE'; // Employee cannot reassign others or alter official deadlines
+      return !isStaff; // Staff cannot reassign others or alter official deadlines
 
     case 'task.complete':
       return true; // Assignee can complete normal task
 
     case 'task.reopen':
-      return role !== 'EMPLOYEE';
-
     case 'raci.manage':
-      return role !== 'EMPLOYEE';
+      return !isStaff;
 
     // 5. Stuck / Need & Escalations
     case 'stuck.read':
@@ -83,7 +86,7 @@ export function can(capability: Capability, user: User | null): boolean {
       return true;
 
     case 'stuck.resolve':
-      return role !== 'EMPLOYEE';
+      return !isStaff;
 
     case 'escalation.read':
     case 'escalation.create':
@@ -91,7 +94,7 @@ export function can(capability: Capability, user: User | null): boolean {
 
     case 'escalation.acknowledge':
     case 'escalation.resolve':
-      return role === 'MD' || role === 'MD_OFFICE' || role === 'DEPARTMENT_HEAD' || role === 'MANAGER';
+      return isMD || isLeader;
 
     // 6. Meetings & Decisions
     case 'meeting.read':
@@ -101,10 +104,10 @@ export function can(capability: Capability, user: User | null): boolean {
     case 'meeting.create':
     case 'meeting.complete':
     case 'decision.create':
-      return role !== 'EMPLOYEE';
+      return !isStaff;
 
     case 'decision.approve':
-      return role === 'MD' || role === 'MD_OFFICE';
+      return isMD;
 
     // 7. Organization & Audit
     case 'user.read':
@@ -114,11 +117,13 @@ export function can(capability: Capability, user: User | null): boolean {
 
     case 'user.create':
     case 'user.update':
+      return isMD || isHR;
+
     case 'department.create':
     case 'role.assign':
     case 'audit.read':
     case 'audit.export':
-      return role === 'MD' || role === 'MD_OFFICE';
+      return isMD;
 
     default:
       return false;
