@@ -25,56 +25,44 @@ export const Header: React.FC = () => {
   }, []);
 
   const getPageTitle = (path: string) => {
-    if (path.includes('/overview')) return 'MD Executive Dashboard';
-    if (path.includes('/strategy')) return 'Strategic Direction & Priorities';
-    if (path.includes('/execution')) return 'Execution Engine & Work Tracker';
-    if (path.includes('/meetings')) return 'Meetings & Decision Register';
-    if (path.includes('/organization')) return 'Organization & RACI Directory';
-    if (path.includes('/reports')) return 'Management Intelligence & Reports';
+    if (path.includes('/overview')) return 'Hospital Workspace';
+    if (path.includes('/execution')) return 'My Tasks & Work';
+    if (path.includes('/calendar')) return 'Hospital Calendar';
+    if (path.includes('/meetings')) return 'Meetings & Action Register';
+    if (path.includes('/organization')) return 'Organization Directory';
     if (path.includes('/settings')) return 'System Settings';
-    return 'LAKSHYA Platform';
+    return 'LAKSHYA';
   };
 
-  const personas: { id: Persona; label: string; desc: string }[] = [
-    { id: 'MD', label: 'MD (Managing Director)', desc: 'Managing Director Exception View' },
-    { id: 'MD_OFFICE', label: 'MD Office (Het Bhatt)', desc: 'Full Organizational Coordination' },
-    { id: 'DEPARTMENT_HEAD', label: 'Department Head (Dr. Rohan Sharma)', desc: 'Spine Surgery Scope' },
-    { id: 'MANAGER', label: 'Manager (Ananya Patel)', desc: 'Operations Team Scope' },
-    { id: 'EMPLOYEE', label: 'Employee (Priyesh Shah)', desc: 'Individual Contributor Scope' },
-  ];
-
   return (
-    <header className="h-16 bg-white border-b border-slate-200 px-6 flex items-center justify-between sticky top-0 z-20 shadow-sm">
+    <header className="h-16 bg-white border-b border-slate-200 px-6 flex items-center justify-between sticky top-0 z-20 shadow-xs">
       {/* Page Context Breadcrumb */}
       <div>
         <h1 className="text-base font-bold text-slate-900 tracking-tight flex items-center gap-2">
           {getPageTitle(pathname)}
-          <span className="px-2.5 py-0.5 bg-blue-50 text-brand-blue border border-blue-200 text-[10px] font-mono font-bold rounded-full uppercase">
-            v0.1 ACTIVE
-          </span>
         </h1>
         <div className="flex items-center gap-2 text-xs text-slate-500 mt-0.5">
           <span>Stavya Spine Hospital</span>
           <span>/</span>
-          <span className="font-semibold text-brand-blue">{user.departmentName}</span>
+          <span className="font-semibold text-slate-700">{user.departmentName}</span>
         </div>
       </div>
 
       {/* Right Controls */}
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-3.5">
         {/* Live Clock Readout */}
-        <div className="hidden lg:flex items-center gap-2 px-3 py-1 bg-blue-50/80 border border-blue-200/80 rounded-md text-xs font-mono text-brand-blue font-bold">
-          <Clock className="w-3.5 h-3.5 text-brand-blue" />
-          <span>{timeString || '14:40 IST'}</span>
+        <div className="hidden lg:flex items-center gap-2 px-3 py-1 bg-slate-50 border border-slate-200 rounded-lg text-xs font-mono text-slate-700 font-semibold">
+          <Clock className="w-3.5 h-3.5 text-slate-500" />
+          <span>{timeString || 'IST'}</span>
         </div>
 
         {/* Search */}
-        <div className="relative hidden md:block w-60">
+        <div className="relative hidden md:block w-56">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
           <input
             type="text"
-            placeholder="Search commitments, decisions..."
-            className="w-full pl-9 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-md text-slate-800 placeholder-slate-400 focus:bg-white focus:border-brand-blue focus:ring-1 focus:ring-brand-blue transition-colors"
+            placeholder="Search tasks, meetings..."
+            className="w-full pl-9 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg text-slate-800 placeholder-slate-400 focus:bg-white focus:border-slate-800 focus:ring-1 focus:ring-slate-800 transition-colors"
           />
         </div>
 
@@ -82,25 +70,25 @@ export const Header: React.FC = () => {
         <div className="relative">
           <button
             onClick={() => setShowNotifications(!showNotifications)}
-            className="p-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-md relative transition-colors"
+            className="p-2 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-lg relative transition-colors cursor-pointer"
             title="Notifications"
           >
-            <Bell className="w-4.5 h-4.5" />
-            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-brand-red rounded-full ring-2 ring-white animate-pulse" />
+            <Bell className="w-4 h-4" />
+            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-blue-600 rounded-full ring-2 ring-white" />
           </button>
 
           {showNotifications && (
-            <div className="absolute right-0 mt-2 w-80 bg-white border border-slate-200 rounded-lg shadow-xl p-4 z-50 animate-in fade-in zoom-in-95 duration-150">
-              <div className="flex items-center justify-between border-b border-slate-200 pb-2 mb-3">
+            <div className="absolute right-0 mt-2 w-80 bg-white border border-slate-200 rounded-xl shadow-xl p-4 z-50 animate-in fade-in zoom-in-95 duration-150">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-2 mb-3">
                 <h4 className="text-xs font-bold uppercase tracking-wider text-slate-900">Notifications</h4>
-                <span className="text-[10px] bg-blue-50 text-brand-blue border border-blue-200 font-bold px-2 py-0.5 rounded-full">
-                  2 New
+                <span className="text-[10px] bg-slate-100 text-slate-700 font-bold px-2 py-0.5 rounded-full">
+                  1 New
                 </span>
               </div>
-              <div className="space-y-2.5 text-xs">
-                <div className="p-2.5 bg-blue-50/50 rounded-md border border-blue-100">
-                  <p className="font-semibold text-slate-900">Escalation Engine Active</p>
-                  <p className="text-slate-600 text-[11px] mt-0.5">Automated stuck detection and escalation routing operational.</p>
+              <div className="space-y-2 text-xs">
+                <div className="p-2.5 bg-slate-50 rounded-lg border border-slate-100">
+                  <p className="font-semibold text-slate-900">Welcome to LAKSHYA</p>
+                  <p className="text-slate-600 text-[11px] mt-0.5">Your hospital workspace is active and up to date.</p>
                   <span className="text-[10px] text-slate-400 mt-1 block">Just now</span>
                 </div>
               </div>
@@ -110,47 +98,14 @@ export const Header: React.FC = () => {
 
         <div className="h-6 w-px bg-slate-200" />
 
-        {/* Persona Quick-Switcher Dropdown */}
-        {process.env.NODE_ENV === 'development' && (
-          <div className="relative">
-            <button
-              onClick={() => setShowPersonaMenu(!showPersonaMenu)}
-              className="flex items-center gap-2 px-3 py-1.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-md text-xs font-semibold text-slate-800 transition-colors"
-            >
-              <ShieldCheck className="w-4 h-4 text-brand-blue" />
-              <span>Persona: {activePersona.replace('_', ' ')}</span>
-              <ChevronDown className="w-3 h-3 text-slate-400" />
-            </button>
-
-            {showPersonaMenu && (
-              <div className="absolute right-0 mt-2 w-72 bg-white border border-slate-200 rounded-lg shadow-xl p-2 z-50 animate-in fade-in zoom-in-95 duration-150">
-                <div className="px-3 py-2 border-b border-slate-200 mb-1">
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
-                    Switch Perspective (DEV DEMO)
-                  </p>
-                </div>
-                {personas.map(p => (
-                  <button
-                    key={p.id}
-                    onClick={() => {
-                      switchPersona(p.id);
-                      setShowPersonaMenu(false);
-                    }}
-                    className={`w-full text-left px-3 py-2 rounded-md text-xs transition-colors flex items-center justify-between ${
-                      activePersona === p.id ? 'bg-blue-50 text-brand-blue font-semibold border border-blue-200' : 'hover:bg-slate-50 text-slate-700'
-                    }`}
-                  >
-                    <div>
-                      <p className="font-medium">{p.label}</p>
-                      <p className="text-[10px] text-slate-500">{p.desc}</p>
-                    </div>
-                    {activePersona === p.id && <Check className="w-4 h-4 text-brand-blue shrink-0 ml-2" />}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
+        {/* Active User Persona Pill */}
+        <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold text-slate-700">
+          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+          <span>{user.name}</span>
+          <span className="text-[10px] uppercase font-bold text-slate-500 bg-slate-200/80 px-1.5 py-0.5 rounded">
+            {user.role}
+          </span>
+        </div>
 
         {/* Logout */}
         <button
@@ -158,8 +113,8 @@ export const Header: React.FC = () => {
             logout();
             router.push('/login');
           }}
-          className="p-2 text-slate-400 hover:text-brand-red hover:bg-red-50 rounded-md transition-colors"
-          title="Sign out session"
+          className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+          title="Sign out"
         >
           <LogOut className="w-4 h-4" />
         </button>

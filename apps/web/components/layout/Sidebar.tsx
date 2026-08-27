@@ -30,10 +30,16 @@ export const Sidebar: React.FC = () => {
       show: true,
     },
     {
+      label: 'My Tasks & Work',
+      href: '/execution',
+      icon: CheckSquare,
+      show: true,
+    },
+    {
       label: 'Calendar',
       href: '/calendar',
       icon: Calendar,
-      show: can('calendar.view'),
+      show: true,
     },
     {
       label: 'Meetings',
@@ -42,40 +48,10 @@ export const Sidebar: React.FC = () => {
       show: true,
     },
     {
-      label: 'Strategy',
-      href: '/strategy',
-      icon: Target,
-      show: true,
-    },
-    {
-      label: 'Execution',
-      href: '/execution',
-      icon: CheckSquare,
-      show: true,
-    },
-    {
-      label: 'Performance / KPI',
-      href: '/kpi',
-      icon: BarChart3,
-      show: can('kpis.view'),
-    },
-    {
-      label: 'O&O Hub',
-      href: '/oo',
-      icon: Target,
-      show: can('oo.view'),
-    },
-    {
       label: 'Organization',
       href: '/organization',
       icon: Building2,
       show: true,
-    },
-    {
-      label: 'Reports',
-      href: '/reports',
-      icon: BarChart3,
-      show: can('dashboard.md.read') || can('dashboard.department.read'),
     },
     {
       label: 'Settings',
@@ -115,11 +91,11 @@ export const Sidebar: React.FC = () => {
                   className="h-9 w-auto shrink-0 object-contain"
                 />
                 <div className="flex flex-col">
-                  <span className="text-base font-extrabold tracking-wider text-brand-blue leading-none">
+                  <span className="text-base font-extrabold tracking-wider text-slate-900 leading-none">
                     LAKSHYA
                   </span>
-                  <span className="text-[10px] font-semibold tracking-widest text-slate-500 uppercase mt-0.5">
-                    MD Office OS
+                  <span className="text-[10px] font-semibold tracking-wider text-slate-400 uppercase mt-0.5">
+                    Stavya Hospital
                   </span>
                 </div>
               </div>
