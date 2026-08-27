@@ -26,6 +26,8 @@ export const Header: React.FC = () => {
 
   const getPageTitle = (path: string) => {
     if (path.includes('/overview')) return 'Hospital Workspace';
+    if (path.includes('/strategy')) return 'Quarterly Priorities & 10-Milestone Engine';
+    if (path.includes('/rca')) return 'Root Cause Analysis (RCA) & FMEA Tools';
     if (path.includes('/execution')) return 'My Tasks & Work';
     if (path.includes('/calendar')) return 'Hospital Calendar';
     if (path.includes('/meetings')) return 'Meetings & Action Register';

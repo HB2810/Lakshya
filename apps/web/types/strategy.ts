@@ -1,16 +1,36 @@
 export type PriorityStatus = 'DRAFT' | 'ACTIVE' | 'AT_RISK' | 'BLOCKED' | 'COMPLETED';
 
-export interface QuarterlyDirection {
+export type MilestoneStepStatus = 'COMPLETED' | 'IN_PROGRESS' | 'PENDING' | 'BLOCKED';
+
+export interface MilestoneStep {
+  stepNumber: number; // 1 to 10
+  title: string;
+  description: string;
+  ownerName: string;
+  targetDate: string;
+  completedAt?: string;
+  status: MilestoneStepStatus;
+  keyDeliverable: string;
+  verificationNotes?: string;
+}
+
+export interface QuarterlyPriority {
   id: string;
   year: number;
   quarter: 'Q1' | 'Q2' | 'Q3' | 'Q4';
   title: string;
   description: string;
-  objective: string;
+  strategicObjective: string;
+  reportingAuthority: string;
+  department: string;
+  status: PriorityStatus;
   progressPercent: number;
-  status: 'ACTIVE' | 'COMPLETED' | 'AT_RISK';
+  currentStep: number; // 1 to 10
   targetDate: string;
+  milestones: MilestoneStep[]; // Exactly 10 milestones representing sequential rollout
 }
+
+export interface QuarterlyDirection extends QuarterlyPriority {}
 
 export interface MonthlyPriority {
   id: string;

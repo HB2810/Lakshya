@@ -30,6 +30,18 @@ export const Sidebar: React.FC = () => {
       show: true,
     },
     {
+      label: 'Quarterly Priorities',
+      href: '/strategy',
+      icon: Target,
+      show: true,
+    },
+    {
+      label: 'Quality & RCA / FMEA',
+      href: '/rca',
+      icon: Shield,
+      show: true,
+    },
+    {
       label: 'My Tasks & Work',
       href: '/execution',
       icon: CheckSquare,
