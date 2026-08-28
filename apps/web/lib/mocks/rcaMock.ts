@@ -208,11 +208,41 @@ export const rcaStore = {
   getFishbone(): FishboneDiagram {
     return fishboneData;
   },
+  updateFishboneProblemEffect(newEffect: string) {
+    fishboneData = {
+      ...fishboneData,
+      problemEffect: newEffect,
+    };
+    notify();
+  },
+  updateFishboneCategoryLabel(categoryKey: string, newLabel: string) {
+    fishboneData = {
+      ...fishboneData,
+      categories: fishboneData.categories.map(c =>
+        c.key === categoryKey ? { ...c, label: newLabel } : c
+      ),
+    };
+    notify();
+  },
   addFishboneCause(categoryKey: string, causeText: string) {
     fishboneData = {
       ...fishboneData,
       categories: fishboneData.categories.map(c =>
         c.key === categoryKey ? { ...c, causes: [...c.causes, causeText] } : c
+      ),
+    };
+    notify();
+  },
+  updateFishboneCause(categoryKey: string, causeIndex: number, newText: string) {
+    fishboneData = {
+      ...fishboneData,
+      categories: fishboneData.categories.map(c =>
+        c.key === categoryKey
+          ? {
+              ...c,
+              causes: c.causes.map((cause, idx) => (idx === causeIndex ? newText : cause)),
+            }
+          : c
       ),
     };
     notify();
@@ -226,6 +256,10 @@ export const rcaStore = {
           : c
       ),
     };
+    notify();
+  },
+  resetFishbone() {
+    fishboneData = { ...INITIAL_FISHBONE_DIAGRAM };
     notify();
   },
   getFMEA(): FMEADocument {
