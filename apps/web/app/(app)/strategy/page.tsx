@@ -28,7 +28,9 @@ export default function StrategyPage() {
   useEffect(() => {
     refreshData();
     const unsubscribe = strategyStore.subscribe(refreshData);
-    return () => unsubscribe();
+    return () => {
+      unsubscribe();
+    };
   }, []);
 
   const handleCreatePriority = (e: React.FormEvent) => {

@@ -1,6 +1,26 @@
 export type WorkItemStatus = 'todo' | 'in_progress' | 'completed' | 'stuck' | 'blocked' | 'cancelled';
 export type WorkItemPriority = 'low' | 'medium' | 'high' | 'urgent';
 
+export interface WorkItemActivity {
+  id: string;
+  timestamp: string;
+  authorId: string;
+  authorName: string;
+  type: 'CREATED' | 'STATUS_CHANGE' | 'PROGRESS_UPDATE' | 'BLOCKER_REPORTED' | 'BLOCKER_RESOLVED' | 'COMPLETED';
+  note?: string;
+  previousStatus?: WorkItemStatus;
+  newStatus?: WorkItemStatus;
+  progressPercent?: number;
+}
+
+export interface BlockerDetails {
+  reason: string;
+  needDescription: string;
+  helpedByPersonOrDept?: string;
+  urgency: 'URGENT' | 'HIGH' | 'MEDIUM';
+  reportedAt: string;
+}
+
 export interface IntakeRequestPayload {
   text: string;
 }
@@ -47,13 +67,18 @@ export interface WorkItem {
   status: WorkItemStatus;
   priority: WorkItemPriority;
   owner_id?: string | null;
+  owner_name?: string | null;
   created_by: string;
   due_at?: string | null;
   completed_at?: string | null;
+  progressPercent?: number; // 0 - 100
   blocked_at?: string | null;
   blocked_reason?: string | null;
+  blocker_details?: BlockerDetails | null;
   origin_meeting_id?: string | null;
-  source_type?: string;
+  source_type?: 'MANUAL' | 'MEETING' | 'STRATEGY' | 'SMART_INTAKE' | string;
+  source_title?: string | null;
+  activity_history?: WorkItemActivity[];
   created_at: string;
   updated_at: string;
   version: number;
@@ -66,7 +91,10 @@ export interface WorkItemPatchPayload {
   priority?: WorkItemPriority;
   owner_id?: string | null;
   due_at?: string | null;
+  progressPercent?: number;
   blocked_reason?: string | null;
+  blocker_details?: BlockerDetails | null;
+  update_note?: string;
 }
 
 export interface WorkItemListResponse {

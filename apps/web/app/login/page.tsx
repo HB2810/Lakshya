@@ -9,7 +9,7 @@ import { useAuth } from '../../lib/auth/AuthContext';
 export default function LoginPage() {
   const router = useRouter();
   const { login, isLoading: authLoading } = useAuth();
-  
+
   const [staffId, setStaffId] = useState('STAVYANS-101');
   const [password, setPassword] = useState('1234');
   const [showPassword, setShowPassword] = useState(false);
@@ -51,7 +51,7 @@ export default function LoginPage() {
       {/* Main Login Card */}
       <main className="w-full max-w-[440px] relative z-10">
         <div className="bg-white rounded-2xl shadow-xl shadow-slate-200/60 border border-slate-200/90 overflow-hidden">
-          
+
           {/* Card Brand Header */}
           <div className="pt-8 pb-6 px-8 text-center border-b border-slate-100 bg-gradient-to-b from-slate-50/50 to-white">
             <div className="inline-flex items-center justify-center p-3 rounded-2xl bg-white border border-slate-200 shadow-xs mb-3">
@@ -68,7 +68,7 @@ export default function LoginPage() {
               LAKSHYA
             </h1>
             <p className="text-xs font-medium text-slate-500 mt-0.5">
-              Hospital Management Operating System
+
             </p>
           </div>
 

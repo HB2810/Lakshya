@@ -2,6 +2,7 @@ import { DEMO_USERS, MOCK_DEPARTMENTS, MOCK_ROLES, MOCK_AUDIT_EVENTS } from '../
 import { MOCK_QUARTERLY_DIRECTIONS, MOCK_MONTHLY_PRIORITIES, MOCK_WEEKLY_MILESTONES } from '../mocks/strategyMock';
 import { MOCK_COMMITMENTS, MOCK_TASKS, MOCK_STUCK_NEEDS, MOCK_ESCALATIONS } from '../mocks/executionMock';
 import { MOCK_MEETINGS, MOCK_DECISIONS, meetingStore } from '../mocks/meetingsMock';
+import { workItemStore } from '../mocks/workItemMock';
 import { getMDOverviewData } from '../mocks/dashboardMock';
 import { CurrentUserResponse, Persona, User } from '../../types/auth';
 import {
@@ -252,33 +253,83 @@ export const apiClient = {
 
   workItems: {
     async intake(text: string): Promise<StructuredPlanRecommendation> {
-      return await apiFetch<StructuredPlanRecommendation>('/work-items/intake', {
-        method: 'POST',
-        body: JSON.stringify({ text }),
-      });
+      try {
+        return await apiFetch<StructuredPlanRecommendation>('/work-items/intake', {
+          method: 'POST',
+          body: JSON.stringify({ text }),
+        });
+      } catch {
+        return {
+          plan: {
+            title: text.slice(0, 50),
+            priority: 'medium',
+            items: [
+              {
+                client_id: `plan-${Date.now()}`,
+                title: text,
+                priority: 'medium',
+              },
+            ],
+          },
+        };
+      }
     },
 
     async approve(payload: ApprovePlanPayload): Promise<WorkItemListResponse> {
-      return await apiFetch<WorkItemListResponse>('/work-items/approve', {
-        method: 'POST',
-        body: JSON.stringify(payload),
-      });
+      try {
+        return await apiFetch<WorkItemListResponse>('/work-items/approve', {
+          method: 'POST',
+          body: JSON.stringify(payload),
+        });
+      } catch {
+        const createdItems = payload.items.map(item =>
+          workItemStore.createWorkItem({
+            title: item.title,
+            description: item.description,
+            priority: item.priority,
+            owner_id: payload.owner_id || 'usr-stav-101',
+            due_at: payload.due_at || undefined,
+            source_type: (payload.source_type as any) || 'SMART_INTAKE',
+            source_title: payload.title,
+            origin_meeting_id: payload.origin_meeting_id,
+          })
+        );
+        return { items: createdItems, total: createdItems.length };
+      }
     },
 
     async list(filters?: { owner_id?: string; status?: string; parent_id?: string }): Promise<WorkItemListResponse> {
-      const queryParams = new URLSearchParams();
-      if (filters?.owner_id) queryParams.append('owner_id', filters.owner_id);
-      if (filters?.status) queryParams.append('status', filters.status);
-      if (filters?.parent_id) queryParams.append('parent_id', filters.parent_id);
-      const query = queryParams.toString() ? `?${queryParams.toString()}` : '';
-      return await apiFetch<WorkItemListResponse>(`/work-items${query}`, { method: 'GET' });
+      try {
+        const queryParams = new URLSearchParams();
+        if (filters?.owner_id) queryParams.append('owner_id', filters.owner_id);
+        if (filters?.status) queryParams.append('status', filters.status);
+        if (filters?.parent_id) queryParams.append('parent_id', filters.parent_id);
+        const query = queryParams.toString() ? `?${queryParams.toString()}` : '';
+        return await apiFetch<WorkItemListResponse>(`/work-items${query}`, { method: 'GET' });
+      } catch {
+        const items = workItemStore.getWorkItems(filters);
+        return { items, total: items.length };
+      }
     },
 
     async patch(id: string, patch: WorkItemPatchPayload): Promise<WorkItem> {
-      return await apiFetch<WorkItem>(`/work-items/${id}`, {
-        method: 'PATCH',
-        body: JSON.stringify(patch),
-      });
+      try {
+        return await apiFetch<WorkItem>(`/work-items/${id}`, {
+          method: 'PATCH',
+          body: JSON.stringify(patch),
+        });
+      } catch {
+        if (patch.status) {
+          workItemStore.updateStatus(id, patch.status, 'Priyesh Shah', patch.update_note);
+        }
+        if (patch.progressPercent !== undefined) {
+          workItemStore.updateProgress(id, patch.progressPercent, patch.update_note);
+        }
+        if (patch.blocker_details) {
+          workItemStore.reportBlocker(id, patch.blocker_details);
+        }
+        return workItemStore.getWorkItemById(id)!;
+      }
     },
   },
 

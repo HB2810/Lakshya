@@ -2,334 +2,408 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import {
+  CheckSquare,
+  Clock,
   AlertTriangle,
+  Calendar,
   Plus,
+  Play,
+  CheckCircle2,
+  AlertCircle,
+  Filter,
+  Search,
+  Link2,
+  ChevronRight,
+  ShieldAlert,
 } from 'lucide-react';
-import { Tabs } from '../../../components/ui/Tabs';
-import { DataTable, Column } from '../../../components/ui/DataTable';
-import { StatusBadge } from '../../../components/ui/StatusBadge';
-import { ProgressBar } from '../../../components/ui/ProgressBar';
-import { Button } from '../../../components/ui/Button';
-import { Badge } from '../../../components/ui/Badge';
-import { Drawer } from '../../../components/ui/Modal';
-import { EmptyState } from '../../../components/ui/States';
-import { Commitment } from '../../../types/execution';
-import { WorkItem } from '../../../types/workItem';
+import { WorkItem, WorkItemPriority, WorkItemStatus } from '../../../types/workItem';
+import { workItemStore } from '../../../lib/mocks/workItemMock';
 import { useAuth } from '../../../lib/auth/AuthContext';
-import { executionStore } from '../../../lib/mocks/executionMock';
-import { apiClient } from '../../../lib/api/client';
-import { CreateCommitmentModal } from '../../../components/modals/CreateCommitmentModal';
-import { ReportStuckModal } from '../../../components/modals/ReportStuckModal';
+import { TaskDetailDrawer } from '../../../components/work/TaskDetailDrawer';
 
 export default function ExecutionPage() {
-  const { can } = useAuth();
-  const [activeTab, setActiveTab] = useState('commitments');
-  const [commitments, setCommitments] = useState<Commitment[]>([]);
+  const { user, can } = useAuth();
   const [workItems, setWorkItems] = useState<WorkItem[]>([]);
-  const [loadingItems, setLoadingItems] = useState(true);
+  const [selectedTask, setSelectedTask] = useState<WorkItem | null>(null);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
-  // Modals
-  const [selectedCommitment, setSelectedCommitment] = useState<Commitment | null>(null);
-  const [isCommitmentModalOpen, setIsCommitmentModalOpen] = useState(false);
-  const [isStuckModalOpen, setIsStuckModalOpen] = useState(false);
+  // Filter & Search State
+  const [activeFilter, setActiveFilter] = useState<'all' | 'today' | 'upcoming' | 'overdue' | 'blocked' | 'completed'>('all');
+  const [searchQuery, setSearchQuery] = useState('');
 
-  const fetchWorkItems = useCallback(async () => {
-    setLoadingItems(true);
-    try {
-      const res = await apiClient.workItems.list();
-      setWorkItems(res.items || []);
-    } catch {
-      // ignore
-    } finally {
-      setLoadingItems(false);
+  // Quick Task Modal/Drawer or Inline State
+  const [isQuickAddOpen, setIsQuickAddOpen] = useState(false);
+  const [quickTitle, setQuickTitle] = useState('');
+  const [quickPriority, setQuickPriority] = useState<WorkItemPriority>('medium');
+  const [quickDue, setQuickDue] = useState('Today');
+
+  const refreshWork = useCallback(() => {
+    const items = workItemStore.getWorkItems({ owner_id: user.id || 'usr-stav-101' });
+    setWorkItems(items);
+    if (selectedTask) {
+      const updated = workItemStore.getWorkItemById(selectedTask.id);
+      if (updated) setSelectedTask(updated);
     }
-  }, []);
-
-  const refreshData = useCallback(() => {
-    setCommitments([...executionStore.getCommitments()]);
-    fetchWorkItems();
-  }, [fetchWorkItems]);
+  }, [user.id, selectedTask]);
 
   useEffect(() => {
-    refreshData();
-    const unsubscribe = executionStore.subscribe(refreshData);
+    refreshWork();
+    const unsubscribe = workItemStore.subscribe(refreshWork);
     return () => {
       unsubscribe();
     };
-  }, [refreshData]);
+  }, [refreshWork]);
 
-  const stuckWorkItems = workItems.filter(w => w.status === 'stuck' || w.status === 'blocked');
+  const handleQuickAdd = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!quickTitle.trim()) return;
 
-  const tabs = [
-    { id: 'commitments', label: 'Commitments', count: commitments.length },
-    { id: 'tasks', label: 'Canonical Work Items', count: workItems.length },
-    { id: 'stuck', label: 'Stuck / Blocked Items', count: stuckWorkItems.length },
-  ];
+    let dueIso = new Date(Date.now() + 86400000).toISOString();
+    if (quickDue === 'Today') dueIso = '2026-08-28T18:00:00Z';
+    if (quickDue === 'Tomorrow') dueIso = '2026-08-29T18:00:00Z';
+    if (quickDue === 'Next Week') dueIso = '2026-09-04T18:00:00Z';
 
-  const commitmentColumns: Column<Commitment>[] = [
-    {
-      key: 'code',
-      header: 'Code',
-      sortable: true,
-      render: row => <span className="font-bold text-indigo-600 dark:text-indigo-400 font-mono">{row.code}</span>,
-    },
-    {
-      key: 'title',
-      header: 'Title & Source',
-      render: row => (
-        <div>
-          <p className="font-semibold text-slate-900 dark:text-white">{row.title}</p>
-          <p className="text-[11px] text-slate-500 dark:text-slate-400">{row.sourceTitle}</p>
-        </div>
-      ),
-    },
-    {
-      key: 'priority',
-      header: 'Priority',
-      render: row => (
-        <Badge
-          variant={
-            row.priority === 'CRITICAL'
-              ? 'danger'
-              : row.priority === 'HIGH'
-              ? 'warning'
-              : 'neutral'
-          }
-        >
-          {row.priority}
-        </Badge>
-      ),
-    },
-    {
-      key: 'responsibleName',
-      header: 'Responsible (R)',
-      render: row => <span className="font-medium text-slate-900 dark:text-white">{row.responsibleName}</span>,
-    },
-    {
-      key: 'accountableName',
-      header: 'Accountable (A)',
-      render: row => <span className="font-medium text-slate-600 dark:text-slate-400">{row.accountableName}</span>,
-    },
-    {
-      key: 'status',
-      header: 'Status',
-      render: row => <StatusBadge status={row.status} size="sm" />,
-    },
-    {
-      key: 'progressPercent',
-      header: 'Progress',
-      render: row => <ProgressBar value={row.progressPercent} showLabel={true} size="sm" className="w-24" />,
-    },
-    {
-      key: 'dueDate',
-      header: 'Target Date',
-      sortable: true,
-      render: row => <span className="font-medium text-slate-600 dark:text-slate-400 font-mono text-xs">{row.dueDate}</span>,
-    },
-  ];
+    workItemStore.createWorkItem(
+      {
+        title: quickTitle.trim(),
+        priority: quickPriority,
+        owner_id: user.id || 'usr-stav-101',
+        owner_name: user.name,
+        due_at: dueIso,
+        source_type: 'MANUAL',
+        source_title: 'Self-Scheduled Work Item',
+      },
+      user.name
+    );
 
-  const workItemColumns: Column<WorkItem>[] = [
-    {
-      key: 'title',
-      header: 'Title & Source',
-      render: row => (
-        <div>
-          <p className="font-semibold text-slate-900 dark:text-white">{row.title}</p>
-          {row.description && (
-            <p className="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-1">{row.description}</p>
-          )}
-          {row.source_type && (
-            <span className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400">Source: {row.source_type.toUpperCase()}</span>
-          )}
-        </div>
-      ),
-    },
-    {
-      key: 'priority',
-      header: 'Priority',
-      render: row => <Badge variant={row.priority === 'urgent' ? 'danger' : 'neutral'}>{row.priority.toUpperCase()}</Badge>,
-    },
-    {
-      key: 'status',
-      header: 'Status',
-      render: row => <StatusBadge status={row.status} size="sm" />,
-    },
-    {
-      key: 'due_at',
-      header: 'Due Date',
-      render: row => <span className="text-xs font-mono text-slate-600 dark:text-slate-400">{row.due_at ? row.due_at.substring(0, 10) : 'N/A'}</span>,
-    },
-    {
-      key: 'completed_at',
-      header: 'Completed At',
-      render: row => <span className="text-xs font-mono text-emerald-600 dark:text-emerald-400">{row.completed_at ? row.completed_at.substring(0, 10) : '—'}</span>,
-    },
-  ];
+    setQuickTitle('');
+    setIsQuickAddOpen(false);
+  };
 
-  const stuckColumns: Column<WorkItem>[] = [
-    {
-      key: 'title',
-      header: 'Blocked Work Item',
-      render: row => (
-        <div>
-          <span className="font-semibold text-slate-900 dark:text-white">{row.title}</span>
-          <p className="text-xs font-semibold text-red-600 dark:text-red-400 mt-1">
-            Reason: {row.blocked_reason || 'Blocker reported'}
-          </p>
-        </div>
-      ),
-    },
-    {
-      key: 'priority',
-      header: 'Priority',
-      render: row => <Badge variant="danger">{row.priority.toUpperCase()}</Badge>,
-    },
-    {
-      key: 'blocked_at',
-      header: 'Blocked Since',
-      render: row => <span className="text-xs font-mono text-slate-600 dark:text-slate-400">{row.blocked_at ? row.blocked_at.substring(0, 10) : 'N/A'}</span>,
-    },
-    {
-      key: 'status',
-      header: 'Status',
-      render: row => <StatusBadge status={row.status} size="sm" />,
-    },
-  ];
+  const openTask = (item: WorkItem) => {
+    setSelectedTask(item);
+    setIsDrawerOpen(true);
+  };
+
+  // Filter definitions
+  const todayStr = '2026-08-28';
+
+  const filterCounts = {
+    all: workItems.length,
+    today: workItems.filter(w => w.status !== 'completed' && (!w.due_at || w.due_at.substring(0, 10) === todayStr)).length,
+    upcoming: workItems.filter(w => w.status !== 'completed' && w.due_at && w.due_at.substring(0, 10) > todayStr).length,
+    overdue: workItems.filter(w => w.status !== 'completed' && w.due_at && w.due_at.substring(0, 10) < todayStr).length,
+    blocked: workItems.filter(w => w.status === 'blocked' || w.status === 'stuck').length,
+    completed: workItems.filter(w => w.status === 'completed').length,
+  };
+
+  const displayedItems = workItems.filter(item => {
+    // Search query
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      const matchTitle = item.title.toLowerCase().includes(q);
+      const matchDesc = item.description?.toLowerCase().includes(q) || false;
+      const matchSource = item.source_title?.toLowerCase().includes(q) || false;
+      if (!matchTitle && !matchDesc && !matchSource) return false;
+    }
+
+    // Filter tab
+    if (activeFilter === 'today') {
+      return item.status !== 'completed' && (!item.due_at || item.due_at.substring(0, 10) === todayStr);
+    }
+    if (activeFilter === 'upcoming') {
+      return item.status !== 'completed' && item.due_at && item.due_at.substring(0, 10) > todayStr;
+    }
+    if (activeFilter === 'overdue') {
+      return item.status !== 'completed' && item.due_at && item.due_at.substring(0, 10) < todayStr;
+    }
+    if (activeFilter === 'blocked') {
+      return item.status === 'blocked' || item.status === 'stuck';
+    }
+    if (activeFilter === 'completed') {
+      return item.status === 'completed';
+    }
+    return true;
+  });
+
+  const getPriorityBadge = (priority: WorkItemPriority) => {
+    switch (priority) {
+      case 'urgent':
+        return 'bg-red-50 text-red-700 border-red-200';
+      case 'high':
+        return 'bg-amber-50 text-amber-700 border-amber-200';
+      case 'medium':
+        return 'bg-blue-50 text-blue-700 border-blue-200';
+      case 'low':
+        return 'bg-slate-50 text-slate-600 border-slate-200';
+    }
+  };
+
+  const getStatusBadge = (status: WorkItemStatus) => {
+    switch (status) {
+      case 'completed':
+        return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+      case 'in_progress':
+        return 'bg-blue-50 text-blue-700 border-blue-200';
+      case 'blocked':
+      case 'stuck':
+        return 'bg-red-50 text-red-700 border-red-200';
+      default:
+        return 'bg-slate-100 text-slate-700 border-slate-200';
+    }
+  };
 
   return (
-    <div className="space-y-6">
-      {/* HEADER */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6 shadow-sm">
+    <div className="max-w-6xl mx-auto space-y-6">
+      {/* 1. HEADER & ACTIONS */}
+      <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">Execution Engine & Canonical Work</h2>
-          <p className="text-xs text-slate-600 dark:text-slate-400 font-medium mt-1">
-            Track organizational commitments, RACI matrices, canonical WorkItems, and blocker resolution.
+          <div className="flex items-center gap-2">
+            <span className="px-2.5 py-0.5 bg-slate-900 text-white text-[10px] font-bold rounded-full uppercase tracking-wider">
+              MY WORK
+            </span>
+            <span className="text-xs text-slate-500 font-medium">
+              Unified Canonical Work Engine
+            </span>
+          </div>
+          <h1 className="text-2xl font-black text-slate-900 tracking-tight mt-1.5">
+            My Work &amp; Execution Queue
+          </h1>
+          <p className="text-xs text-slate-500 mt-0.5">
+            Single view for all your assigned tasks, meeting action items, and self-scheduled work.
           </p>
         </div>
 
         <div className="flex items-center gap-3">
-          {can('commitment.create') && (
-            <Button size="sm" leftIcon={<Plus className="w-4 h-4" />} onClick={() => setIsCommitmentModalOpen(true)}>
-              New Commitment
-            </Button>
-          )}
-          {can('stuck.create') && (
-            <Button variant="danger" size="sm" leftIcon={<AlertTriangle className="w-4 h-4" />} onClick={() => setIsStuckModalOpen(true)}>
-              Report Blocker / Stuck
-            </Button>
-          )}
+          <button
+            type="button"
+            onClick={() => setIsQuickAddOpen(!isQuickAddOpen)}
+            className="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl transition-colors inline-flex items-center gap-1.5 shadow-xs cursor-pointer"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Add Work Item</span>
+          </button>
         </div>
       </div>
 
-      {/* TABS */}
-      <Tabs tabs={tabs} activeTab={activeTab} onChange={setActiveTab} />
-
-      {/* COMMITMENTS TAB */}
-      {activeTab === 'commitments' && (
-        <div>
-          {commitments.length === 0 ? (
-            <EmptyState
-              title="No Commitments Recorded"
-              description="Start by creating an organizational commitment to automate sub-task generation and RACI assignments."
-              action={<Button size="sm" onClick={() => setIsCommitmentModalOpen(true)}>+ Create Commitment</Button>}
-            />
-          ) : (
-            <DataTable
-              columns={commitmentColumns}
-              data={commitments}
-              onRowClick={row => setSelectedCommitment(row)}
-            />
-          )}
-        </div>
-      )}
-
-      {/* CANONICAL WORK ITEMS TAB */}
-      {activeTab === 'tasks' && (
-        <div>
-          {loadingItems ? (
-            <div className="p-8 text-center text-xs text-slate-500 font-mono">Loading WorkItems...</div>
-          ) : workItems.length === 0 ? (
-            <EmptyState
-              title="No Work Items Recorded"
-              description="No canonical work items exist yet. Use Smart Work Intake or Meeting Extraction on Overview page."
-            />
-          ) : (
-            <DataTable columns={workItemColumns} data={workItems} />
-          )}
-        </div>
-      )}
-
-      {/* STUCK ITEMS TAB */}
-      {activeTab === 'stuck' && (
-        <div>
-          {stuckWorkItems.length === 0 ? (
-            <div className="p-8 text-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm space-y-3">
-              <div className="w-12 h-12 bg-emerald-50 dark:bg-emerald-950 border border-emerald-200 dark:border-emerald-800 rounded-full flex items-center justify-center mx-auto text-emerald-600 dark:text-emerald-400 font-bold">
-                ✓
-              </div>
-              <h3 className="text-base font-bold text-slate-900 dark:text-white">Zero Blocked Workflows</h3>
-              <p className="text-xs font-medium text-slate-600 dark:text-slate-400 max-w-md mx-auto">
-                No work items are currently flagged as stuck. Use &quot;Report Blocker / Stuck&quot; if an operational task encounters a vendor, resource, or decision blocker.
-              </p>
-              <Button variant="outline" size="sm" onClick={() => setIsStuckModalOpen(true)}>
-                Report Blocker / Stuck
-              </Button>
-            </div>
-          ) : (
-            <DataTable columns={stuckColumns} data={stuckWorkItems} />
-          )}
-        </div>
-      )}
-
-      {/* COMMITMENT DETAIL DRAWER */}
-      {selectedCommitment && (
-        <Drawer
-          isOpen={Boolean(selectedCommitment)}
-          onClose={() => setSelectedCommitment(null)}
-          title={`${selectedCommitment.code} — Commitment Details`}
+      {/* 2. QUICK ADD EXPANDABLE FORM */}
+      {isQuickAddOpen && (
+        <form
+          onSubmit={handleQuickAdd}
+          className="p-5 bg-white border border-slate-200 rounded-3xl shadow-xs space-y-3 animate-in fade-in duration-150"
         >
-          <div className="space-y-6">
-            <div>
-              <span className="text-xs text-indigo-600 dark:text-indigo-400 font-bold uppercase">{selectedCommitment.sourceTitle}</span>
-              <h3 className="text-lg font-bold text-slate-900 dark:text-white mt-1">{selectedCommitment.title}</h3>
-              <p className="text-xs text-slate-600 dark:text-slate-400 mt-2 leading-relaxed">{selectedCommitment.description}</p>
-            </div>
-
-            {/* RACI Matrix Breakdown */}
-            <div className="p-4 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg space-y-3">
-              <h4 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">RACI Accountability Matrix</h4>
-              <div className="grid grid-cols-2 gap-2 text-xs">
-                <div className="p-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded">
-                  <span className="font-bold text-indigo-600 dark:text-indigo-400">R (Responsible): </span>
-                  <span className="text-slate-900 dark:text-white">{selectedCommitment.responsibleName}</span>
-                </div>
-                <div className="p-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded">
-                  <span className="font-bold text-emerald-700 dark:text-emerald-400">A (Accountable): </span>
-                  <span className="text-slate-900 dark:text-white">{selectedCommitment.accountableName}</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setSelectedCommitment(null)}>
-                Close
-              </Button>
-            </div>
+          <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-900">
+              Create New Work Item
+            </h3>
+            <button
+              type="button"
+              onClick={() => setIsQuickAddOpen(false)}
+              className="text-xs font-bold text-slate-400 hover:text-slate-700"
+            >
+              ✕
+            </button>
           </div>
-        </Drawer>
+
+          <div className="flex flex-col sm:flex-row items-center gap-2.5">
+            <input
+              type="text"
+              value={quickTitle}
+              onChange={e => setQuickTitle(e.target.value)}
+              placeholder="What work do you need to do?"
+              required
+              className="flex-1 w-full px-3.5 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none"
+            />
+
+            <select
+              value={quickPriority}
+              onChange={e => setQuickPriority(e.target.value as WorkItemPriority)}
+              className="w-full sm:w-32 px-3 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl text-slate-700 focus:outline-none"
+            >
+              <option value="low">Low Priority</option>
+              <option value="medium">Medium</option>
+              <option value="high">High Priority</option>
+              <option value="urgent">Urgent</option>
+            </select>
+
+            <select
+              value={quickDue}
+              onChange={e => setQuickDue(e.target.value)}
+              className="w-full sm:w-32 px-3 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl text-slate-700 focus:outline-none"
+            >
+              <option value="Today">Due Today</option>
+              <option value="Tomorrow">Tomorrow</option>
+              <option value="Next Week">Next Week</option>
+            </select>
+
+            <button
+              type="submit"
+              className="w-full sm:w-auto px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-xs transition-colors cursor-pointer"
+            >
+              Create
+            </button>
+          </div>
+        </form>
       )}
 
-      {/* MODALS */}
-      <CreateCommitmentModal
-        isOpen={isCommitmentModalOpen}
-        onClose={() => setIsCommitmentModalOpen(false)}
-        onSuccess={refreshData}
-      />
+      {/* 3. FILTER TABS & SEARCH BAR */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white border border-slate-200 p-3 rounded-2xl shadow-2xs">
+        {/* Filter Pills */}
+        <div className="flex flex-wrap items-center gap-1">
+          {(
+            [
+              { id: 'all', label: 'All', count: filterCounts.all },
+              { id: 'today', label: 'Today', count: filterCounts.today },
+              { id: 'upcoming', label: 'Upcoming', count: filterCounts.upcoming },
+              { id: 'overdue', label: 'Overdue', count: filterCounts.overdue },
+              { id: 'blocked', label: 'Blocked', count: filterCounts.blocked },
+              { id: 'completed', label: 'Completed', count: filterCounts.completed },
+            ] as const
+          ).map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveFilter(tab.id)}
+              className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-colors cursor-pointer flex items-center gap-1.5 ${
+                activeFilter === tab.id
+                  ? 'bg-slate-900 text-white shadow-xs'
+                  : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+              }`}
+            >
+              <span>{tab.label}</span>
+              <span
+                className={`text-[10px] px-1.5 py-0.2 rounded-full ${
+                  activeFilter === tab.id
+                    ? 'bg-slate-800 text-slate-200'
+                    : 'bg-slate-200 text-slate-700'
+                }`}
+              >
+                {tab.count}
+              </span>
+            </button>
+          ))}
+        </div>
 
-      <ReportStuckModal
-        isOpen={isStuckModalOpen}
-        onClose={() => setIsStuckModalOpen(false)}
-        onSuccess={refreshData}
+        {/* Search */}
+        <div className="relative w-full sm:w-64">
+          <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            placeholder="Search tasks or source..."
+            className="w-full pl-8 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none"
+          />
+        </div>
+      </div>
+
+      {/* 4. WORK ITEMS LIST */}
+      {displayedItems.length === 0 ? (
+        <div className="p-12 text-center bg-white border border-slate-200 rounded-3xl space-y-2">
+          <CheckSquare className="w-8 h-8 text-slate-300 mx-auto" />
+          <h3 className="text-base font-bold text-slate-900">No Work Items Found</h3>
+          <p className="text-xs text-slate-500">
+            {searchQuery ? 'No tasks match your search filter.' : 'You have no items in this filter view.'}
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {displayedItems.map(item => (
+            <div
+              key={item.id}
+              onClick={() => openTask(item)}
+              className="p-4 bg-white border border-slate-200 hover:border-slate-300 rounded-2xl shadow-xs transition-all flex flex-col md:flex-row md:items-center justify-between gap-4 cursor-pointer hover:shadow-sm"
+            >
+              {/* Task Details */}
+              <div className="space-y-1.5 flex-1 min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span
+                    className={`text-[9px] font-bold px-2 py-0.5 rounded uppercase tracking-wider border ${getStatusBadge(
+                      item.status
+                    )}`}
+                  >
+                    {item.status.replace('_', ' ')}
+                  </span>
+                  <span
+                    className={`text-[9px] font-bold px-2 py-0.5 rounded uppercase tracking-wider border ${getPriorityBadge(
+                      item.priority
+                    )}`}
+                  >
+                    {item.priority}
+                  </span>
+                  {item.source_title && (
+                    <span className="text-[10px] text-slate-500 font-medium bg-slate-50 px-2 py-0.5 rounded border border-slate-200 flex items-center gap-1 truncate max-w-xs">
+                      <Link2 className="w-3 h-3 text-slate-400 shrink-0" />
+                      {item.source_title}
+                    </span>
+                  )}
+                </div>
+
+                <h3
+                  className={`text-sm font-bold leading-snug ${
+                    item.status === 'completed' ? 'line-through text-slate-400' : 'text-slate-900'
+                  }`}
+                >
+                  {item.title}
+                </h3>
+
+                {item.description && (
+                  <p className="text-xs text-slate-500 line-clamp-1 font-medium">
+                    {item.description}
+                  </p>
+                )}
+
+                {/* If Blocked: Display blocker highlight */}
+                {item.status === 'blocked' && (
+                  <div className="p-2 bg-red-50 text-red-800 text-[11px] rounded-lg font-semibold flex items-center gap-1.5 mt-1">
+                    <AlertTriangle className="w-3.5 h-3.5 text-red-600 shrink-0" />
+                    <span>Blocker: {item.blocked_reason || 'Blocked'}</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Progress & Quick Action */}
+              <div className="flex items-center gap-4 shrink-0 pt-2 md:pt-0 border-t md:border-t-0 border-slate-100">
+                <div className="text-right space-y-0.5">
+                  <div className="text-[10px] text-slate-400 font-bold uppercase">
+                    Due: <span className="text-slate-700 font-mono">{item.due_at ? item.due_at.substring(0, 10) : 'Today'}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-20 bg-slate-100 h-1.5 rounded-full overflow-hidden">
+                      <div
+                        className="bg-slate-900 h-full rounded-full transition-all"
+                        style={{ width: `${item.progressPercent || 0}%` }}
+                      />
+                    </div>
+                    <span className="text-xs font-black text-slate-900">{item.progressPercent || 0}%</span>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={e => {
+                    e.stopPropagation();
+                    openTask(item);
+                  }}
+                  className="px-3.5 py-2 bg-slate-50 hover:bg-slate-100 text-slate-900 border border-slate-200 text-xs font-bold rounded-xl transition-colors flex items-center gap-1"
+                >
+                  <span>Open</span>
+                  <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* 5. TASK DETAIL DRAWER */}
+      <TaskDetailDrawer
+        workItem={selectedTask}
+        isOpen={isDrawerOpen}
+        onClose={() => {
+          setIsDrawerOpen(false);
+          setSelectedTask(null);
+        }}
+        onUpdated={refreshWork}
       />
     </div>
   );

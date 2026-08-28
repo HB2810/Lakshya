@@ -77,7 +77,9 @@ export default function RCAPage() {
   useEffect(() => {
     refreshData();
     const unsubscribe = rcaStore.subscribe(refreshData);
-    return () => unsubscribe();
+    return () => {
+      unsubscribe();
+    };
   }, []);
 
   const activeAnalysis = fiveWhyList.find(f => f.id === activeFiveWhyId) || fiveWhyList[0];

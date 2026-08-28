@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { PolicySOPItem, PolicyCategory } from '../../../types/policy';
 import { policyStore } from '../../../lib/mocks/policyMock';
+import { useAuth } from '../../../lib/auth/AuthContext';
 
 const CATEGORY_LABELS: Record<PolicyCategory | 'ALL', string> = {
   ALL: 'All Policies & SOPs',
@@ -34,6 +35,8 @@ const CATEGORY_LABELS: Record<PolicyCategory | 'ALL', string> = {
 };
 
 export default function PoliciesPage() {
+  const { user, can } = useAuth();
+  const isAuthor = can('dashboard.md.read') || user.role === 'ADMIN' || user.role === 'MANAGING_DIRECTOR';
   const [policies, setPolicies] = useState<PolicySOPItem[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<PolicyCategory | 'ALL'>('ALL');
@@ -58,7 +61,9 @@ export default function PoliciesPage() {
   useEffect(() => {
     refreshData();
     const unsubscribe = policyStore.subscribe(refreshData);
-    return () => unsubscribe();
+    return () => {
+      unsubscribe();
+    };
   }, []);
 
   const handleCreatePolicy = (e: React.FormEvent) => {
@@ -122,14 +127,16 @@ export default function PoliciesPage() {
           </p>
         </div>
 
-        <button
-          type="button"
-          onClick={() => setShowAddModal(true)}
-          className="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer"
-        >
-          <Plus className="w-4 h-4" />
-          <span>+ Upload / Author New SOP</span>
-        </button>
+        {isAuthor && (
+          <button
+            type="button"
+            onClick={() => setShowAddModal(true)}
+            className="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer"
+          >
+            <Plus className="w-4 h-4" />
+            <span>+ Upload / Author New SOP</span>
+          </button>
+        )}
       </div>
 
       {/* 2. STATS PILL ROW */}

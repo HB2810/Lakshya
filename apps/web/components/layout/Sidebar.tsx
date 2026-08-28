@@ -23,33 +23,17 @@ export const Sidebar: React.FC = () => {
   const { user, can } = useAuth();
   const [isCollapsed, setIsCollapsed] = useState(false);
 
+  const isManagement = can('dashboard.md.read') || can('quarterly_direction.create') || user.role === 'ADMIN';
+
   const navItems = [
     {
-      label: 'Home',
+      label: 'My Day',
       href: '/overview',
       icon: LayoutDashboard,
       show: true,
     },
     {
-      label: 'Quarterly Priorities',
-      href: '/strategy',
-      icon: Target,
-      show: true,
-    },
-    {
-      label: 'Quality & RCA / FMEA',
-      href: '/rca',
-      icon: Shield,
-      show: true,
-    },
-    {
-      label: 'Policies & SOPs',
-      href: '/policies',
-      icon: BookOpen,
-      show: true,
-    },
-    {
-      label: 'My Tasks & Work',
+      label: 'My Work',
       href: '/execution',
       icon: CheckSquare,
       show: true,
@@ -65,6 +49,25 @@ export const Sidebar: React.FC = () => {
       href: '/meetings',
       icon: Calendar,
       show: true,
+    },
+    {
+      label: 'Policies & SOPs',
+      href: '/policies',
+      icon: BookOpen,
+      show: true,
+    },
+    // Leadership & Governance Management Tools
+    {
+      label: 'Quarterly Priorities',
+      href: '/strategy',
+      icon: Target,
+      show: isManagement,
+    },
+    {
+      label: 'Quality & RCA / FMEA',
+      href: '/rca',
+      icon: Shield,
+      show: isManagement,
     },
     {
       label: 'Organization',
