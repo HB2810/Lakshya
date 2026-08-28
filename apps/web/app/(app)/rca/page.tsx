@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { FiveWhyAnalysis, FishboneDiagram, FMEADocument, FMEARow } from '../../../types/rca';
 import { rcaStore } from '../../../lib/mocks/rcaMock';
+import { FishboneMindMap } from '../../../components/rca/FishboneMindMap';
 
 export default function RCAPage() {
   const [activeTab, setActiveTab] = useState<'5why' | 'fishbone' | 'fmea'>('5why');
@@ -368,90 +369,9 @@ export default function RCAPage() {
         </div>
       )}
 
-      {/* 3. TAB 2: ISHIKAWA FISHBONE DIAGRAM */}
+      {/* 3. TAB 2: ISHIKAWA FISHBONE DIAGRAM (MIND MAP FORMAT) */}
       {activeTab === 'fishbone' && fishbone && (
-        <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
-            <div>
-              <span className="px-2.5 py-0.5 bg-blue-50 text-brand-blue border border-blue-200 text-[10px] font-bold rounded-full uppercase tracking-wider">
-                Ishikawa 6M Cause & Effect Layout
-              </span>
-              <h3 className="text-base font-bold text-slate-900 mt-1">
-                Effect: {fishbone.problemEffect}
-              </h3>
-              <p className="text-xs text-slate-500">
-                Department: {fishbone.department} &bull; Date: {fishbone.date}
-              </p>
-            </div>
-          </div>
-
-          {/* Quick Cause Addition Bar */}
-          <form onSubmit={handleAddFishboneCause} className="flex flex-col sm:flex-row items-center gap-2 p-3 bg-slate-50 border border-slate-200 rounded-xl">
-            <select
-              value={selectedCategoryKey}
-              onChange={e => setSelectedCategoryKey(e.target.value)}
-              className="w-full sm:w-48 px-3 py-2 text-xs bg-white border border-slate-200 rounded-lg text-slate-800 focus:outline-none"
-            >
-              {fishbone.categories.map(c => (
-                <option key={c.key} value={c.key}>
-                  {c.label}
-                </option>
-              ))}
-            </select>
-            <input
-              type="text"
-              value={newCauseText}
-              onChange={e => setNewCauseText(e.target.value)}
-              placeholder="Add contributory root cause under selected category..."
-              required
-              className="flex-1 w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-lg text-slate-900 focus:outline-none"
-            />
-            <button
-              type="submit"
-              className="w-full sm:w-auto px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-lg transition-colors cursor-pointer"
-            >
-              + Add Cause
-            </button>
-          </form>
-
-          {/* 6M Category Bones Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {fishbone.categories.map(cat => (
-              <div
-                key={cat.key}
-                className="p-4 bg-slate-50/70 border border-slate-200 rounded-xl space-y-3"
-              >
-                <div className="flex items-center justify-between border-b border-slate-200/80 pb-2">
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-900">
-                    {cat.label}
-                  </h4>
-                  <span className="text-[10px] font-bold text-slate-500 bg-slate-200/80 px-2 py-0.5 rounded-full">
-                    {cat.causes.length} causes
-                  </span>
-                </div>
-
-                <div className="space-y-1.5">
-                  {cat.causes.map((cause, idx) => (
-                    <div
-                      key={idx}
-                      className="p-2.5 bg-white border border-slate-200/70 rounded-lg text-xs font-medium text-slate-800 flex items-start justify-between gap-2 shadow-xs group"
-                    >
-                      <span className="leading-tight">&bull; {cause}</span>
-                      <button
-                        type="button"
-                        onClick={() => rcaStore.removeFishboneCause(cat.key, idx)}
-                        className="text-slate-300 hover:text-red-600 transition-colors p-0.5"
-                        title="Remove cause"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+        <FishboneMindMap fishbone={fishbone} />
       )}
 
       {/* 4. TAB 3: FMEA RISK ANALYSIS ENGINE */}

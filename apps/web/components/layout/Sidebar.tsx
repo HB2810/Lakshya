@@ -14,6 +14,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Shield,
+  BookOpen,
 } from 'lucide-react';
 import { useAuth } from '../../lib/auth/AuthContext';
 
@@ -39,6 +40,12 @@ export const Sidebar: React.FC = () => {
       label: 'Quality & RCA / FMEA',
       href: '/rca',
       icon: Shield,
+      show: true,
+    },
+    {
+      label: 'Policies & SOPs',
+      href: '/policies',
+      icon: BookOpen,
       show: true,
     },
     {

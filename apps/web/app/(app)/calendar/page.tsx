@@ -15,310 +15,667 @@ import {
   ChevronLeft,
   ChevronRight,
   ShieldAlert,
+  Search,
+  Users,
+  ExternalLink,
+  Sparkles,
+  Tag,
+  Check,
+  Building,
 } from 'lucide-react';
-import { Button } from '../../../components/ui/Button';
-import { Card } from '../../../components/ui/Card';
-import { Badge } from '../../../components/ui/Badge';
 import { CreateMeetingModal } from '../../../components/modals/CreateMeetingModal';
 
 type CalendarViewMode = 'month' | 'week' | 'day' | 'agenda';
 
-interface EventItem {
+interface CalendarEvent {
   id: string;
   title: string;
-  type: 'WEEKLY' | 'DAILY' | 'ONE_ON_ONE' | 'STRATEGY' | 'MILESTONE_REVIEW';
+  category: 'SURGERY_OT' | 'MD_STRATEGIC' | 'CLINICAL_REVIEW' | 'ONE_ON_ONE' | 'QUALITY_NABH';
   startTime: string;
   endTime: string;
-  date: string;
+  startHour: number; // e.g. 10 for 10:00
+  durationHours: number;
+  date: string; // YYYY-MM-DD
+  dayOfMonth: number;
   organizer: string;
+  department: string;
   location: string;
-  status: 'SCHEDULED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
-  syncStatus: 'SYNCHRONIZED' | 'SYNC_PENDING' | 'SYNC_FAILED';
-  isInstant?: boolean;
+  attendees: string[];
+  notes?: string;
+  status: 'SCHEDULED' | 'IN_PROGRESS' | 'COMPLETED';
+  isGoogleSynced: boolean;
 }
 
-const MOCK_EVENTS: EventItem[] = [
+const CATEGORY_STYLES: Record<
+  CalendarEvent['category'],
+  { label: string; bg: string; text: string; border: string; dot: string }
+> = {
+  SURGERY_OT: {
+    label: 'Spine OT & Surgery',
+    bg: 'bg-emerald-50 hover:bg-emerald-100',
+    text: 'text-emerald-800 font-bold',
+    border: 'border-emerald-200',
+    dot: 'bg-emerald-500',
+  },
+  MD_STRATEGIC: {
+    label: 'MD Strategic Direction',
+    bg: 'bg-blue-50 hover:bg-blue-100',
+    text: 'text-blue-800 font-bold',
+    border: 'border-blue-200',
+    dot: 'bg-blue-600',
+  },
+  CLINICAL_REVIEW: {
+    label: 'Clinical Review & OPD',
+    bg: 'bg-purple-50 hover:bg-purple-100',
+    text: 'text-purple-800 font-bold',
+    border: 'border-purple-200',
+    dot: 'bg-purple-500',
+  },
+  ONE_ON_ONE: {
+    label: '1:1 Executive Briefing',
+    bg: 'bg-amber-50 hover:bg-amber-100',
+    text: 'text-amber-800 font-bold',
+    border: 'border-amber-200',
+    dot: 'bg-amber-500',
+  },
+  QUALITY_NABH: {
+    label: 'Quality & NABH Audit',
+    bg: 'bg-rose-50 hover:bg-rose-100',
+    text: 'text-rose-800 font-bold',
+    border: 'border-rose-200',
+    dot: 'bg-rose-500',
+  },
+};
+
+const INITIAL_EVENTS: CalendarEvent[] = [
   {
-    id: 'evt-101',
-    title: 'Executive Leadership Weekly Sync',
-    type: 'WEEKLY',
-    startTime: '10:00 AM',
-    endTime: '11:30 AM',
-    date: '2026-08-26',
-    organizer: 'Het Bhatt (MD)',
-    location: 'MD Boardroom & Google Meet',
+    id: 'evt-1',
+    title: 'Daily Spine Surgery OT Readiness & Patient Check',
+    category: 'SURGERY_OT',
+    startTime: '08:30 AM',
+    endTime: '09:30 AM',
+    startHour: 8.5,
+    durationHours: 1,
+    date: '2026-08-28',
+    dayOfMonth: 28,
+    organizer: 'Dr. Rohan Sharma',
+    department: 'Spine Surgery',
+    location: 'OT Complex Block 2',
+    attendees: ['Dr. Rohan Sharma', 'Sister Sunita Rao', 'Amit Patel'],
+    notes: 'Review sterilization logs, implant barcode cross-checks, and surgeon sterile trays.',
     status: 'IN_PROGRESS',
-    syncStatus: 'SYNCHRONIZED',
+    isGoogleSynced: true,
   },
   {
-    id: 'evt-102',
-    title: 'OPD Flow & Patient Experience Review',
-    type: 'MILESTONE_REVIEW',
+    id: 'evt-2',
+    title: 'Executive Leadership Strategy & Priorities Sync',
+    category: 'MD_STRATEGIC',
+    startTime: '10:30 AM',
+    endTime: '11:45 AM',
+    startHour: 10.5,
+    durationHours: 1.25,
+    date: '2026-08-28',
+    dayOfMonth: 28,
+    organizer: 'Het Bhatt (MD)',
+    department: 'MD Office',
+    location: 'MD Boardroom & Google Meet',
+    attendees: ['Het Bhatt (MD)', 'Ananya Patel', 'Priyesh Shah', 'Dr. Rohan Sharma'],
+    notes: 'Q3 10-Milestone Strategic progress review and OPD waiting time metrics.',
+    status: 'SCHEDULED',
+    isGoogleSynced: true,
+  },
+  {
+    id: 'evt-3',
+    title: 'OPD Flow & PACS Gateway Digital Health Audit',
+    category: 'CLINICAL_REVIEW',
     startTime: '02:00 PM',
     endTime: '03:00 PM',
-    date: '2026-08-26',
-    organizer: 'Dr. Priyesh Shah (HOD OPD)',
-    location: 'Conference Room 2',
+    startHour: 14,
+    durationHours: 1,
+    date: '2026-08-28',
+    dayOfMonth: 28,
+    organizer: 'Priyesh Shah',
+    department: 'IT & Digital Health',
+    location: 'Consultation Suite 4 & IT Lab',
+    attendees: ['Priyesh Shah', 'Dr. Rajesh Verma', 'Frontdesk Coordinators'],
+    notes: 'Benchmark EMR barcode scanning speed and digital consult token queue latency.',
     status: 'SCHEDULED',
-    syncStatus: 'SYNCHRONIZED',
+    isGoogleSynced: true,
   },
   {
-    id: 'evt-103',
-    title: 'Instant 1:1 Operations Briefing',
-    type: 'ONE_ON_ONE',
-    startTime: '11:45 AM',
-    endTime: '12:15 PM',
-    date: '2026-08-26',
-    organizer: 'Het Bhatt (MD)',
-    location: 'MD Office Direct',
-    status: 'IN_PROGRESS',
-    syncStatus: 'NOT_SYNCED' as any,
-    isInstant: true,
+    id: 'evt-4',
+    title: '1:1 Operations & CSSD Protocol Briefing',
+    category: 'ONE_ON_ONE',
+    startTime: '04:00 PM',
+    endTime: '04:30 PM',
+    startHour: 16,
+    durationHours: 0.5,
+    date: '2026-08-28',
+    dayOfMonth: 28,
+    organizer: 'Ananya Patel',
+    department: 'Hospital Operations',
+    location: 'Operations Office',
+    attendees: ['Ananya Patel', 'Sister Sunita Rao'],
+    notes: 'Review autoclave maintenance downtime and transport trolley load limits.',
+    status: 'SCHEDULED',
+    isGoogleSynced: false,
   },
   {
-    id: 'evt-104',
-    title: 'Financial Q3 Strategic Priority Review',
-    type: 'STRATEGY',
+    id: 'evt-5',
+    title: 'NABH Infection Control & SSI Surveillance Meeting',
+    category: 'QUALITY_NABH',
     startTime: '11:00 AM',
     endTime: '12:30 PM',
-    date: '2026-08-27',
-    organizer: 'Ananya Patel (MD Office Lead)',
-    location: 'Strategy War Room',
+    startHour: 11,
+    durationHours: 1.5,
+    date: '2026-08-29',
+    dayOfMonth: 29,
+    organizer: 'Dr. Rajesh Verma',
+    department: 'Quality & Infection Control',
+    location: 'Main Auditorium',
+    attendees: ['Infection Control Committee', 'OT Supervisors'],
+    notes: 'Monthly SSI rate review and prophylactic antibiotic compliance verification.',
     status: 'SCHEDULED',
-    syncStatus: 'SYNC_PENDING',
+    isGoogleSynced: true,
   },
   {
-    id: 'evt-105',
-    title: 'Nursing Department Weekly CFT Review',
-    type: 'WEEKLY',
-    startTime: '04:00 PM',
-    endTime: '05:00 PM',
-    date: '2026-08-28',
-    organizer: 'Dr. Rajesh Verma (HOD Clinical)',
-    location: 'Main Auditorium',
-    status: 'SCHEDULED',
-    syncStatus: 'SYNCHRONIZED',
+    id: 'evt-6',
+    title: 'Complex Spine Arthrodesis Case Conference',
+    category: 'SURGERY_OT',
+    startTime: '09:00 AM',
+    endTime: '10:30 AM',
+    startHour: 9,
+    durationHours: 1.5,
+    date: '2026-08-26',
+    dayOfMonth: 26,
+    organizer: 'Dr. Rohan Sharma',
+    department: 'Spine Surgery',
+    location: 'Clinical Radiology Room',
+    attendees: ['Spine Surgery Consultants', 'Radiology Resident'],
+    notes: 'Pre-op 3D CT reconstruction review for severe spondylolisthesis case.',
+    status: 'COMPLETED',
+    isGoogleSynced: true,
   },
 ];
 
-export default function CalendarPage() {
-  const [viewMode, setViewMode] = useState<CalendarViewMode>('week');
-  const [selectedDate, setSelectedDate] = useState('August 2026');
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [filterType, setFilterType] = useState('ALL');
+const DAYS_OF_WEEK = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
-  const getSyncBadge = (status: string, isInstant?: boolean) => {
-    if (isInstant) {
-      return (
-        <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200">
-          Instant (Internal Only)
-        </span>
-      );
-    }
-    switch (status) {
-      case 'SYNCHRONIZED':
-        return (
-          <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
-            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> Google Synced
-          </span>
-        );
-      case 'SYNC_PENDING':
-        return (
-          <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 animate-pulse">
-            <RefreshCw className="w-3.5 h-3.5 text-amber-600 animate-spin" /> Outbox Syncing
-          </span>
-        );
-      case 'SYNC_FAILED':
-        return (
-          <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200">
-            <AlertTriangle className="w-3.5 h-3.5 text-rose-600" /> Sync Conflict
-          </span>
-        );
-      default:
-        return null;
-    }
+export default function CalendarPage() {
+  const [events, setEvents] = useState<CalendarEvent[]>(INITIAL_EVENTS);
+  const [viewMode, setViewMode] = useState<CalendarViewMode>('month');
+  const [selectedDay, setSelectedDay] = useState<number>(28); // Today is Aug 28, 2026
+  const [selectedCategoryFilter, setSelectedCategoryFilter] = useState<string>('ALL');
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [selectedEventForModal, setSelectedEventForModal] = useState<CalendarEvent | null>(null);
+
+  // Month Matrix for August 2026 (Aug 1 is Saturday, 31 days)
+  // Leading empty days for Monday-first: 5 days (Mon-Fri of previous month)
+  const monthDays: (number | null)[] = [
+    null, null, null, null, null, 1, 2,
+    3, 4, 5, 6, 7, 8, 9,
+    10, 11, 12, 13, 14, 15, 16,
+    17, 18, 19, 20, 21, 22, 23,
+    24, 25, 26, 27, 28, 29, 30,
+    31, null, null, null, null, null, null,
+  ];
+
+  const filteredEvents = events.filter(e => {
+    if (selectedCategoryFilter === 'ALL') return true;
+    return e.category === selectedCategoryFilter;
+  });
+
+  const getEventsForDay = (day: number) => {
+    return filteredEvents.filter(e => e.dayOfMonth === day);
   };
 
+  const hoursList = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19];
+
   return (
-    <div className="space-y-6 max-w-7xl mx-auto pb-12">
-      {/* Top Header & Actions */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+    <div className="max-w-7xl mx-auto space-y-6">
+      {/* 1. TOP HEADER & MODERN CONTROLS */}
+      <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-brand-blue/10 text-brand-blue rounded-xl">
-              <CalendarIcon className="w-6 h-6" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold text-slate-900">LAKSHYA Unified Calendar</h1>
-              <p className="text-sm text-slate-500">
-                Scheduled meetings, strategic review dates & two-way Google Calendar synchronization
-              </p>
-            </div>
+          <div className="flex items-center gap-2">
+            <span className="px-2.5 py-0.5 bg-blue-50 text-brand-blue border border-blue-200 text-[10px] font-bold rounded-full uppercase tracking-wider flex items-center gap-1.5">
+              <CalendarIcon className="w-3.5 h-3.5" />
+              Stavya Unified Calendar
+            </span>
+            <span className="text-xs text-slate-500 font-mono">
+              • Two-Way Google Calendar Sync Active
+            </span>
           </div>
+          <h1 className="text-2xl font-black text-slate-900 tracking-tight mt-1.5">
+            Surgical Schedules & Clinical Reviews
+          </h1>
+          <p className="text-xs text-slate-500 mt-0.5">
+            Synchronized clinical operating theartes, MD governance reviews, and department milestones.
+          </p>
         </div>
 
-        <div className="flex items-center gap-3">
-          <Button
-            variant="outline"
-            className="flex items-center gap-2 border-slate-300 hover:bg-slate-50 text-slate-700"
-          >
-            <RefreshCw className="w-4 h-4" /> Re-Sync
-          </Button>
-          <Button
+        <div className="flex items-center gap-2.5">
+          <button
+            type="button"
             onClick={() => setIsCreateModalOpen(true)}
-            className="flex items-center gap-2 bg-brand-blue hover:bg-brand-blue/90 text-white shadow-md shadow-brand-blue/20"
+            className="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer"
           >
-            <Plus className="w-4 h-4" /> Schedule Meeting
-          </Button>
+            <Plus className="w-4 h-4" />
+            <span>+ Schedule Event</span>
+          </button>
         </div>
       </div>
 
-      {/* Controls Bar: View Toggles, Date Navigation & Filters */}
-      <Card className="p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 border-slate-200 shadow-sm">
+      {/* 2. CALENDAR CONTROLS & NAVIGATION BAR */}
+      <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-xs flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+        {/* Left: Date Selector & Today Jump */}
         <div className="flex items-center gap-3">
-          <div className="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200">
-            {(['month', 'week', 'day', 'agenda'] as CalendarViewMode[]).map((mode) => (
-              <button
-                key={mode}
-                onClick={() => setViewMode(mode)}
-                className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold capitalize transition-all ${
-                  viewMode === mode
-                    ? 'bg-white text-slate-900 shadow-sm'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
-              >
-                {mode}
-              </button>
-            ))}
-          </div>
-
-          <div className="flex items-center gap-2">
-            <button className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-600">
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              className="p-2 hover:bg-slate-100 rounded-xl text-slate-700 transition-colors cursor-pointer"
+              title="Previous month"
+            >
               <ChevronLeft className="w-4 h-4" />
             </button>
-            <span className="text-sm font-semibold text-slate-800">{selectedDate}</span>
-            <button className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-600">
+            <h2 className="text-base font-extrabold text-slate-900 min-w-[140px] text-center">
+              August 2026
+            </h2>
+            <button
+              type="button"
+              className="p-2 hover:bg-slate-100 rounded-xl text-slate-700 transition-colors cursor-pointer"
+              title="Next month"
+            >
               <ChevronRight className="w-4 h-4" />
             </button>
           </div>
+
+          <button
+            type="button"
+            onClick={() => setSelectedDay(28)}
+            className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs rounded-lg transition-colors cursor-pointer"
+          >
+            Today (Aug 28)
+          </button>
         </div>
 
-        <div className="flex items-center gap-3">
-          <Filter className="w-4 h-4 text-slate-400" />
+        {/* Middle: Category Filter Dropdown */}
+        <div className="flex items-center gap-2">
+          <Filter className="w-3.5 h-3.5 text-slate-400" />
           <select
-            value={filterType}
-            onChange={(e) => setFilterType(e.target.value)}
-            className="text-xs font-medium bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-blue/30"
+            value={selectedCategoryFilter}
+            onChange={e => setSelectedCategoryFilter(e.target.value)}
+            className="text-xs font-semibold bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-slate-800 focus:outline-none focus:bg-white"
           >
-            <option value="ALL">All Event Types</option>
-            <option value="WEEKLY">Weekly Meetings</option>
-            <option value="ONE_ON_ONE">1:1 Meetings</option>
-            <option value="STRATEGY">Strategic Reviews</option>
-            <option value="MILESTONE_REVIEW">Milestone Reviews</option>
+            <option value="ALL">All Event Categories</option>
+            <option value="SURGERY_OT">Spine OT & Surgery</option>
+            <option value="MD_STRATEGIC">MD Strategic Direction</option>
+            <option value="CLINICAL_REVIEW">Clinical Review & OPD</option>
+            <option value="ONE_ON_ONE">1:1 Executive Briefing</option>
+            <option value="QUALITY_NABH">Quality & NABH Audit</option>
           </select>
         </div>
-      </Card>
 
-      {/* Main Calendar View Body */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Calendar Agenda / Events List */}
-        <div className="lg:col-span-2 space-y-4">
-          <h2 className="text-sm font-bold text-slate-500 uppercase tracking-wider">
-            Today & Upcoming Schedule (Asia/Kolkata)
-          </h2>
-
-          {MOCK_EVENTS.map((event) => (
-            <Card
-              key={event.id}
-              className={`p-5 transition-all hover:shadow-md border-l-4 ${
-                event.status === 'IN_PROGRESS'
-                  ? 'border-l-emerald-500 bg-emerald-50/20'
-                  : 'border-l-brand-blue bg-white'
+        {/* Right: View Mode Tabs */}
+        <div className="flex items-center bg-slate-100 p-1 rounded-xl">
+          {(['month', 'week', 'day', 'agenda'] as CalendarViewMode[]).map(mode => (
+            <button
+              key={mode}
+              type="button"
+              onClick={() => setViewMode(mode)}
+              className={`px-3.5 py-1.5 rounded-lg text-xs font-bold capitalize transition-all cursor-pointer ${
+                viewMode === mode
+                  ? 'bg-white text-slate-900 shadow-xs'
+                  : 'text-slate-500 hover:text-slate-900'
               }`}
             >
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div className="space-y-1.5">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-bold text-slate-400 uppercase tracking-wide">
-                      {event.date}
-                    </span>
-                    <span className="text-xs font-bold text-slate-300">•</span>
-                    <span className="text-xs font-semibold text-brand-blue">
-                      {event.startTime} - {event.endTime}
-                    </span>
-                    {getSyncBadge(event.syncStatus, event.isInstant)}
-                  </div>
-
-                  <h3 className="text-lg font-bold text-slate-900 hover:text-brand-blue cursor-pointer">
-                    {event.title}
-                  </h3>
-
-                  <div className="flex flex-wrap items-center gap-4 text-xs text-slate-500">
-                    <div className="flex items-center gap-1.5">
-                      <User className="w-3.5 h-3.5 text-slate-400" />
-                      <span>{event.organizer}</span>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <MapPin className="w-3.5 h-3.5 text-slate-400" />
-                      <span>{event.location}</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2 self-start sm:self-center shrink-0">
-                  {event.status === 'IN_PROGRESS' ? (
-                    <Button className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-4 py-2 rounded-xl shadow-sm">
-                      Join Live Meeting
-                    </Button>
-                  ) : (
-                    <Button variant="outline" className="text-xs font-semibold border-slate-200 hover:bg-slate-50">
-                      View Prep
-                    </Button>
-                  )}
-                </div>
-              </div>
-            </Card>
+              {mode}
+            </button>
           ))}
-        </div>
-
-        {/* Sidebar Status & Integrations Info */}
-        <div className="space-y-6">
-          <Card className="p-5 border-slate-200 bg-slate-900 text-white space-y-4">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-                Google Calendar Integration
-              </span>
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping" />
-            </div>
-
-            <div className="space-y-2">
-              <div className="text-sm font-semibold text-slate-200">
-                Connected: <span className="text-white">md.office@stavyaspine.com</span>
-              </div>
-              <p className="text-xs text-slate-400">
-                Scheduled meetings automatically trigger background Google outbox invitations.
-              </p>
-            </div>
-
-            <div className="pt-2 border-t border-slate-800 flex items-center justify-between text-xs text-slate-400">
-              <span>Outbox Queue: <strong className="text-emerald-400">0 Pending</strong></span>
-              <span>Last Sync: <strong>Just now</strong></span>
-            </div>
-          </Card>
-
-          <Card className="p-5 border-slate-200 space-y-4">
-            <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-              <ShieldAlert className="w-4 h-4 text-brand-blue" /> Two-Way Controlled Sync Rules
-            </h3>
-            <ul className="text-xs text-slate-600 space-y-2 list-disc pl-4">
-              <li>LAKSHYA is authoritative for meeting agendas, priorities & O&O items.</li>
-              <li>Instant meetings are excluded from external calendar sync.</li>
-              <li>External date/time changes trigger organizer verification.</li>
-            </ul>
-          </Card>
         </div>
       </div>
 
+      {/* 3. MAIN CALENDAR BODY (MONTH / WEEK / DAY / AGENDA) */}
+      {viewMode === 'month' && (
+        <div className="bg-white border border-slate-200 rounded-2xl shadow-xs overflow-hidden">
+          {/* Day of Week Header */}
+          <div className="grid grid-cols-7 border-b border-slate-200 bg-slate-50 text-center py-2.5 text-xs font-bold text-slate-500 uppercase tracking-wider">
+            {DAYS_OF_WEEK.map(d => (
+              <div key={d}>{d}</div>
+            ))}
+          </div>
+
+          {/* Month Days Grid */}
+          <div className="grid grid-cols-7 divide-x divide-y divide-slate-100">
+            {monthDays.map((day, idx) => {
+              if (day === null) {
+                return (
+                  <div
+                    key={idx}
+                    className="min-h-[105px] bg-slate-50/40 p-2 text-slate-300 select-none"
+                  />
+                );
+              }
+
+              const isToday = day === 28;
+              const isSelected = day === selectedDay;
+              const dayEvents = getEventsForDay(day);
+
+              return (
+                <div
+                  key={idx}
+                  onClick={() => setSelectedDay(day)}
+                  className={`min-h-[105px] p-2 flex flex-col justify-between transition-colors cursor-pointer ${
+                    isSelected
+                      ? 'bg-blue-50/40 ring-1 ring-inset ring-blue-500'
+                      : 'hover:bg-slate-50/70 bg-white'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span
+                      className={`text-xs font-black w-6 h-6 rounded-full flex items-center justify-center ${
+                        isToday
+                          ? 'bg-blue-600 text-white shadow-xs'
+                          : 'text-slate-700'
+                      }`}
+                    >
+                      {day}
+                    </span>
+
+                    {dayEvents.length > 0 && (
+                      <span className="text-[9px] font-bold text-slate-400">
+                        {dayEvents.length} {dayEvents.length === 1 ? 'event' : 'events'}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Day Events Pills */}
+                  <div className="space-y-1 my-1">
+                    {dayEvents.slice(0, 2).map(evt => {
+                      const style = CATEGORY_STYLES[evt.category];
+                      return (
+                        <div
+                          key={evt.id}
+                          onClick={e => {
+                            e.stopPropagation();
+                            setSelectedEventForModal(evt);
+                          }}
+                          className={`p-1 rounded-md text-[10px] truncate border font-semibold flex items-center gap-1 transition-all ${style.bg} ${style.border} ${style.text}`}
+                        >
+                          <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${style.dot}`} />
+                          <span className="truncate">{evt.title}</span>
+                        </div>
+                      );
+                    })}
+                    {dayEvents.length > 2 && (
+                      <span className="text-[9px] font-bold text-blue-600 block pl-1">
+                        +{dayEvents.length - 2} more
+                      </span>
+                    )}
+                  </div>
+
+                  <div />
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* WEEK VIEW */}
+      {viewMode === 'week' && (
+        <div className="bg-white border border-slate-200 rounded-2xl shadow-xs overflow-x-auto">
+          <div className="min-w-[800px]">
+            {/* Week Columns Header */}
+            <div className="grid grid-cols-8 border-b border-slate-200 bg-slate-50 text-center py-3 text-xs font-bold">
+              <div className="text-slate-400 uppercase text-[10px]">Time (IST)</div>
+              {DAYS_OF_WEEK.map((d, i) => {
+                const dayNum = 24 + i;
+                const isToday = dayNum === 28;
+                return (
+                  <div key={d} className="space-y-0.5">
+                    <span className="text-[10px] text-slate-400 uppercase">{d}</span>
+                    <p
+                      className={`text-sm font-black mx-auto w-7 h-7 rounded-full flex items-center justify-center ${
+                        isToday ? 'bg-blue-600 text-white' : 'text-slate-800'
+                      }`}
+                    >
+                      {dayNum}
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Time Grid Rows */}
+            <div className="divide-y divide-slate-100 text-xs">
+              {hoursList.map(hour => {
+                const hourFormatted = hour < 12 ? `${hour}:00 AM` : hour === 12 ? `12:00 PM` : `${hour - 12}:00 PM`;
+                return (
+                  <div key={hour} className="grid grid-cols-8 min-h-[60px] divide-x divide-slate-100">
+                    <div className="p-2 text-slate-400 font-mono text-[10px] text-right pr-3 bg-slate-50/50">
+                      {hourFormatted}
+                    </div>
+
+                    {DAYS_OF_WEEK.map((_, dayIdx) => {
+                      const dayNum = 24 + dayIdx;
+                      const dayEventsInHour = filteredEvents.filter(
+                        e => e.dayOfMonth === dayNum && Math.floor(e.startHour) === hour
+                      );
+
+                      return (
+                        <div key={dayIdx} className="p-1 hover:bg-slate-50/50 transition-colors relative">
+                          {dayEventsInHour.map(evt => {
+                            const style = CATEGORY_STYLES[evt.category];
+                            return (
+                              <div
+                                key={evt.id}
+                                onClick={() => setSelectedEventForModal(evt)}
+                                className={`p-1.5 rounded-lg border text-[10px] font-bold space-y-0.5 cursor-pointer shadow-xs ${style.bg} ${style.border} ${style.text}`}
+                              >
+                                <p className="truncate">{evt.title}</p>
+                                <p className="text-[9px] text-slate-500 font-mono">{evt.startTime} - {evt.endTime}</p>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* DAY VIEW */}
+      {viewMode === 'day' && (
+        <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-4">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+            <div>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-blue-600 bg-blue-50 px-2 py-0.5 rounded">
+                Day Schedule View
+              </span>
+              <h3 className="text-lg font-black text-slate-900 mt-1">
+                Friday, August {selectedDay}, 2026
+              </h3>
+            </div>
+            <span className="text-xs font-semibold text-slate-500">
+              {getEventsForDay(selectedDay).length} Scheduled Sessions
+            </span>
+          </div>
+
+          <div className="divide-y divide-slate-100">
+            {getEventsForDay(selectedDay).length === 0 ? (
+              <div className="py-12 text-center text-xs text-slate-400">
+                No scheduled sessions on this day.
+              </div>
+            ) : (
+              getEventsForDay(selectedDay).map(evt => {
+                const style = CATEGORY_STYLES[evt.category];
+                return (
+                  <div
+                    key={evt.id}
+                    onClick={() => setSelectedEventForModal(evt)}
+                    className="py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-slate-50/60 px-3 rounded-xl transition-colors cursor-pointer"
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="p-2.5 rounded-xl bg-slate-100 text-slate-700 font-mono text-xs font-black shrink-0 text-center min-w-[75px]">
+                        {evt.startTime}
+                      </div>
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <span className={`text-[9px] px-2 py-0.5 rounded-full border ${style.bg} ${style.border} ${style.text}`}>
+                            {style.label}
+                          </span>
+                          <span className="text-xs text-slate-400 font-mono">
+                            {evt.startTime} - {evt.endTime}
+                          </span>
+                        </div>
+                        <h4 className="text-sm font-bold text-slate-900">{evt.title}</h4>
+                        <p className="text-xs text-slate-500 flex items-center gap-3">
+                          <span>📍 {evt.location}</span>
+                          <span>&bull;</span>
+                          <span>👤 {evt.organizer}</span>
+                        </p>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      className="px-3.5 py-1.5 bg-slate-900 text-white font-bold text-xs rounded-xl shadow-xs"
+                    >
+                      View Prep
+                    </button>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* AGENDA VIEW */}
+      {viewMode === 'agenda' && (
+        <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-4">
+          <div className="border-b border-slate-100 pb-3">
+            <h3 className="text-base font-bold text-slate-900">Agenda & Chronological Schedule</h3>
+            <p className="text-xs text-slate-500">Upcoming hospital operations, reviews & governance checkpoints</p>
+          </div>
+
+          <div className="space-y-3">
+            {filteredEvents.map(evt => {
+              const style = CATEGORY_STYLES[evt.category];
+              return (
+                <div
+                  key={evt.id}
+                  onClick={() => setSelectedEventForModal(evt)}
+                  className="p-4 bg-slate-50 hover:bg-slate-100/80 border border-slate-200 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-colors cursor-pointer"
+                >
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-xs font-bold text-slate-600 bg-white px-2 py-0.5 rounded border border-slate-200">
+                        {evt.date}
+                      </span>
+                      <span className={`text-[9px] px-2 py-0.5 rounded-full border ${style.bg} ${style.border} ${style.text}`}>
+                        {style.label}
+                      </span>
+                    </div>
+                    <h4 className="text-sm font-bold text-slate-900">{evt.title}</h4>
+                    <p className="text-xs text-slate-500">{evt.location} &bull; Lead: {evt.organizer}</p>
+                  </div>
+
+                  <div className="text-right">
+                    <p className="text-xs font-bold text-slate-900">{evt.startTime} - {evt.endTime}</p>
+                    <p className="text-[10px] text-emerald-600 font-semibold">Google Synced</p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* 4. MODAL: EVENT DETAILS PREVIEW */}
+      {selectedEventForModal && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-white border border-slate-200 rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4 animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div>
+                <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full border ${CATEGORY_STYLES[selectedEventForModal.category].bg} ${CATEGORY_STYLES[selectedEventForModal.category].border} ${CATEGORY_STYLES[selectedEventForModal.category].text}`}>
+                  {CATEGORY_STYLES[selectedEventForModal.category].label}
+                </span>
+                <h3 className="text-base font-bold text-slate-900 mt-1">
+                  {selectedEventForModal.title}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedEventForModal(null)}
+                className="text-slate-400 hover:text-slate-600 font-bold text-sm p-1"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="space-y-3 text-xs">
+              <div className="grid grid-cols-2 gap-3 p-3 bg-slate-50 rounded-xl border border-slate-100">
+                <div>
+                  <span className="text-[10px] text-slate-400 uppercase font-bold">Date & Time</span>
+                  <p className="font-bold text-slate-800">{selectedEventForModal.date}</p>
+                  <p className="font-mono text-slate-600 text-[11px]">{selectedEventForModal.startTime} - {selectedEventForModal.endTime}</p>
+                </div>
+                <div>
+                  <span className="text-[10px] text-slate-400 uppercase font-bold">Location</span>
+                  <p className="font-bold text-slate-800">{selectedEventForModal.location}</p>
+                </div>
+                <div>
+                  <span className="text-[10px] text-slate-400 uppercase font-bold">Organizer</span>
+                  <p className="font-bold text-slate-800">{selectedEventForModal.organizer}</p>
+                </div>
+                <div>
+                  <span className="text-[10px] text-slate-400 uppercase font-bold">Department</span>
+                  <p className="font-bold text-slate-800">{selectedEventForModal.department}</p>
+                </div>
+              </div>
+
+              {selectedEventForModal.notes && (
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Executive Notes / Agenda</p>
+                  <p className="text-slate-700 leading-relaxed mt-0.5 bg-slate-50 p-2.5 rounded-lg border border-slate-100">
+                    {selectedEventForModal.notes}
+                  </p>
+                </div>
+              )}
+
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Confirmed Attendees</p>
+                <div className="flex flex-wrap gap-1.5 mt-1">
+                  {selectedEventForModal.attendees.map((att, i) => (
+                    <span key={i} className="px-2 py-1 bg-slate-100 text-slate-800 rounded-md font-semibold text-[11px]">
+                      {att}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
+              <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-md flex items-center gap-1">
+                <CheckCircle2 className="w-3.5 h-3.5" /> Google Calendar Synced
+              </span>
+              <button
+                type="button"
+                onClick={() => setSelectedEventForModal(null)}
+                className="px-4 py-2 bg-slate-900 text-white font-bold text-xs rounded-xl"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* CREATE MEETING MODAL */}
       <CreateMeetingModal isOpen={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)} />
     </div>
   );
