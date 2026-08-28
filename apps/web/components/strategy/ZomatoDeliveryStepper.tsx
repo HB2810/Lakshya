@@ -47,57 +47,54 @@ export const ZomatoDeliveryStepper: React.FC<ZomatoDeliveryStepperProps> = ({ pr
 
   return (
     <div className="space-y-6">
-      {/* 1. TOP LIVE DELIVERY PROGRESS SUMMARY */}
-      <div className="bg-slate-900 text-white rounded-2xl p-6 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-6 relative overflow-hidden">
-        {/* Background glow accent */}
-        <div className="absolute -right-16 -bottom-16 w-64 h-64 bg-blue-600/20 rounded-full blur-3xl pointer-events-none" />
-
+      {/* 1. TOP LIVE DELIVERY PROGRESS SUMMARY (MODERN LIGHT THEME) */}
+      <div className="bg-white border border-blue-200/80 rounded-2xl p-6 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-6 relative overflow-hidden bg-gradient-to-r from-blue-50/40 via-white to-indigo-50/30">
         <div className="space-y-2 relative z-10">
           <div className="flex items-center gap-2">
-            <span className="px-2.5 py-0.5 bg-blue-500/20 border border-blue-400/40 text-blue-300 text-[10px] font-bold rounded-full uppercase tracking-wider flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="px-2.5 py-0.5 bg-blue-100 text-blue-800 border border-blue-200 text-[10px] font-bold rounded-full uppercase tracking-wider flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
               Live Milestone Delivery Tracker
             </span>
-            <span className="text-xs text-slate-400 font-mono">
+            <span className="text-xs text-slate-500 font-semibold font-mono bg-slate-100 px-2 py-0.5 rounded-md">
               Step {priority.currentStep} of 10
             </span>
           </div>
 
-          <h3 className="text-xl font-extrabold text-white tracking-tight">
+          <h3 className="text-xl font-black text-slate-900 tracking-tight">
             {priority.title}
           </h3>
 
-          <p className="text-xs text-slate-300 max-w-2xl leading-relaxed">
+          <p className="text-xs text-slate-600 max-w-2xl leading-relaxed font-medium">
             {priority.description}
           </p>
 
-          <div className="flex flex-wrap items-center gap-4 text-xs text-slate-400 pt-1">
-            <span className="flex items-center gap-1.5">
-              <User className="w-3.5 h-3.5 text-blue-400" />
-              Reporting Authority: <strong className="text-white">{priority.reportingAuthority}</strong>
+          <div className="flex flex-wrap items-center gap-4 text-xs text-slate-500 pt-1">
+            <span className="flex items-center gap-1.5 font-medium">
+              <User className="w-3.5 h-3.5 text-blue-600" />
+              Reporting Authority: <strong className="text-slate-800 font-bold">{priority.reportingAuthority}</strong>
             </span>
-            <span className="flex items-center gap-1.5">
-              <Calendar className="w-3.5 h-3.5 text-blue-400" />
-              Target Quarter End: <strong className="text-white">{priority.targetDate}</strong>
+            <span className="flex items-center gap-1.5 font-medium">
+              <Calendar className="w-3.5 h-3.5 text-blue-600" />
+              Target Quarter End: <strong className="text-slate-800 font-bold">{priority.targetDate}</strong>
             </span>
           </div>
         </div>
 
         {/* Big Progress Metric Pill */}
-        <div className="shrink-0 bg-slate-800/90 border border-slate-700/80 rounded-2xl p-4 text-center min-w-[170px] relative z-10">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+        <div className="shrink-0 bg-white border border-blue-200/90 rounded-2xl p-4 text-center min-w-[190px] shadow-xs relative z-10">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
             Overall Completion
           </p>
-          <div className="text-3xl font-black text-emerald-400 mt-1">
+          <div className="text-3xl font-black text-emerald-600 mt-1">
             {priority.progressPercent}%
           </div>
-          <div className="w-full bg-slate-700 h-2 rounded-full mt-2 overflow-hidden">
+          <div className="w-full bg-slate-100 h-2.5 rounded-full mt-2 overflow-hidden border border-slate-200/60">
             <div
-              className="bg-gradient-to-r from-blue-500 to-emerald-400 h-full rounded-full transition-all duration-500"
+              className="bg-gradient-to-r from-blue-600 to-emerald-500 h-full rounded-full transition-all duration-500"
               style={{ width: `${priority.progressPercent}%` }}
             />
           </div>
-          <p className="text-[10px] text-slate-400 mt-1.5 font-medium">
+          <p className="text-[11px] text-slate-600 mt-1.5 font-bold">
             {completedCount} / 10 Milestones Delivered
           </p>
         </div>

@@ -137,10 +137,10 @@ export default function OverviewPage() {
       <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
           <div className="flex items-center gap-2">
-            <span className="px-2.5 py-0.5 bg-slate-900 text-white text-[10px] font-bold rounded-full uppercase tracking-wider">
+            <span className="px-2.5 py-0.5 bg-blue-600 text-white text-[10px] font-black rounded-full uppercase tracking-wider shadow-2xs">
               MY DAY
             </span>
-            <span className="text-xs text-slate-500">
+            <span className="text-xs text-slate-500 font-semibold">
               • {now.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' })}
             </span>
           </div>
@@ -177,7 +177,7 @@ export default function OverviewPage() {
         <div className="flex flex-wrap items-center gap-2 shrink-0">
           <Link
             href="/execution"
-            className="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl transition-colors inline-flex items-center gap-1.5 shadow-xs"
+            className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl transition-colors inline-flex items-center gap-1.5 shadow-xs"
           >
             <CheckSquare className="w-4 h-4" />
             <span>My Work Board</span>
@@ -199,64 +199,67 @@ export default function OverviewPage() {
         </div>
       </div>
 
-      {/* 2. PRIMARY NEXT ACTION SPOTLIGHT CARD */}
+      {/* 2. PRIMARY NEXT ACTION SPOTLIGHT CARD (MODERN LIGHT THEME) */}
       {primaryNextAction ? (
-        <div className="bg-gradient-to-br from-slate-900 to-slate-800 text-white rounded-3xl p-6 shadow-md relative overflow-hidden">
-          <div className="absolute right-0 top-0 translate-x-4 -translate-y-4 w-48 h-48 bg-blue-500/10 rounded-full blur-2xl pointer-events-none" />
-
+        <div className="bg-white border-2 border-blue-500/30 rounded-3xl p-6 shadow-xs relative overflow-hidden bg-gradient-to-br from-blue-50/50 via-white to-indigo-50/30">
           <div className="relative z-10 space-y-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <span className="px-2 py-0.5 bg-blue-500 text-white text-[10px] font-black uppercase tracking-wider rounded-md">
+                <span className="px-2.5 py-0.5 bg-blue-600 text-white text-[10px] font-black uppercase tracking-wider rounded-md shadow-2xs">
                   PRIMARY NEXT ACTION
                 </span>
-                <span className="text-xs text-slate-300 font-medium">
+                <span className="text-xs text-slate-500 font-semibold">
                   Focus on this to move your day forward
                 </span>
               </div>
               <span
-                className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider ${
-                  primaryNextAction.priority === 'urgent'
-                    ? 'bg-red-500/30 text-red-200 border border-red-400/40'
-                    : 'bg-amber-500/30 text-amber-200 border border-amber-400/40'
-                }`}
+                className={`text-[10px] font-bold px-2.5 py-0.5 rounded-md uppercase tracking-wider border ${getPriorityBadge(
+                  primaryNextAction.priority
+                )}`}
               >
                 {primaryNextAction.priority} Priority
               </span>
             </div>
 
             <div className="space-y-1">
-              <h2 className="text-xl font-bold tracking-tight text-white">
+              <h2 className="text-xl font-black tracking-tight text-slate-900">
                 {primaryNextAction.title}
               </h2>
               {primaryNextAction.description && (
-                <p className="text-xs text-slate-300 line-clamp-2 leading-relaxed">
+                <p className="text-xs text-slate-600 line-clamp-2 leading-relaxed font-medium">
                   {primaryNextAction.description}
                 </p>
               )}
             </div>
 
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-2 border-t border-slate-700/60">
-              <div className="flex items-center gap-4 text-xs text-slate-300">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-3 border-t border-blue-100/80">
+              <div className="flex flex-wrap items-center gap-4 text-xs text-slate-500">
                 <span>
-                  Due: <strong className="text-white">{primaryNextAction.due_at ? primaryNextAction.due_at.substring(0, 10) : 'Today'}</strong>
+                  Target Due: <strong className="text-slate-800 font-bold font-mono">{primaryNextAction.due_at ? primaryNextAction.due_at.substring(0, 10) : 'Today'}</strong>
                 </span>
                 {primaryNextAction.source_title && (
-                  <span className="flex items-center gap-1 text-slate-400">
-                    <Link2 className="w-3 h-3" />
+                  <span className="flex items-center gap-1 text-slate-600 bg-white px-2 py-0.5 rounded border border-slate-200 font-medium">
+                    <Link2 className="w-3 h-3 text-slate-400" />
                     {primaryNextAction.source_title}
                   </span>
                 )}
-                <span>
-                  Progress: <strong className="text-white">{primaryNextAction.progressPercent || 0}%</strong>
-                </span>
+                <div className="flex items-center gap-2">
+                  <span>Progress:</span>
+                  <div className="w-20 bg-slate-100 h-2 rounded-full overflow-hidden border border-slate-200/60">
+                    <div
+                      className="bg-blue-600 h-full rounded-full transition-all"
+                      style={{ width: `${primaryNextAction.progressPercent || 0}%` }}
+                    />
+                  </div>
+                  <strong className="text-slate-900 font-bold">{primaryNextAction.progressPercent || 0}%</strong>
+                </div>
               </div>
 
               <div className="flex items-center gap-2">
                 <button
                   type="button"
                   onClick={() => openTaskDetail(primaryNextAction)}
-                  className="px-5 py-2.5 bg-white hover:bg-slate-100 text-slate-900 text-xs font-bold rounded-xl shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer"
+                  className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer"
                 >
                   <Play className="w-3.5 h-3.5 fill-current" />
                   <span>{primaryNextAction.status === 'in_progress' ? 'Continue Working' : 'Start Working'}</span>
@@ -465,7 +468,7 @@ export default function OverviewPage() {
 
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-xs transition-colors cursor-pointer"
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-xs transition-colors cursor-pointer"
                 >
                   Add
                 </button>

@@ -159,10 +159,10 @@ export default function ExecutionPage() {
       <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <span className="px-2.5 py-0.5 bg-slate-900 text-white text-[10px] font-bold rounded-full uppercase tracking-wider">
+            <span className="px-2.5 py-0.5 bg-blue-600 text-white text-[10px] font-black rounded-full uppercase tracking-wider shadow-2xs">
               MY WORK
             </span>
-            <span className="text-xs text-slate-500 font-medium">
+            <span className="text-xs text-slate-500 font-semibold">
               Unified Canonical Work Engine
             </span>
           </div>
@@ -178,7 +178,7 @@ export default function ExecutionPage() {
           <button
             type="button"
             onClick={() => setIsQuickAddOpen(!isQuickAddOpen)}
-            className="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl transition-colors inline-flex items-center gap-1.5 shadow-xs cursor-pointer"
+            className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl transition-colors inline-flex items-center gap-1.5 shadow-xs cursor-pointer"
           >
             <Plus className="w-4 h-4" />
             <span>Add Work Item</span>
@@ -190,7 +190,7 @@ export default function ExecutionPage() {
       {isQuickAddOpen && (
         <form
           onSubmit={handleQuickAdd}
-          className="p-5 bg-white border border-slate-200 rounded-3xl shadow-xs space-y-3 animate-in fade-in duration-150"
+          className="p-5 bg-white border border-blue-200/80 rounded-3xl shadow-xs space-y-3 animate-in fade-in duration-150"
         >
           <div className="flex items-center justify-between border-b border-slate-100 pb-2">
             <h3 className="text-xs font-bold uppercase tracking-wider text-slate-900">
@@ -238,7 +238,7 @@ export default function ExecutionPage() {
 
             <button
               type="submit"
-              className="w-full sm:w-auto px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-xs transition-colors cursor-pointer"
+              className="w-full sm:w-auto px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-xs transition-colors cursor-pointer"
             >
               Create
             </button>
@@ -265,15 +265,15 @@ export default function ExecutionPage() {
               onClick={() => setActiveFilter(tab.id)}
               className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-colors cursor-pointer flex items-center gap-1.5 ${
                 activeFilter === tab.id
-                  ? 'bg-slate-900 text-white shadow-xs'
+                  ? 'bg-blue-600 text-white shadow-xs'
                   : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
               }`}
             >
               <span>{tab.label}</span>
               <span
-                className={`text-[10px] px-1.5 py-0.2 rounded-full ${
+                className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
                   activeFilter === tab.id
-                    ? 'bg-slate-800 text-slate-200'
+                    ? 'bg-blue-700 text-white'
                     : 'bg-slate-200 text-slate-700'
                 }`}
               >
