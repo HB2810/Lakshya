@@ -20,8 +20,11 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { WorkItem, WorkItemPriority } from '../../../types/workItem';
+import { QuarterlyPriority } from '../../../types/strategy';
 import { workItemStore } from '../../../lib/mocks/workItemMock';
+import { strategyStore } from '../../../lib/mocks/strategyMock';
 import { TaskDetailDrawer } from '../../../components/work/TaskDetailDrawer';
+import { ZomatoDeliveryStepper } from '../../../components/strategy/ZomatoDeliveryStepper';
 
 export default function OverviewPage() {
   const { user } = useAuth();
@@ -30,6 +33,7 @@ export default function OverviewPage() {
   const [workItems, setWorkItems] = useState<WorkItem[]>([]);
   const [selectedTask, setSelectedTask] = useState<WorkItem | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [activePriority, setActivePriority] = useState<QuarterlyPriority | null>(null);
 
   // Quick Self-Task Intake Form
   const [newTitle, setNewTitle] = useState('');
@@ -39,6 +43,10 @@ export default function OverviewPage() {
   const refreshTasks = useCallback(() => {
     const items = workItemStore.getWorkItems({ owner_id: user.id || 'usr-stav-101' });
     setWorkItems(items);
+    const priorities = strategyStore.getQuarterlyPriorities();
+    if (priorities.length > 0) {
+      setActivePriority(priorities[0]);
+    }
     if (selectedTask) {
       const updated = workItemStore.getWorkItemById(selectedTask.id);
       if (updated) setSelectedTask(updated);
@@ -47,9 +55,11 @@ export default function OverviewPage() {
 
   useEffect(() => {
     refreshTasks();
-    const unsubscribe = workItemStore.subscribe(refreshTasks);
+    const unsubWork = workItemStore.subscribe(refreshTasks);
+    const unsubStrat = strategyStore.subscribe(refreshTasks);
     return () => {
-      unsubscribe();
+      unsubWork();
+      unsubStrat();
     };
   }, [refreshTasks]);
 
@@ -508,7 +518,30 @@ export default function OverviewPage() {
         </div>
       </div>
 
-      {/* 4. TASK DETAIL DRAWER */}
+      {/* 4. STRATEGIC 10-MILESTONE ZOMATO-STYLE DELIVERY TRACKER */}
+      {activePriority && (
+        <div className="space-y-3 pt-2">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-purple-600" />
+              <h2 className="text-sm font-bold uppercase tracking-wider text-slate-900">
+                Quarterly Priority Milestone Delivery Tracker
+              </h2>
+            </div>
+            <Link
+              href="/strategy"
+              className="text-xs font-semibold text-purple-700 hover:text-purple-900 flex items-center gap-1"
+            >
+              <span>View All Priorities</span>
+              <ChevronRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
+
+          <ZomatoDeliveryStepper priority={activePriority} />
+        </div>
+      )}
+
+      {/* 5. TASK DETAIL DRAWER */}
       <TaskDetailDrawer
         workItem={selectedTask}
         isOpen={isDrawerOpen}
