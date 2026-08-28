@@ -56,18 +56,17 @@ export const Sidebar: React.FC = () => {
       icon: BookOpen,
       show: true,
     },
-    // Leadership & Governance Management Tools
     {
       label: 'Quarterly Priorities',
       href: '/strategy',
       icon: Target,
-      show: isManagement,
+      show: true,
     },
     {
       label: 'Quality & RCA / FMEA',
       href: '/rca',
       icon: Shield,
-      show: isManagement,
+      show: true,
     },
     {
       label: 'Organization',

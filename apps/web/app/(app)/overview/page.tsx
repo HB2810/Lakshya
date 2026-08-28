@@ -164,7 +164,7 @@ export default function OverviewPage() {
           </div>
         </div>
 
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex flex-wrap items-center gap-2 shrink-0">
           <Link
             href="/execution"
             className="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl transition-colors inline-flex items-center gap-1.5 shadow-xs"
@@ -173,11 +173,18 @@ export default function OverviewPage() {
             <span>My Work Board</span>
           </Link>
           <Link
-            href="/calendar"
+            href="/rca"
             className="px-3.5 py-2.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-xs font-bold rounded-xl transition-colors inline-flex items-center gap-1.5"
           >
-            <Calendar className="w-4 h-4 text-slate-500" />
-            <span>Calendar</span>
+            <ShieldAlert className="w-4 h-4 text-brand-blue" />
+            <span>Quality &amp; RCA</span>
+          </Link>
+          <Link
+            href="/strategy"
+            className="px-3.5 py-2.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-xs font-bold rounded-xl transition-colors inline-flex items-center gap-1.5"
+          >
+            <Sparkles className="w-4 h-4 text-purple-600" />
+            <span>Quarterly Priorities</span>
           </Link>
         </div>
       </div>
