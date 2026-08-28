@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Plus, Trash2, Sparkles, Zap, GitBranch, ArrowRight } from 'lucide-react';
+import { Plus, Trash2, GitBranch, ArrowRight, Sparkles } from 'lucide-react';
 import { FishboneDiagram } from '../../types/rca';
 import { rcaStore } from '../../lib/mocks/rcaMock';
 
@@ -9,229 +9,272 @@ interface FishboneMindMapProps {
   fishbone: FishboneDiagram;
 }
 
-const CATEGORY_COLORS: Record<
-  string,
-  { bg: string; text: string; border: string; accent: string; nodeBg: string }
-> = {
-  people: {
-    bg: 'bg-indigo-50',
-    text: 'text-indigo-900',
-    border: 'border-indigo-200',
-    accent: '#6366f1',
-    nodeBg: 'bg-indigo-500',
-  },
-  process: {
-    bg: 'bg-blue-50',
-    text: 'text-blue-900',
-    border: 'border-blue-200',
-    accent: '#3b82f6',
-    nodeBg: 'bg-blue-500',
-  },
-  equipment: {
-    bg: 'bg-amber-50',
-    text: 'text-amber-900',
-    border: 'border-amber-200',
-    accent: '#f59e0b',
-    nodeBg: 'bg-amber-500',
-  },
-  materials: {
-    bg: 'bg-emerald-50',
-    text: 'text-emerald-900',
-    border: 'border-emerald-200',
-    accent: '#10b981',
-    nodeBg: 'bg-emerald-500',
-  },
-  measurement: {
-    bg: 'bg-purple-50',
-    text: 'text-purple-900',
-    border: 'border-purple-200',
-    accent: '#a855f7',
-    nodeBg: 'bg-purple-500',
-  },
-  environment: {
-    bg: 'bg-rose-50',
-    text: 'text-rose-900',
-    border: 'border-rose-200',
-    accent: '#f43f5e',
-    nodeBg: 'bg-rose-500',
-  },
+const CATEGORY_DESCRIPTIONS: Record<string, string> = {
+  people: 'Examine staffing ratios, surgeon schedules, and nursing handover transitions across shift changes.',
+  process: 'Analyze standard operating workflows, patient intake sequences, and documentation handoffs.',
+  equipment: 'Assess biomedical hardware uptime, autoclaves, 2D barcode scanners, and IT network reliability.',
+  materials: 'Review sterile drape packaging integrity, implant consignment stock, and physical clinical forms.',
+  measurement: 'Evaluate KPI tracking accuracy, real-time queue monitors, and audit telemetry milestones.',
+  environment: 'Investigate facility temperature, corridor bottlenecks, OT sterile fields, and lighting conditions.',
 };
 
 export const FishboneMindMap: React.FC<FishboneMindMapProps> = ({ fishbone }) => {
   const [activeCategory, setActiveCategory] = useState<string>('people');
   const [newCauseInput, setNewCauseInput] = useState<string>('');
 
-  const handleAddCause = (e: React.FormEvent) => {
+  // Top 3 categories and Bottom 3 categories
+  const topCategories = fishbone.categories.slice(0, 3);
+  const bottomCategories = fishbone.categories.slice(3, 6);
+
+  const handleAddCause = (categoryKey: string, e: React.FormEvent) => {
     e.preventDefault();
     if (!newCauseInput.trim()) return;
-    rcaStore.addFishboneCause(activeCategory, newCauseInput.trim());
+    rcaStore.addFishboneCause(categoryKey, newCauseInput.trim());
     setNewCauseInput('');
   };
 
   return (
     <div className="space-y-6">
-      {/* Mind Map Canvas Container */}
-      <div className="bg-slate-950 text-white rounded-3xl p-6 sm:p-8 shadow-xl relative overflow-hidden border border-slate-800">
-        {/* Ambient background grid pattern */}
+      {/* 1. VISUAL FISHBONE CANVAS (EXACT DIAGRAMMATIC ARCHITECTURE) */}
+      <div className="bg-[#fafbfc] border border-slate-200 rounded-3xl p-6 sm:p-10 shadow-sm relative overflow-x-auto">
+        {/* Subtle engineering grid background as in reference screenshot */}
         <div
-          className="absolute inset-0 opacity-10 pointer-events-none"
+          className="absolute inset-0 opacity-40 pointer-events-none rounded-3xl"
           style={{
-            backgroundImage: `radial-gradient(circle, #94a3b8 1px, transparent 1px)`,
-            backgroundSize: '24px 24px',
+            backgroundImage: `linear-gradient(to right, #e2e8f0 1px, transparent 1px), linear-gradient(to bottom, #e2e8f0 1px, transparent 1px)`,
+            backgroundSize: '40px 40px',
           }}
         />
 
-        {/* Mind Map Header */}
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-5 mb-6">
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="px-2.5 py-0.5 bg-blue-500/20 text-blue-400 border border-blue-500/30 text-[10px] font-bold rounded-full uppercase tracking-wider flex items-center gap-1">
-                <GitBranch className="w-3 h-3" />
-                Ishikawa Visual Mind Map
-              </span>
-              <span className="text-xs text-slate-400 font-mono">
-                • {fishbone.department}
-              </span>
-            </div>
-            <h3 className="text-lg font-black text-white mt-1">
-              {fishbone.problemEffect}
-            </h3>
+        <div className="relative z-10 min-w-[980px] max-w-6xl mx-auto space-y-4">
+          {/* TOP SECTION: CATEGORIES 1, 2, 3 (PLANNING, PROCESS, EQUIPMENT) */}
+          <div className="grid grid-cols-4 gap-4">
+            {topCategories.map((cat, idx) => (
+              <div key={cat.key} className="space-y-2 pr-4">
+                <h4 className="text-sm font-extrabold text-slate-900">
+                  {idx + 1}. {cat.label}
+                </h4>
+                <p className="text-[11px] text-slate-500 leading-relaxed">
+                  {CATEGORY_DESCRIPTIONS[cat.key] || 'Analyze contributory factors.'}
+                </p>
+              </div>
+            ))}
+            <div /> {/* Empty 4th column for right problem head alignment */}
           </div>
 
-          <div className="text-right">
-            <span className="text-[10px] uppercase font-bold text-slate-400">Total Root Causes</span>
-            <p className="text-2xl font-black text-emerald-400">
-              {fishbone.categories.reduce((acc, c) => acc + c.causes.length, 0)} Nodes
-            </p>
-          </div>
-        </div>
-
-        {/* 1. CENTRAL PROBLEM HEAD & RADIATING MIND MAP NODES */}
-        <div className="relative z-10 space-y-8">
-          {/* Central Problem Node */}
-          <div className="flex justify-center">
-            <div className="bg-gradient-to-r from-red-600 to-rose-700 text-white px-6 py-3.5 rounded-2xl shadow-lg border border-red-400/40 text-center max-w-xl animate-in zoom-in-95 duration-200">
-              <span className="text-[9px] font-bold uppercase tracking-widest bg-red-950/60 px-2 py-0.5 rounded-full text-red-200">
-                Core Incident / Effect (Problem Head)
-              </span>
-              <h4 className="text-sm sm:text-base font-extrabold mt-1">
-                {fishbone.problemEffect}
-              </h4>
-            </div>
-          </div>
-
-          {/* 6 Category Radial Limbs Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {fishbone.categories.map((category) => {
-              const theme = CATEGORY_COLORS[category.key] || CATEGORY_COLORS.people;
-              const isSelected = activeCategory === category.key;
-
-              return (
-                <div
-                  key={category.key}
-                  onClick={() => setActiveCategory(category.key)}
-                  className={`bg-slate-900/90 border rounded-2xl p-4 transition-all relative flex flex-col justify-between cursor-pointer ${
-                    isSelected
-                      ? 'border-blue-400 shadow-md ring-1 ring-blue-500/50 bg-slate-900'
-                      : 'border-slate-800 hover:border-slate-700'
-                  }`}
+          {/* FISHBONE VECTOR & NODE CANVAS */}
+          <div className="relative py-8">
+            {/* SVG BONES SKELETON */}
+            <svg
+              className="absolute inset-0 w-full h-full pointer-events-none"
+              style={{ overflow: 'visible' }}
+            >
+              <defs>
+                <marker
+                  id="fish-arrow"
+                  viewBox="0 0 10 10"
+                  refX="6"
+                  refY="5"
+                  markerWidth="8"
+                  markerHeight="8"
+                  orient="auto-start-reverse"
                 >
-                  {/* Category Limb Header */}
-                  <div>
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center gap-2">
-                        <span
-                          className="w-2.5 h-2.5 rounded-full"
-                          style={{ backgroundColor: theme.accent }}
-                        />
-                        <h5 className="text-xs font-black uppercase tracking-wider text-white">
-                          {category.label}
-                        </h5>
-                      </div>
-                      <span className="text-[10px] font-bold bg-slate-800 text-slate-300 px-2 py-0.5 rounded-full border border-slate-700">
-                        {category.causes.length} causes
-                      </span>
-                    </div>
+                  <path d="M 0 1 L 8 5 L 0 9 z" fill="#3b49df" />
+                </marker>
+              </defs>
 
-                    {/* Sub-Branch Cause Nodes */}
-                    <div className="space-y-2">
-                      {category.causes.map((cause, index) => (
-                        <div
-                          key={index}
-                          className="bg-slate-800/80 hover:bg-slate-800 border border-slate-700/80 rounded-xl p-2.5 text-xs text-slate-200 flex items-start justify-between gap-2 transition-colors group"
-                        >
-                          <div className="flex items-start gap-1.5 leading-relaxed">
-                            <span
-                              className="font-bold text-[10px] mt-0.5 opacity-60"
-                              style={{ color: theme.accent }}
-                            >
-                              #{index + 1}
-                            </span>
-                            <span>{cause}</span>
-                          </div>
+              {/* Main Central Horizontal Spine Line with Arrowhead */}
+              <line
+                x1="40"
+                y1="50%"
+                x2="72%"
+                y2="50%"
+                stroke="#3b49df"
+                strokeWidth="7"
+                strokeLinecap="round"
+                markerEnd="url(#fish-arrow)"
+              />
 
+              {/* Top 3 Diagonal Rib Bones (Angle down-right towards spine) */}
+              <line x1="12%" y1="12%" x2="20%" y2="50%" stroke="#3b49df" strokeWidth="3" />
+              <line x1="37%" y1="12%" x2="45%" y2="50%" stroke="#3b49df" strokeWidth="3" />
+              <line x1="62%" y1="12%" x2="70%" y2="50%" stroke="#3b49df" strokeWidth="3" />
+
+              {/* Bottom 3 Diagonal Rib Bones (Angle up-right towards spine) */}
+              <line x1="12%" y1="88%" x2="20%" y2="50%" stroke="#3b49df" strokeWidth="3" />
+              <line x1="37%" y1="88%" x2="45%" y2="50%" stroke="#3b49df" strokeWidth="3" />
+              <line x1="62%" y1="88%" x2="70%" y2="50%" stroke="#3b49df" strokeWidth="3" />
+            </svg>
+
+            {/* TOP 3 CATEGORY PILLS & HORIZONTAL CAUSE BRANCHES */}
+            <div className="grid grid-cols-4 gap-4 mb-24 relative z-20">
+              {topCategories.map((cat) => (
+                <div key={cat.key} className="flex flex-col items-start space-y-3">
+                  {/* Category Oval Pill (Matches screenshot cyan style) */}
+                  <div className="px-5 py-2 rounded-full bg-[#00d2d3] text-[#0a3d62] font-black text-xs uppercase tracking-wider border-2 border-[#0a3d62] shadow-sm flex items-center gap-1.5 self-center">
+                    <span>{cat.label.toUpperCase()}</span>
+                  </div>
+
+                  {/* Horizontal Cause Sub-branches */}
+                  <div className="space-y-2 w-full pl-2">
+                    {cat.causes.map((cause, cIdx) => (
+                      <div key={cIdx} className="flex items-center gap-2 group">
+                        <div className="w-6 h-[2px] bg-[#3b49df] shrink-0" />
+                        <div className="px-3 py-1.5 rounded-xl bg-[#00d2d3]/90 hover:bg-[#00d2d3] text-[#0a3d62] font-extrabold text-[11px] border border-[#0a3d62]/60 shadow-xs flex items-center justify-between gap-2 max-w-[200px]">
+                          <span className="truncate">{cause}</span>
                           <button
                             type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              rcaStore.removeFishboneCause(category.key, index);
-                            }}
-                            className="text-slate-500 hover:text-red-400 transition-colors p-0.5 opacity-0 group-hover:opacity-100"
-                            title="Delete cause node"
+                            onClick={() => rcaStore.removeFishboneCause(cat.key, cIdx)}
+                            className="text-red-700 hover:text-red-900 opacity-0 group-hover:opacity-100 transition-opacity p-0.5 cursor-pointer"
+                            title="Remove cause"
                           >
-                            <Trash2 className="w-3.5 h-3.5" />
+                            <Trash2 className="w-3 h-3" />
                           </button>
                         </div>
-                      ))}
-                    </div>
-                  </div>
+                      </div>
+                    ))}
 
-                  {/* Active Selection Indicator */}
-                  <div className="mt-3 pt-2 border-t border-slate-800/60 flex items-center justify-between text-[10px] text-slate-400">
-                    <span>Click to add cause to this branch</span>
-                    {isSelected && (
-                      <span className="text-blue-400 font-bold flex items-center gap-1">
-                        Active Branch &bull;
-                      </span>
-                    )}
+                    {/* Add cause trigger */}
+                    <button
+                      type="button"
+                      onClick={() => setActiveCategory(cat.key)}
+                      className="ml-8 text-[10px] font-bold text-blue-700 hover:text-blue-900 flex items-center gap-1 cursor-pointer bg-white px-2 py-0.5 rounded border border-blue-200"
+                    >
+                      <Plus className="w-3 h-3" /> Add Cause
+                    </button>
                   </div>
                 </div>
-              );
-            })}
+              ))}
+
+              {/* RIGHT PROBLEM EFFECT HEAD & EXPLANATORY TEXT */}
+              <div className="row-span-2 flex flex-col justify-center items-center text-center pl-4">
+                {/* Cyan Circular Problem Head (Matches screenshot) */}
+                <div className="w-48 h-48 rounded-full bg-[#00d2d3] border-4 border-[#0a3d62] flex flex-col items-center justify-center p-4 text-[#0a3d62] shadow-xl text-center">
+                  <span className="text-[9px] font-bold uppercase tracking-widest text-[#0a3d62]/80">
+                    INCIDENT / EFFECT
+                  </span>
+                  <h3 className="text-sm font-black uppercase tracking-tight mt-1 leading-snug">
+                    {fishbone.problemEffect}
+                  </h3>
+                </div>
+
+                <div className="mt-4 text-left text-xs text-slate-600 leading-relaxed bg-white/80 p-3 rounded-xl border border-slate-200 shadow-xs">
+                  <p className="font-bold text-slate-800 text-[11px] mb-1">
+                    Systemic Root Cause Impact:
+                  </p>
+                  <p className="text-[11px]">
+                    Structured Ishikawa evaluation isolating contributing failure points across the 6Ms to prevent recurrence.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* BOTTOM 3 CATEGORY PILLS & HORIZONTAL CAUSE BRANCHES */}
+            <div className="grid grid-cols-4 gap-4 mt-8 relative z-20">
+              {bottomCategories.map((cat) => (
+                <div key={cat.key} className="flex flex-col items-start space-y-3">
+                  {/* Horizontal Cause Sub-branches */}
+                  <div className="space-y-2 w-full pl-2">
+                    {cat.causes.map((cause, cIdx) => (
+                      <div key={cIdx} className="flex items-center gap-2 group">
+                        <div className="w-6 h-[2px] bg-[#3b49df] shrink-0" />
+                        <div className="px-3 py-1.5 rounded-xl bg-[#00d2d3]/90 hover:bg-[#00d2d3] text-[#0a3d62] font-extrabold text-[11px] border border-[#0a3d62]/60 shadow-xs flex items-center justify-between gap-2 max-w-[200px]">
+                          <span className="truncate">{cause}</span>
+                          <button
+                            type="button"
+                            onClick={() => rcaStore.removeFishboneCause(cat.key, cIdx)}
+                            className="text-red-700 hover:text-red-900 opacity-0 group-hover:opacity-100 transition-opacity p-0.5 cursor-pointer"
+                            title="Remove cause"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+
+                    <button
+                      type="button"
+                      onClick={() => setActiveCategory(cat.key)}
+                      className="ml-8 text-[10px] font-bold text-blue-700 hover:text-blue-900 flex items-center gap-1 cursor-pointer bg-white px-2 py-0.5 rounded border border-blue-200"
+                    >
+                      <Plus className="w-3 h-3" /> Add Cause
+                    </button>
+                  </div>
+
+                  {/* Category Oval Pill (Matches screenshot cyan style) */}
+                  <div className="px-5 py-2 rounded-full bg-[#00d2d3] text-[#0a3d62] font-black text-xs uppercase tracking-wider border-2 border-[#0a3d62] shadow-sm flex items-center gap-1.5 self-center">
+                    <span>{cat.label.toUpperCase()}</span>
+                  </div>
+                </div>
+              ))}
+
+              <div /> {/* Alignment placeholder */}
+            </div>
+          </div>
+
+          {/* BOTTOM SECTION: CATEGORIES 4, 5, 6 (MATERIALS, MEASUREMENT, ENVIRONMENT) */}
+          <div className="grid grid-cols-4 gap-4 pt-4 border-t border-slate-200">
+            {bottomCategories.map((cat, idx) => (
+              <div key={cat.key} className="space-y-2 pr-4">
+                <h4 className="text-sm font-extrabold text-slate-900">
+                  {idx + 4}. {cat.label}
+                </h4>
+                <p className="text-[11px] text-slate-500 leading-relaxed">
+                  {CATEGORY_DESCRIPTIONS[cat.key] || 'Analyze contributory factors.'}
+                </p>
+              </div>
+            ))}
+            <div />
           </div>
         </div>
       </div>
 
-      {/* 2. INLINE CAUSE NODE CREATOR FOR SELECTED BRANCH */}
-      <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <Plus className="w-4 h-4 text-slate-900" />
-            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-900">
-              Attach Cause Node to &quot;{fishbone.categories.find(c => c.key === activeCategory)?.label}&quot;
-            </h4>
+      {/* 2. INLINE CAUSE NODE CREATOR MODAL / CONTROLLER */}
+      <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
+            <Plus className="w-5 h-5" />
           </div>
-          <span className="text-xs text-slate-500">
-            Selected Mind Map Branch: <strong className="text-slate-800 capitalize">{activeCategory}</strong>
-          </span>
+          <div>
+            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-900">
+              Add Cause Node to Selected Bone
+            </h4>
+            <p className="text-xs text-slate-500">
+              Selected Fishbone Category: <strong className="text-slate-800 uppercase">{activeCategory}</strong>
+            </p>
+          </div>
         </div>
 
-        <form onSubmit={handleAddCause} className="flex flex-col sm:flex-row items-center gap-2.5">
+        <form
+          onSubmit={(e) => handleAddCause(activeCategory, e)}
+          className="flex items-center gap-2 w-full sm:w-auto"
+        >
+          <select
+            value={activeCategory}
+            onChange={(e) => setActiveCategory(e.target.value)}
+            className="px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl text-slate-800 font-semibold focus:outline-none"
+          >
+            {fishbone.categories.map((c) => (
+              <option key={c.key} value={c.key}>
+                {c.label}
+              </option>
+            ))}
+          </select>
+
           <input
             type="text"
             value={newCauseInput}
             onChange={(e) => setNewCauseInput(e.target.value)}
-            placeholder={`Enter contributory cause for ${activeCategory}...`}
+            placeholder={`Enter cause for ${activeCategory}...`}
             required
-            className="flex-1 w-full px-3.5 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:bg-white focus:border-slate-800 focus:outline-none"
+            className="w-full sm:w-64 px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:bg-white focus:outline-none"
           />
 
           <button
             type="submit"
-            className="w-full sm:w-auto px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-xs transition-colors whitespace-nowrap cursor-pointer flex items-center gap-1.5"
+            className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-xs transition-colors whitespace-nowrap cursor-pointer"
           >
-            <Plus className="w-3.5 h-3.5" />
-            <span>Add Mind Map Node</span>
+            + Add Cause
           </button>
         </form>
       </div>
