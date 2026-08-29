@@ -135,9 +135,106 @@ The Leader UI is organized for immediate operational clarity:
 
 ---
 
-## 14. Explicitly Excluded Functionality (Out of Scope for V1)
-- ❌ HRMS features (payroll, leave applications, appraisal scores, recruitment).
-- ❌ Autonomous AI task modifications (AI can summarize, never reassign or change deadlines).
-- ❌ Unrestricted open-browser search across non-permitted departments.
-- ❌ WhatsApp / external chat sync engines (V1 uses in-app contextual follow-ups).
-- ❌ Complex predictive KPI analytics.
+## 15. Phase 2 Remediation & Live-Wire Execution Decisions (Audit Lock)
+
+Following the real user-facing acceptance audit, the 15 core operational decisions are locked as follows:
+
+### 15.1 Exact Leader Home Information Hierarchy
+The Leader Workspace (`apps/web/app/(app)/overview/page.tsx`) renders a dedicated **Leader Operational View** when logged in as `LEADERS` / `DEPARTMENT_HEAD` / `MANAGER`:
+1. **Header Kaizen Banner:** Subtle top-center continuous improvement wisdom chip.
+2. **Attention Required Triage Deck (Top Priority):**
+   - Inbound Escalations (pending resolution).
+   - Blocked & Stuck Tasks with explicit need descriptions.
+   - Overdue Commitments.
+3. **Today & Upcoming Execution Stream:** High-priority items, today's due dates, and upcoming milestone deliverables.
+4. **Team Execution & Workload Grid:** Reportees, active task counts, completion velocity, and vacancy indicators.
+5. **Interactive Scoped Org Subtree:** Real-time tree visualizer driven by `GET /api/v1/organizations/tree/scoped`.
+6. **Quick Smart Intake Action:** Fast NLP/modal task creation with pre-populated reporting department and assignees.
+
+### 15.2 Exact WorkItem Detail Interaction Model
+The Task Detail Drawer provides:
+- Primary status and progress percentage slider.
+- Clear distinction between routine tasks and formal commitments.
+- Blocker declaration modal (Reason, What is Needed, Urgency, Escalation route).
+- Immutable chronological activity timeline fetched from backend activities.
+
+### 15.3 Exact RACI Editing Permissions
+- **Responsible (R):** Leader can assign/reassign to self, direct reportees, indirect reportees, or members of their primary department.
+- **Accountable (A):** Strictly enforced single user. Leader can set `A` to self or a designated reporting lead.
+- **Consulted (C) & Informed (I):** Can include cross-department users without altering primary task ownership.
+- **Server Enforcement:** `WorkItemService` validates that assignee and accountable users exist in the organization and meet assignment rules.
+
+### 15.4 Exact EDC Verification Interaction
+- Routine tasks: Assignee can mark `completed` directly.
+- Critical/Formal Commitments with EDC criteria:
+  - Assignee marks `ready_for_review` (progress = 100%).
+  - Leader / Accountable user receives verification prompt in Drawer with "Verify & Sign-off" button.
+  - Submitting verification note triggers `POST /api/v1/work_items/{id}/verify`, locking task as `completed` with a `COMPLETION_VERIFIED` audit entry.
+
+### 15.5 Exact Dependency Interaction
+- Declared inside `WorkItem` as structured metadata (`dependencies` array).
+- Selecting a blocking task within the team creates a direct state link.
+- Cross-team dependency displays the target task's public title and status without leaking private execution details.
+
+### 15.6 Exact Escalation Inbox Interaction
+- Leader views all pending inbound escalations in the *Attention Required* deck.
+- Action options:
+  1. **Resolve Blocker:** Enters resolution notes $\rightarrow$ triggers `POST /api/v1/work_items/escalations/{id}/resolve` $\rightarrow$ automatically transitions task to `in_progress` and clears `blocked_reason`.
+  2. **Escalate to Tier 2 / MD:** Re-routes escalation up the organizational graph.
+
+### 15.7 Exact Org Chart Editing Permissions
+- **MASTER / ADMIN:** Full CRUD on departments, positions, reporting lines, and user assignments.
+- **MD / MD Office:** Full authority to modify positions, reporting lines, and execute transfers.
+- **LEADER:** View-only access to scoped reporting subtree; can request personnel transfers through MD Office.
+- **EMPLOYEE:** View-only access to direct reporting chain.
+
+### 15.8 Roles Authorized to Transfer Employees
+- Strictly restricted to `MD`, `MD_OFFICE`, `MASTER`, and `ADMIN`.
+- Executed via `POST /api/v1/organizations/transfer`.
+- Atomic database mutation: closes prior `PositionAssignment`, updates `DepartmentMembership`, and preserves task history.
+
+### 15.9 Cross-Team Dependency Visibility Boundary
+- When a task in Team A depends on a task in Team B, Leader A sees:
+  - Target Work Item ID & Title.
+  - Owning Department & Owner Name.
+  - High-level Status (`todo`, `in_progress`, `completed`, `blocked`).
+- Leader A **cannot** see private notes, attachments, internal discussions, or audit trails of Team B's task.
+
+### 15.10 Behaviour of Active Tasks After Transfer
+- When Employee Carol transfers from Leader A to Leader B:
+  - Carol **retains ownership** of all active, pending, and completed tasks.
+  - Leader B **immediately gains management visibility** over Carol's tasks.
+  - Leader A **immediately loses visibility**, unless Leader A was explicitly added as `A`, `C`, or `I` in the task's RACI matrix.
+  - No database task rows are rewritten or deleted.
+
+### 15.11 Behaviour of RACI Relationships After Transfer
+- Named RACI user IDs remain intact on historical and active records.
+- If transferred employee was Accountable (`A`), they remain Accountable unless the new Leader reassigns `A`.
+- If former Leader was explicitly in RACI as `C` or `I`, their read access is preserved through the RACI grant.
+
+### 15.12 Behaviour of Existing Escalations After Transfer
+- Existing unresolved escalations that were targeted to Leader A remain assigned to Leader A for resolution of that specific past blocker, or can be re-triaged by the new Leader upon claim.
+- All new blocker escalations automatically calculate and route to the new reporting line (Leader B).
+
+### 15.13 Mock Data Cleanup Policy
+- **To Be Removed from Production Code:**
+  - `apps/web/lib/mocks/workItemMock.ts` $\rightarrow$ Remove runtime fallback in `apps/web/lib/api/client.ts`; enforce live `/api/v1/work_items` REST endpoints.
+  - `apps/web/lib/mocks/organizationMock.ts` $\rightarrow$ Remove runtime fallback; wire `organization/page.tsx` directly to `/api/v1/organizations/tree/scoped`.
+- **Allowed to Remain as Fixtures (Phase 3 Prep):**
+  - `strategyMock.ts` & `dashboardMock.ts` (Isolated to future Phase 3 strategy views until Phase 3 planning).
+
+### 15.14 API Modifications vs. Frontend Live-Wiring
+- **Backend API Status:** Fully implemented and verified (`/work_items`, `/work_items/escalations/inbox`, `/work_items/escalations/{id}/resolve`, `/work_items/{id}/verify`, `/organizations/tree/scoped`, `/organizations/transfer`).
+- **Required Remediation Work:** Pure **frontend live-wiring**:
+  1. Refactor `apps/web/lib/api/client.ts` to call live endpoints with CSRF token injection and error handling.
+  2. Implement the Leader Attention & Escalation Inbox UI component.
+  3. Wire Scoped Org Tree visualization in `organization/page.tsx` and `overview/page.tsx`.
+  4. Integrate EDC "Verify & Sign-off" action into Task Drawer.
+
+### 15.15 Exact V1 Deployment Acceptance Criteria
+1. Full end-to-end task lifecycle (Create $\rightarrow$ In Progress $\rightarrow$ Blocker $\rightarrow$ Escalate $\rightarrow$ Leader Resolve $\rightarrow$ Verify $\rightarrow$ Complete) operates against the live PostgreSQL database.
+2. 0 mock fallbacks in execution and organization flows.
+3. IDOR and unauthorized cross-department access blocked with `403 Forbidden` / `404 Not Found`.
+4. Automated employee transfer dynamically switches Leader visibility without manual data patching.
+5. All backend pytest tests (457+) and frontend test suites pass with 0 errors.
+

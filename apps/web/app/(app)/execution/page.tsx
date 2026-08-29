@@ -17,7 +17,7 @@ import {
   ShieldAlert,
 } from 'lucide-react';
 import { WorkItem, WorkItemPriority, WorkItemStatus } from '../../../types/workItem';
-import { workItemStore } from '../../../lib/mocks/workItemMock';
+import { apiClient } from '../../../lib/api/client';
 import { useAuth } from '../../../lib/auth/AuthContext';
 import { TaskDetailDrawer } from '../../../components/work/TaskDetailDrawer';
 
@@ -37,24 +37,32 @@ export default function ExecutionPage() {
   const [quickPriority, setQuickPriority] = useState<WorkItemPriority>('medium');
   const [quickDue, setQuickDue] = useState('Today');
 
-  const refreshWork = useCallback(() => {
-    const items = workItemStore.getWorkItems({ owner_id: user.id || 'usr-stav-101' });
-    setWorkItems(items);
-    if (selectedTask) {
-      const updated = workItemStore.getWorkItemById(selectedTask.id);
-      if (updated) setSelectedTask(updated);
+  // Data Fetching State
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const refreshWork = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const response = await apiClient.workItems.list({ owner_id: user.id || 'usr-stav-101' });
+      setWorkItems(response.items);
+      if (selectedTask) {
+        const updated = response.items.find((item) => item.id === selectedTask.id);
+        if (updated) setSelectedTask(updated);
+      }
+    } catch (err: any) {
+      setError(err.message || 'Failed to load tasks');
+    } finally {
+      setIsLoading(false);
     }
   }, [user.id, selectedTask]);
 
   useEffect(() => {
     refreshWork();
-    const unsubscribe = workItemStore.subscribe(refreshWork);
-    return () => {
-      unsubscribe();
-    };
   }, [refreshWork]);
 
-  const handleQuickAdd = (e: React.FormEvent) => {
+  const handleQuickAdd = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!quickTitle.trim()) return;
 
@@ -63,21 +71,25 @@ export default function ExecutionPage() {
     if (quickDue === 'Tomorrow') dueIso = '2026-08-29T18:00:00Z';
     if (quickDue === 'Next Week') dueIso = '2026-09-04T18:00:00Z';
 
-    workItemStore.createWorkItem(
-      {
-        title: quickTitle.trim(),
+    try {
+      await apiClient.workItems.approve({
+        items: [{
+          client_id: `plan-${Date.now()}`,
+          title: quickTitle.trim(),
+          priority: quickPriority,
+        }],
+        title: 'Self-Scheduled Work Item',
         priority: quickPriority,
         owner_id: user.id || 'usr-stav-101',
-        owner_name: user.name,
         due_at: dueIso,
-        source_type: 'MANUAL',
-        source_title: 'Self-Scheduled Work Item',
-      },
-      user.name
-    );
+      });
 
-    setQuickTitle('');
-    setIsQuickAddOpen(false);
+      setQuickTitle('');
+      setIsQuickAddOpen(false);
+      refreshWork();
+    } catch (err) {
+      console.error('Failed to create task:', err);
+    }
   };
 
   const openTask = (item: WorkItem) => {
@@ -152,6 +164,33 @@ export default function ExecutionPage() {
         return 'bg-slate-100 text-slate-700 border-slate-200';
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="max-w-6xl mx-auto p-12 text-center text-slate-500">
+        <div className="animate-spin w-8 h-8 border-4 border-blue-200 border-t-blue-600 rounded-full mx-auto mb-4" />
+        <p className="text-sm font-semibold">Loading your work items...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="max-w-6xl mx-auto p-12 text-center">
+        <div className="bg-red-50 text-red-600 border border-red-200 rounded-2xl p-6 inline-block">
+          <AlertTriangle className="w-8 h-8 mx-auto mb-2" />
+          <h3 className="text-base font-bold">Failed to load data</h3>
+          <p className="text-sm mt-1">{error}</p>
+          <button
+            onClick={() => refreshWork()}
+            className="mt-4 px-4 py-2 bg-white border border-red-200 rounded-lg text-sm font-semibold text-red-700 hover:bg-red-50"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">

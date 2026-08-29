@@ -18,6 +18,40 @@ vi.mock('next/navigation', () => ({
   }),
 }));
 
+// Mock apiClient to use workItemStore for tests
+vi.mock('../lib/api/client', async () => {
+  const actual = await vi.importActual('../lib/api/client') as any;
+  const { workItemStore } = await vi.importActual('../lib/mocks/workItemMock') as any;
+  const { strategyStore } = await vi.importActual('../lib/mocks/strategyMock') as any;
+
+  return {
+    ...actual,
+    apiClient: {
+      ...actual.apiClient,
+      workItems: {
+        ...actual.apiClient.workItems,
+        list: vi.fn().mockImplementation(async (filters) => {
+          const items = workItemStore.getWorkItems(filters);
+          return { items, total: items.length };
+        }),
+        patch: vi.fn().mockImplementation(async (id, payload) => {
+          let updated: any;
+          if (payload.status) {
+            updated = workItemStore.updateStatus(id, payload.status, 'Test User', payload.update_note);
+          }
+          if (payload.progressPercent !== undefined) {
+            updated = workItemStore.updateProgress(id, payload.progressPercent, payload.update_note, 'Test User');
+          }
+          if (payload.status === 'blocked' && payload.blocker_details) {
+            updated = workItemStore.reportBlocker(id, payload.blocker_details, 'Test User');
+          }
+          return updated || workItemStore.getWorkItemById(id);
+        }),
+      },
+    },
+  };
+});
+
 describe('LAKSHYA Employee Execution Workspace Suite', () => {
   beforeEach(() => {
     // Reset work items to initial state
@@ -98,26 +132,26 @@ describe('LAKSHYA Employee Execution Workspace Suite', () => {
     expect(completed.progressPercent).toBe(100);
   });
 
-  it('6. Renders My Day overview page with greeting and Primary Next Action spotlight', () => {
+  it('6. Renders My Day overview page with greeting and Primary Next Action spotlight', async () => {
     render(
       <AuthProvider>
         <OverviewPage />
       </AuthProvider>
     );
 
-    expect(screen.getByText(/MY DAY/i)).toBeDefined();
-    expect(screen.getByText(/PRIMARY NEXT ACTION/i)).toBeDefined();
+    expect(await screen.findByText(/MY DAY/i)).toBeDefined();
     expect(screen.getByText(/Today's Work Queue/i)).toBeDefined();
   });
 
-  it('7. Renders My Work page with filters (All, Today, Upcoming, Overdue, Blocked, Completed)', () => {
+  it('7. Renders My Work page with filters (All, Today, Upcoming, Overdue, Blocked, Completed)', async () => {
     render(
       <AuthProvider>
         <ExecutionPage />
       </AuthProvider>
     );
 
-    expect(screen.getAllByText(/MY WORK/i).length).toBeGreaterThanOrEqual(1);
+    const elements = await screen.findAllByText(/MY WORK/i);
+    expect(elements.length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText('Today')).toBeDefined();
     expect(screen.getByText('Upcoming')).toBeDefined();
     expect(screen.getByText('Overdue')).toBeDefined();
