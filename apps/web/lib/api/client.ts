@@ -599,9 +599,14 @@ export const apiClient = {
 
   calendar: {
     async getEvents(params?: { start_time?: string; end_time?: string; event_type?: string }) {
-      const query = new URLSearchParams(params as Record<string, string>).toString();
-      const url = `/calendar/events${query ? `?${query}` : ''}`;
-      return await apiFetch<any[]>(url, { method: 'GET' });
+      try {
+        const query = new URLSearchParams(params as Record<string, string>).toString();
+        const url = `/calendar/events${query ? `?${query}` : ''}`;
+        return await apiFetch<any[]>(url, { method: 'GET' });
+      } catch (err) {
+        console.warn('Calendar events API error:', err);
+        return [];
+      }
     },
     async createEvent(payload: any) {
       return await apiFetch<any>('/calendar/events', {
@@ -609,8 +614,43 @@ export const apiClient = {
         body: JSON.stringify(payload),
       });
     },
+    async deleteEvent(eventId: string) {
+      return await apiFetch<any>(`/calendar/events/${eventId}`, {
+        method: 'DELETE',
+      });
+    },
     async getIntegrationStatus() {
-      return await apiFetch<any>('/calendar/integrations', { method: 'GET' });
+      try {
+        return await apiFetch<any>('/calendar/integrations', { method: 'GET' });
+      } catch {
+        return null;
+      }
+    },
+    async getGoogleAuthUrl() {
+      return await apiFetch<{ auth_url: string; is_simulated: boolean }>('/calendar/integrations/google/auth-url', {
+        method: 'GET',
+      });
+    },
+    async connectGoogle(authCode: string, redirectUri: string, accountEmail?: string) {
+      return await apiFetch<any>('/calendar/integrations/google/connect', {
+        method: 'POST',
+        body: JSON.stringify({
+          provider: 'GOOGLE',
+          auth_code: authCode,
+          redirect_uri: redirectUri,
+          account_email: accountEmail,
+        }),
+      });
+    },
+    async disconnectGoogle() {
+      return await apiFetch<any>('/calendar/integrations/disconnect', {
+        method: 'POST',
+      });
+    },
+    async triggerSync() {
+      return await apiFetch<any>('/calendar/sync', {
+        method: 'POST',
+      });
     },
   },
 };

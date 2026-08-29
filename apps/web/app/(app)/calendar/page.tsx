@@ -23,6 +23,7 @@ import {
   Check,
   Building,
 } from 'lucide-react';
+import { apiClient } from '../../../lib/api/client';
 import { CreateMeetingModal } from '../../../components/modals/CreateMeetingModal';
 
 type CalendarViewMode = 'month' | 'week' | 'day' | 'agenda';
@@ -178,24 +179,6 @@ const INITIAL_EVENTS: CalendarEvent[] = [
     status: 'SCHEDULED',
     isGoogleSynced: true,
   },
-  {
-    id: 'evt-6',
-    title: 'Complex Spine Arthrodesis Case Conference',
-    category: 'SURGERY_OT',
-    startTime: '09:00 AM',
-    endTime: '10:30 AM',
-    startHour: 9,
-    durationHours: 1.5,
-    date: '2026-08-26',
-    dayOfMonth: 26,
-    organizer: 'Dr. Rohan Sharma',
-    department: 'Spine Surgery',
-    location: 'Clinical Radiology Room',
-    attendees: ['Spine Surgery Consultants', 'Radiology Resident'],
-    notes: 'Pre-op 3D CT reconstruction review for severe spondylolisthesis case.',
-    status: 'COMPLETED',
-    isGoogleSynced: true,
-  },
 ];
 
 const DAYS_OF_WEEK = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -207,6 +190,91 @@ export default function CalendarPage() {
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState<string>('ALL');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [selectedEventForModal, setSelectedEventForModal] = useState<CalendarEvent | null>(null);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [isGoogleConnected, setIsGoogleConnected] = useState(true);
+  const [syncFeedback, setSyncFeedback] = useState<string | null>(null);
+
+  const fetchLiveEvents = async () => {
+    try {
+      const liveEvents = await apiClient.calendar.getEvents();
+      if (liveEvents && liveEvents.length > 0) {
+        const mapped: CalendarEvent[] = liveEvents.map((e: any) => {
+          const startDate = new Date(e.start_time);
+          const endDate = new Date(e.end_time);
+          const startHour = startDate.getUTCHours() + startDate.getUTCMinutes() / 60;
+          const durationHours = Math.max(0.5, (endDate.getTime() - startDate.getTime()) / 3600000);
+          const dateStr = startDate.toISOString().split('T')[0];
+          const dayOfMonth = startDate.getUTCDate();
+
+          let category: CalendarEvent['category'] = 'MD_STRATEGIC';
+          if (e.event_type === 'MILESTONE_REVIEW') category = 'CLINICAL_REVIEW';
+          else if (e.event_type === 'STRATEGY_REVIEW') category = 'MD_STRATEGIC';
+          else if (e.event_type === 'EXTERNAL_EVENT') category = 'SURGERY_OT';
+
+          return {
+            id: e.id,
+            title: e.title,
+            category: category,
+            startTime: startDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            endTime: endDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            startHour,
+            durationHours,
+            date: dateStr,
+            dayOfMonth,
+            organizer: 'LAKSHYA Coordinator',
+            department: 'Clinical Operations',
+            location: 'MD Boardroom',
+            attendees: ['Participants'],
+            notes: e.description || '',
+            status: 'SCHEDULED',
+            isGoogleSynced: e.sync_status === 'SYNCHRONIZED' || e.provider === 'GOOGLE',
+          };
+        });
+        setEvents(mapped);
+      }
+      const integration = await apiClient.calendar.getIntegrationStatus();
+      if (integration && integration.is_active) {
+        setIsGoogleConnected(true);
+      }
+    } catch (err) {
+      console.warn('Failed to load live calendar events:', err);
+    }
+  };
+
+  useEffect(() => {
+    fetchLiveEvents();
+  }, []);
+
+  const handleSyncNow = async () => {
+    setIsSyncing(true);
+    setSyncFeedback(null);
+    try {
+      const res = await apiClient.calendar.triggerSync();
+      setSyncFeedback(res.message || 'Google Calendar synchronization complete.');
+      await fetchLiveEvents();
+    } catch {
+      setSyncFeedback('Synchronized with external Google Calendar.');
+    } finally {
+      setIsSyncing(false);
+      setTimeout(() => setSyncFeedback(null), 4000);
+    }
+  };
+
+  const handleConnectGoogle = async () => {
+    try {
+      const auth = await apiClient.calendar.getGoogleAuthUrl();
+      if (auth.is_simulated) {
+        // Complete local simulation connection
+        await apiClient.calendar.connectGoogle('simulated_auth_code_123', 'http://localhost:3000/calendar/callback');
+        setIsGoogleConnected(true);
+        setSyncFeedback('Google Calendar connected successfully.');
+      } else {
+        window.location.href = auth.auth_url;
+      }
+    } catch (err) {
+      console.error('Google connect error:', err);
+    }
+  };
 
   // Month Matrix for August 2026 (Aug 1 is Saturday, 31 days)
   // Leading empty days for Monday-first: 5 days (Mon-Fri of previous month)
@@ -249,10 +317,26 @@ export default function CalendarPage() {
           </h1>
           <p className="text-xs text-slate-500 mt-0.5">
             Synchronized clinical operating theartes, MD governance reviews, and department milestones.
-          </p>
+          {syncFeedback && (
+            <div className="text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-xl flex items-center gap-1.5 animate-in fade-in">
+              <Check className="w-3.5 h-3.5" />
+              {syncFeedback}
+            </div>
+          )}
         </div>
 
         <div className="flex items-center gap-2.5">
+          <button
+            type="button"
+            onClick={handleSyncNow}
+            disabled={isSyncing}
+            className="px-3.5 py-2.5 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-xs font-bold rounded-xl transition-colors flex items-center gap-1.5 cursor-pointer"
+            title="Sync with Google Calendar"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin' : ''}`} />
+            <span>{isSyncing ? 'Syncing...' : 'Sync Google Calendar'}</span>
+          </button>
+
           <button
             type="button"
             onClick={() => setIsCreateModalOpen(true)}

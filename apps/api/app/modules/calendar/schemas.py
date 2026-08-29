@@ -42,14 +42,6 @@ class CalendarEventCreate(BaseModel):
             return None
         return v.strip() or None
 
-    @field_validator("provider")
-    @classmethod
-    def validate_phase3_provider(cls, v: CalendarProvider) -> CalendarProvider:
-        if v != CalendarProvider.LAKSHYA:
-            raise ValueError(
-                "External calendar provider synchronization (GOOGLE) is disabled in Phase 3 until Phase 5 OAuth integration."
-            )
-        return v
 
     @field_validator("timezone")
     @classmethod
@@ -180,3 +172,16 @@ class ConnectIntegrationRequest(BaseModel):
     provider: CalendarProvider = Field(default=CalendarProvider.GOOGLE)
     auth_code: str = Field(..., min_length=1)
     redirect_uri: str = Field(..., min_length=1)
+    account_email: str | None = None
+
+
+class GoogleAuthUrlResponse(BaseModel):
+    auth_url: str
+    is_simulated: bool = False
+
+
+class CalendarSyncTriggerResponse(BaseModel):
+    processed_count: int
+    success_count: int
+    failed_count: int
+    message: str

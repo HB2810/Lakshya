@@ -217,6 +217,11 @@ class Settings(BaseSettings):
     # Guards app/scripts/bootstrap_local.py. Never enable outside local.
     allow_local_bootstrap: bool = False
 
+    # -- Google Calendar Integration --------------------------------------
+    google_client_id: str | None = Field(default=None)
+    google_client_secret: str | None = Field(default=None)
+    google_redirect_uri: str = Field(default="http://localhost:3000/calendar/callback")
+
     # -- Validation -------------------------------------------------------
 
     @field_validator("database_url", "migration_database_url")
