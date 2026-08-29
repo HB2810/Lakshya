@@ -517,41 +517,4 @@ export const MOCK_ROLES: RoleDefinition[] = [
   },
 ];
 
-export const MOCK_AUDIT_EVENTS: AuditEvent[] = [
-  {
-    id: 'aud-001',
-    timestamp: '2026-08-18T10:30:00+05:30',
-    actorUserId: 'usr-mdo-002',
-    actorUserName: 'Het Bhatt',
-    action: 'COMMITMENT_APPROVED',
-    entityType: 'COMMITMENT',
-    entityId: 'cm-2026-089',
-    entityTitle: 'Complete waiting-time data integration for OPD flow',
-    previousValue: 'DRAFT',
-    newValue: 'IN_PROGRESS',
-  },
-  {
-    id: 'aud-002',
-    timestamp: '2026-08-18T09:15:00+05:30',
-    actorUserId: 'usr-md-001',
-    actorUserName: 'Managing Director',
-    action: 'DECISION_APPROVED',
-    entityType: 'DECISION',
-    entityId: 'dec-2026-031',
-    entityTitle: 'Approve new MRI appointment allocation strategy',
-    previousValue: 'PENDING_APPROVAL',
-    newValue: 'APPROVED',
-  },
-  {
-    id: 'aud-003',
-    timestamp: '2026-08-17T16:45:00+05:30',
-    actorUserId: 'usr-emp-005',
-    actorUserName: 'Priyesh Shah',
-    action: 'STUCK_NEED_REPORTED',
-    entityType: 'TASK',
-    entityId: 'tk-2026-402',
-    entityTitle: 'Configure OPD queue dashboard WebSocket endpoint',
-    previousValue: 'IN_PROGRESS',
-    newValue: 'BLOCKED',
-  },
-];
+export const MOCK_AUDIT_EVENTS: AuditEvent[] = [];
