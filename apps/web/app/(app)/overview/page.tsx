@@ -28,6 +28,7 @@ import { ZomatoDeliveryStepper } from '../../../components/strategy/ZomatoDelive
 import { SmartIntakeBox } from '../../../components/intake/SmartIntakeBox';
 import { AttentionRequiredCard } from '../../../components/leader/AttentionRequiredCard';
 import { TeamWorkloadGrid } from '../../../components/leader/TeamWorkloadGrid';
+import { DepartmentWorkloadGrid } from '../../../components/leader/DepartmentWorkloadGrid';
 import { ScopedOrgTree } from '../../../components/leader/ScopedOrgTree';
 import { EscalationDetailDrawer } from '../../../components/leader/EscalationDetailDrawer';
 import { PositionDetailDrawer } from '../../../components/leader/PositionDetailDrawer';
@@ -62,12 +63,14 @@ export default function OverviewPage() {
   // Leader Specific State
   const [teamMembers, setTeamMembers] = useState<any[]>([]);
   const isLeader = ['MD', 'MD_OFFICE', 'DEPARTMENT_HEAD', 'MANAGER', 'LEADER'].includes(user.role);
+  const isMD = user.role === 'MD' || user.role === 'MD_OFFICE';
 
   const refreshTasks = useCallback(async () => {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await apiClient.workItems.list({ owner_id: user.id || 'usr-stav-101' });
+      const filters = isMD ? {} : { owner_id: user.id || 'usr-stav-101' };
+      const response = await apiClient.workItems.list(filters);
       setWorkItems(response.items);
       const priorities = strategyStore.getQuarterlyPriorities();
       if (priorities.length > 0) {
@@ -84,7 +87,6 @@ export default function OverviewPage() {
         setEscalations(escInbox);
 
         // Fetch Org Tree Scope
-        const isMD = user.role === 'MD';
         const treeData = isMD 
           ? await apiClient.organization.tree() 
           : await apiClient.organization.treeScoped();
@@ -109,7 +111,7 @@ export default function OverviewPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [user.id, selectedTask, isLeader]);
+  }, [user.id, selectedTask, isLeader, isMD]);
 
   useEffect(() => {
     refreshTasks();
@@ -469,7 +471,11 @@ export default function OverviewPage() {
           
           {isLeader && (
             <div className="flex-1 mt-6 xl:mt-0 space-y-6">
-              <TeamWorkloadGrid teamMembers={teamMembers} workItems={workItems} isLoading={isLoading} />
+              {isMD ? (
+                <DepartmentWorkloadGrid treeData={orgTree} workItems={workItems} isLoading={isLoading} />
+              ) : (
+                <TeamWorkloadGrid teamMembers={teamMembers} workItems={workItems} isLoading={isLoading} />
+              )}
               
               <ScopedOrgTree 
                 treeData={orgTree} 

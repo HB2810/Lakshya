@@ -238,3 +238,56 @@ The Task Detail Drawer provides:
 4. Automated employee transfer dynamically switches Leader visibility without manual data patching.
 5. All backend pytest tests (457+) and frontend test suites pass with 0 errors.
 
+
+---
+
+## 16. Phase 3 Architecture & Product Decisions (MD Operational Command Center)
+
+**Status:** PROPOSED
+
+### 16.1 Product Purpose & Priority
+The MD is the operational commander of the hospital. The MD interface answers:
+- What needs my attention?
+- Where is the organization stuck?
+- Who owns the problem?
+- What actions do I need to take?
+**Priority Flow:** Attention $\rightarrow$ Organization $\rightarrow$ Work $\rightarrow$ Departments $\rightarrow$ Escalations $\rightarrow$ Quick Action.
+**Crucial Constraint:** Do NOT redesign LAKSHYA. MD Workspace is not a new application, but a role-specific view of the unified system leveraging the same unified backend and frontend components.
+
+### 16.2 MD Home Information Hierarchy
+The MD Workspace (anchored on the /overview route conditionally rendering full-scope data) consists of:
+1. **Attention Required:**
+   - Critical blockers, Tier 3 escalations, overdue commitments, high-priority risks, and items explicitly awaiting MD sign-off.
+2. **Organization Snapshot:**
+   - Full canonical Organization Chart visualization (GET /api/v1/organizations/tree).
+   - Shows reporting structure, vacancies, active staff, and basic workload metrics.
+3. **Hospital Work & Visibility:**
+   - Organization-wide WorkItems accessible with filters (Department, Leader, Owner, Status, Priority).
+4. **Department Workload:**
+   - A simplified operational overview per department (active, overdue, blocked, completed). No speculative complex BI platforms.
+5. **Organization-wide Escalations:**
+   - Full visibility into the escalation engine showing originating employee, current leader, reason, age, and state.
+6. **Smart Intake (Execution):**
+   - Retain the NLP Smart Intake system. Converts natural language instructions ("Anita should coordinate with Quality...") into a reviewable plan before committing as structured WorkItems respecting RACI. No autonomous AI execution.
+
+### 16.3 Organizational Graph as the Source of Truth
+- The canonical organization chart continues to dictate visibility and authority dynamically.
+- When the MD executes an employee transfer (POST /api/v1/organizations/transfer), it automatically adjusts the downstream reporting subtree, escalation paths, and department visibility without manual synchronization.
+- Historical WorkItem ownership remains intact post-transfer.
+
+### 16.4 MD Scope & Authority Rules
+| Action / Context | Policy | Details / Enforcement |
+| :--- | :--- | :--- |
+| **View Entire Organization** | ALLOW | Access to the root canonical organization tree. |
+| **View All Operational Work** | ALLOW | Full read visibility across all departments. |
+| **Create/Assign Operational Work** | ALLOW | Can assign work anywhere in the organization. |
+| **Modify Priority / Deadline** | ALLOW | Authority to mutate constraints on any operational task. |
+| **Transfer Employees** | ALLOW | Can execute atomic organizational transfers. |
+| **Bypass Audit Logging** | DENY | Every mutation strictly audited (WorkItemActivity, AuditLog). |
+| **Bypass RACI / EDC Rules** | DENY | Must respect formal commitment verification and accountability logic. |
+
+### 16.5 Consistency & UI Re-Use
+- The Employee, Leader, and MD experiences are identical in design language, sharing the Header, Wisdom of the Day (Kaizen) banner, Task Detail Drawer, RACI displays, and Escalation modales.
+- The distinction lies entirely in **Scope, Authority, and Actions**, securely governed by the backend.
+- HR modules (payroll, appraisal, recruitment) and speculative AI agents are explicitly out of scope for Phase 3.
+
