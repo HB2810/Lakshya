@@ -25,5 +25,10 @@ export interface PolicySOPItem {
   contentSummary: string;
   keyGuidelines: string[];
   documentUrl?: string;
+  fileName?: string;
+  fileSize?: string;
+  fileType?: string;
+  scope?: string;
+  checklist?: string[];
   downloadsCount: number;
 }

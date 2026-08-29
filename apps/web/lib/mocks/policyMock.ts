@@ -138,6 +138,12 @@ export const policyStore = {
       isNABHMandatory: item.isNABHMandatory ?? true,
       contentSummary: item.contentSummary || '',
       keyGuidelines: item.keyGuidelines || ['Standard hospital adherence required.'],
+      documentUrl: item.documentUrl,
+      fileName: item.fileName,
+      fileSize: item.fileSize,
+      fileType: item.fileType,
+      scope: item.scope || 'All clinical, nursing, and administrative units across Stavya Spine Hospital.',
+      checklist: item.checklist || ['Verification before commencement', 'Step-by-step adherence to sterile protocol', 'Post-procedure logging in EMR'],
       downloadsCount: 0,
     };
     policyList = [newItem, ...policyList];
