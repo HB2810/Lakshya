@@ -43,9 +43,5 @@ export const AppShellContent: React.FC<{ children: React.ReactNode }> = ({ child
 };
 
 export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  return (
-    <AuthProvider>
-      <AppShellContent>{children}</AppShellContent>
-    </AuthProvider>
-  );
+  return <AppShellContent>{children}</AppShellContent>;
 };

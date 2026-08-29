@@ -11,6 +11,8 @@ export const metadata: Metadata = {
   },
 };
 
+import { AuthProvider } from '../lib/auth/AuthContext';
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
@@ -23,7 +25,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body className="font-sans antialiased bg-slate-50 text-slate-900 selection:bg-brand-blue selection:text-white">
-        {children}
+        <AuthProvider>{children}</AuthProvider>
       </body>
     </html>
   );
