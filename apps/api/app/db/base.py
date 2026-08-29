@@ -18,8 +18,8 @@ import uuid
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import MetaData, func
-from sqlalchemy.dialects.postgresql import TIMESTAMP, UUID
+from sqlalchemy import MetaData, Uuid, func
+from sqlalchemy.dialects.postgresql import TIMESTAMP
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 NAMING_CONVENTION = {
@@ -33,7 +33,7 @@ NAMING_CONVENTION = {
 metadata = MetaData(naming_convention=NAMING_CONVENTION)
 
 #: Reusable column type for UUID primary/foreign keys.
-UUID_PK = UUID(as_uuid=True)
+UUID_PK = Uuid(as_uuid=True)
 
 #: Reusable column type for UTC instants.
 UTC_TIMESTAMP = TIMESTAMP(timezone=True)

@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
+from typing import Any
 
 from sqlalchemy import (
     Boolean,
@@ -123,7 +124,7 @@ class CalendarSyncOutbox(Base, TimestampMixin):
     idempotency_key: Mapped[str] = mapped_column(String(255), nullable=False)
     event_type: Mapped[str] = mapped_column(String(100), nullable=False)
     
-    payload: Mapped[dict] = mapped_column(JSONB, nullable=False)
+    payload: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
     status: Mapped[str] = mapped_column(String(50), nullable=False, server_default=text("'PENDING'"))
     
     attempts: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text("0"))

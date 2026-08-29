@@ -12,7 +12,8 @@ from sqlalchemy.orm import Session
 
 from app.core.errors import ConflictError, PermissionDeniedError, ResourceNotFoundError
 from app.modules.access.authorization import AuthorizationService
-from app.modules.audit.service import AuditActor, AuditRecorder, AuditSource
+from app.modules.audit.models import AuditSource
+from app.modules.audit.service import AuditActor, AuditRecorder
 from app.modules.calendar.models import (
     CalendarEvent,
     CalendarOutboxStatus,

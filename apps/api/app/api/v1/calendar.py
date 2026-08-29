@@ -35,13 +35,14 @@ def list_calendar_events(
     ctx: RequestContext = CurrentContext,
 ) -> Sequence[CalendarEventResponse]:
     """Query LAKSHYA calendar events for user's organization."""
-    return CalendarService.list_events(
+    events = CalendarService.list_events(
         db=db,
         user=ctx.authenticated.user,
         start_time=start_time,
         end_time=end_time,
         event_type=event_type.value if event_type else None,
     )
+    return [CalendarEventResponse.model_validate(e) for e in events]
 
 
 @router.post("/events", response_model=CalendarEventResponse, status_code=status.HTTP_201_CREATED)
@@ -54,7 +55,7 @@ def create_calendar_event(
     """Create a new internal LAKSHYA calendar event."""
     event = CalendarService.create_event(db=db, user=ctx.authenticated.user, payload=payload)
     set_etag(response, event.version)
-    return event
+    return CalendarEventResponse.model_validate(event)
 
 
 @router.get("/events/{event_id}", response_model=CalendarEventResponse)
@@ -67,7 +68,7 @@ def get_calendar_event(
     """Get calendar event by ID."""
     event = CalendarService.get_event(db=db, user=ctx.authenticated.user, event_id=event_id)
     set_etag(response, event.version)
-    return event
+    return CalendarEventResponse.model_validate(event)
 
 
 @router.patch("/events/{event_id}", response_model=CalendarEventResponse)
@@ -89,7 +90,7 @@ def update_calendar_event(
         expected_version=expected_version,
     )
     set_etag(response, event.version)
-    return event
+    return CalendarEventResponse.model_validate(event)
 
 
 @router.post("/events/{event_id}/cancel", response_model=CalendarEventResponse)
@@ -111,7 +112,7 @@ def cancel_calendar_event(
         expected_version=expected_version,
     )
     set_etag(response, event.version)
-    return event
+    return CalendarEventResponse.model_validate(event)
 
 
 @router.get("/outbox", response_model=list[CalendarSyncOutboxResponse])
@@ -121,11 +122,12 @@ def list_calendar_outbox(
     ctx: RequestContext = CurrentContext,
 ) -> Sequence[CalendarSyncOutboxResponse]:
     """List outbox items for calendar synchronization."""
-    return CalendarService.list_outbox_items(
+    items = CalendarService.list_outbox_items(
         db=db,
         user=ctx.authenticated.user,
         status_filter=status_filter.value if status_filter else None,
     )
+    return [CalendarSyncOutboxResponse.model_validate(item) for item in items]
 
 
 @router.get("/integrations", response_model=UserCalendarIntegrationResponse | None)
@@ -134,7 +136,8 @@ def get_user_calendar_integration(
     ctx: RequestContext = CurrentContext,
 ) -> UserCalendarIntegrationResponse | None:
     """Get active user calendar integration."""
-    return CalendarService.get_user_integration(db=db, user=ctx.authenticated.user)
+    integration = CalendarService.get_user_integration(db=db, user=ctx.authenticated.user)
+    return UserCalendarIntegrationResponse.model_validate(integration) if integration else None
 
 
 @router.post("/integrations/connect", response_model=UserCalendarIntegrationResponse)
@@ -144,4 +147,5 @@ def connect_calendar_integration(
     ctx: RequestContext = CurrentContext,
 ) -> UserCalendarIntegrationResponse:
     """Disabled in Phase 3. Returns HTTP 501 Not Implemented per Phase 5 OAuth scope rule."""
-    return CalendarService.connect_integration(db=db, user=ctx.authenticated.user, payload=payload)
+    integration = CalendarService.connect_integration(db=db, user=ctx.authenticated.user, payload=payload)
+    return UserCalendarIntegrationResponse.model_validate(integration)
