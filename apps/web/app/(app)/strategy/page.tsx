@@ -3,13 +3,14 @@
 import React, { useState, useEffect } from 'react';
 import { Target, Plus, Sparkles, Building, Layers, CheckCircle2, ChevronRight } from 'lucide-react';
 import { QuarterlyPriority } from '../../../types/strategy';
-import { strategyStore } from '../../../lib/mocks/strategyMock';
+import { apiClient } from '../../../lib/api/client';
 import { ZomatoDeliveryStepper } from '../../../components/strategy/ZomatoDeliveryStepper';
 
 export default function StrategyPage() {
   const [priorities, setPriorities] = useState<QuarterlyPriority[]>([]);
   const [activePriorityId, setActivePriorityId] = useState<string>('');
   const [showAddModal, setShowAddModal] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   // New QP Form State
   const [newTitle, setNewTitle] = useState('');
@@ -17,27 +18,28 @@ export default function StrategyPage() {
   const [newAuthority, setNewAuthority] = useState('Managing Director');
   const [newDepartment, setNewDepartment] = useState('Spine Surgery & Operations');
 
-  const refreshData = () => {
-    const list = strategyStore.getQuarterlyPriorities();
-    setPriorities([...list]);
-    if (list.length > 0 && !activePriorityId) {
-      setActivePriorityId(list[0].id);
+  const refreshData = async () => {
+    setIsLoading(true);
+    try {
+      const list = await apiClient.strategy.getQuarterlyPriorities();
+      setPriorities([...list]);
+      if (list.length > 0 && !activePriorityId) {
+        setActivePriorityId(list[0].id);
+      }
+    } finally {
+      setIsLoading(false);
     }
   };
 
   useEffect(() => {
     refreshData();
-    const unsubscribe = strategyStore.subscribe(refreshData);
-    return () => {
-      unsubscribe();
-    };
   }, []);
 
-  const handleCreatePriority = (e: React.FormEvent) => {
+  const handleCreatePriority = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTitle.trim()) return;
 
-    const created = strategyStore.addQuarterlyPriority({
+    const created = await apiClient.strategy.createQuarterlyPriority({
       title: newTitle.trim(),
       description: newDescription.trim() || 'Strategic operational transformation target.',
       reportingAuthority: newAuthority,
@@ -46,6 +48,7 @@ export default function StrategyPage() {
       year: 2026,
     });
 
+    await refreshData();
     setActivePriorityId(created.id);
     setNewTitle('');
     setNewDescription('');
@@ -129,7 +132,7 @@ export default function StrategyPage() {
 
       {/* 3. ACTIVE QUARTERLY PRIORITY ZOMATO DELIVERY STEPPER */}
       {selectedPriority ? (
-        <ZomatoDeliveryStepper priority={selectedPriority} />
+        <ZomatoDeliveryStepper priority={selectedPriority} onRefresh={refreshData} />
       ) : (
         <div className="bg-white border border-dashed border-slate-300 rounded-2xl p-12 text-center">
           <Target className="w-12 h-12 text-slate-400 mx-auto mb-3" />

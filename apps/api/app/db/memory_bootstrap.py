@@ -22,6 +22,9 @@ from app.modules.access.catalog import ScopeType
 from app.modules.access.models import Permission, Role, RoleAssignment, RolePermission
 from app.modules.identity.models import CREDENTIAL_KIND_PASSWORD, Credential, User
 from app.modules.organization.models import Department, DepartmentMembership, Organization
+from app.modules.strategy.models import QuarterlyPriority
+from app.modules.strategy.service import DEFAULT_10_MILESTONE_TEMPLATES, StrategyService
+from app.modules.strategy.schemas import MilestoneStepSchema
 from app.modules.work_item.models import WorkItem, WorkItemActivity, WorkItemEscalation
 
 logger = logging.getLogger("lakshya.memory_db")
@@ -223,3 +226,26 @@ def bootstrap_seed_data(session: Session, settings: Settings) -> None:
         version=1,
     )
     session.add(wi2)
+
+    # 6. Seed Strategic Priorities with 10-Milestone Delivery Stepper
+    milestones = [MilestoneStepSchema(**m) for m in DEFAULT_10_MILESTONE_TEMPLATES]
+    qp1 = QuarterlyPriority(
+        id=uuid.uuid4(),
+        organization_id=org.id,
+        title="Spine Surgery Infection Rate Reduction & Digital OT Protocol",
+        expected_outcome=StrategyService._dump_milestones(
+            milestones,
+            {
+                "reporting_authority": "Managing Director",
+                "department": "Spine Surgery & Operations",
+                "description": "Achieve 0% surgical site infection rate across OT-1 and OT-2 via digital sterile verification.",
+                "target_date": "2026-09-30",
+            },
+        ),
+        owner_id=md_user.id,
+        proposer_id=md_user.id,
+        fy_start_year=2026,
+        quarter="Q3",
+        status="ACTIVE",
+    )
+    session.add(qp1)

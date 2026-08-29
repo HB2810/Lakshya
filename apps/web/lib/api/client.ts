@@ -309,9 +309,143 @@ export const apiClient = {
   },
 
   strategy: {
-    async getQuarterlyDirections() {
-      return MOCK_QUARTERLY_DIRECTIONS;
+    async getQuarterlyPriorities(filters?: { year?: number; quarter?: string }): Promise<QuarterlyPriority[]> {
+      try {
+        const queryParams = new URLSearchParams();
+        if (filters?.year) queryParams.append('year', filters.year.toString());
+        if (filters?.quarter) queryParams.append('quarter', filters.quarter);
+        const query = queryParams.toString() ? `?${queryParams.toString()}` : '';
+        const data = await apiFetch<any[]>(`/strategy/quarterly-priorities${query}`, { method: 'GET' });
+        return data.map((item: any) => ({
+          id: item.id,
+          year: item.year,
+          quarter: item.quarter,
+          title: item.title,
+          description: item.description || '',
+          strategicObjective: item.strategic_objective || item.title,
+          reportingAuthority: item.reporting_authority || 'Managing Director',
+          department: item.department || 'Hospital Operations',
+          status: item.status,
+          progressPercent: item.progress_percent || 0,
+          currentStep: item.current_step || 1,
+          targetDate: item.target_date || '2026-09-30',
+          milestones: (item.milestones || []).map((m: any) => ({
+            stepNumber: m.step_number,
+            title: m.title,
+            description: m.description || '',
+            ownerName: m.owner_name || 'Lead',
+            targetDate: m.target_date || '',
+            completedAt: m.completed_at || undefined,
+            status: m.status,
+            keyDeliverable: m.key_deliverable || '',
+            verificationNotes: m.verification_notes || undefined,
+          })),
+        }));
+      } catch (err) {
+        console.warn('Backend strategy endpoint unavailable, falling back to local store:', err);
+        return strategyStore.getQuarterlyPriorities();
+      }
     },
+
+    async getQuarterlyDirections(): Promise<QuarterlyPriority[]> {
+      return this.getQuarterlyPriorities();
+    },
+
+    async createQuarterlyPriority(payload: {
+      title: string;
+      description?: string;
+      reportingAuthority?: string;
+      department?: string;
+      quarter?: string;
+      year?: number;
+    }): Promise<QuarterlyPriority> {
+      try {
+        const backendPayload = {
+          title: payload.title,
+          description: payload.description,
+          reporting_authority: payload.reportingAuthority || 'Managing Director',
+          department: payload.department || 'Hospital Operations',
+          quarter: payload.quarter || 'Q3',
+          fy_start_year: payload.year || 2026,
+        };
+        const item = await apiFetch<any>('/strategy/quarterly-priorities', {
+          method: 'POST',
+          body: JSON.stringify(backendPayload),
+        });
+        return {
+          id: item.id,
+          year: item.year,
+          quarter: item.quarter,
+          title: item.title,
+          description: item.description || '',
+          strategicObjective: item.strategic_objective || item.title,
+          reportingAuthority: item.reporting_authority,
+          department: item.department,
+          status: item.status,
+          progressPercent: item.progress_percent,
+          currentStep: item.current_step,
+          targetDate: item.target_date,
+          milestones: (item.milestones || []).map((m: any) => ({
+            stepNumber: m.step_number,
+            title: m.title,
+            description: m.description || '',
+            ownerName: m.owner_name,
+            targetDate: m.target_date,
+            completedAt: m.completed_at,
+            status: m.status,
+            keyDeliverable: m.key_deliverable,
+            verificationNotes: m.verification_notes,
+          })),
+        };
+      } catch {
+        return strategyStore.addQuarterlyPriority(payload as any);
+      }
+    },
+
+    async updateMilestone(
+      priorityId: string,
+      stepNumber: number,
+      payload: { status: string; verificationNotes?: string }
+    ): Promise<QuarterlyPriority> {
+      try {
+        const item = await apiFetch<any>(`/strategy/quarterly-priorities/${priorityId}/milestones/${stepNumber}`, {
+          method: 'PATCH',
+          body: JSON.stringify({
+            status: payload.status,
+            verification_notes: payload.verificationNotes,
+          }),
+        });
+        return {
+          id: item.id,
+          year: item.year,
+          quarter: item.quarter,
+          title: item.title,
+          description: item.description || '',
+          strategicObjective: item.strategic_objective || item.title,
+          reportingAuthority: item.reporting_authority,
+          department: item.department,
+          status: item.status,
+          progressPercent: item.progress_percent,
+          currentStep: item.current_step,
+          targetDate: item.target_date,
+          milestones: (item.milestones || []).map((m: any) => ({
+            stepNumber: m.step_number,
+            title: m.title,
+            description: m.description || '',
+            ownerName: m.owner_name,
+            targetDate: m.target_date,
+            completedAt: m.completed_at,
+            status: m.status,
+            keyDeliverable: m.key_deliverable,
+            verificationNotes: m.verification_notes,
+          })),
+        };
+      } catch {
+        strategyStore.updateMilestoneStatus(priorityId, stepNumber, payload.status as any, payload.verificationNotes);
+        return strategyStore.getQuarterlyPriorities().find(p => p.id === priorityId)!;
+      }
+    },
+
     async getMonthlyPriorities() {
       return MOCK_MONTHLY_PRIORITIES;
     },

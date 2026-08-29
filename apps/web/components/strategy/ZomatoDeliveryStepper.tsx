@@ -15,13 +15,14 @@ import {
   Check,
 } from 'lucide-react';
 import { MilestoneStep, QuarterlyPriority } from '../../types/strategy';
-import { strategyStore } from '../../lib/mocks/strategyMock';
+import { apiClient } from '../../lib/api/client';
 
 interface ZomatoDeliveryStepperProps {
   priority: QuarterlyPriority;
+  onRefresh?: () => void;
 }
 
-export const ZomatoDeliveryStepper: React.FC<ZomatoDeliveryStepperProps> = ({ priority }) => {
+export const ZomatoDeliveryStepper: React.FC<ZomatoDeliveryStepperProps> = ({ priority, onRefresh }) => {
   const [selectedStepNumber, setSelectedStepNumber] = useState<number>(priority.currentStep || 1);
   const [isUpdating, setIsUpdating] = useState(false);
   const [verificationNotes, setVerificationNotes] = useState('');
@@ -29,18 +30,24 @@ export const ZomatoDeliveryStepper: React.FC<ZomatoDeliveryStepperProps> = ({ pr
   const selectedStep =
     priority.milestones.find(m => m.stepNumber === selectedStepNumber) || priority.milestones[0];
 
-  const handleUpdateStatus = (newStatus: MilestoneStep['status']) => {
+  const handleUpdateStatus = async (newStatus: MilestoneStep['status']) => {
     setIsUpdating(true);
-    strategyStore.updateMilestoneStatus(
-      priority.id,
-      selectedStep.stepNumber,
-      newStatus,
-      verificationNotes || undefined
-    );
-    setTimeout(() => {
+    try {
+      await apiClient.strategy.updateMilestone(
+        priority.id,
+        selectedStep.stepNumber,
+        {
+          status: newStatus,
+          verificationNotes: verificationNotes || undefined,
+        }
+      );
+      if (onRefresh) {
+        onRefresh();
+      }
+    } finally {
       setIsUpdating(false);
       setVerificationNotes('');
-    }, 400);
+    }
   };
 
   const completedCount = priority.milestones.filter(m => m.status === 'COMPLETED').length;
