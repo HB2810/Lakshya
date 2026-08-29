@@ -399,6 +399,18 @@ export const apiClient = {
       }
     },
 
+    async create(item: Partial<WorkItem>): Promise<WorkItem> {
+      try {
+        return await apiFetch<WorkItem>('/work-items', {
+          method: 'POST',
+          body: JSON.stringify(item),
+        });
+      } catch (err) {
+        console.warn('Backend work-items create endpoint unavailable, creating in local store:', err);
+        return workItemStore.createWorkItem(item, item.owner_name || 'Assigned Staff');
+      }
+    },
+
     async patch(id: string, patch: WorkItemPatchPayload): Promise<WorkItem> {
       try {
         return await apiFetch<WorkItem>(`/work-items/${id}`, {
@@ -436,23 +448,8 @@ export const apiClient = {
         try {
           return await apiFetch<any[]>('/work-items/escalations/inbox', { method: 'GET' });
         } catch (err) {
-          console.warn('Backend escalations inbox unavailable, returning mock escalations:', err);
-          return [
-            {
-              id: 'esc-001',
-              organization_id: 'org-stavya-001',
-              work_item_id: 'wi-003',
-              level: 'DEPARTMENT_HEAD',
-              reason: 'Vendor tech support escalation required for proprietary driver unlock key.',
-              escalated_by_id: 'usr-stav-101',
-              escalated_by_name: 'Priyesh Shah',
-              escalated_to_id: 'usr-dh-003',
-              escalated_to_name: 'Dr. Rohan Sharma',
-              escalated_at: '2026-08-27T16:00:00Z',
-              created_at: '2026-08-27T16:00:00Z',
-              status: 'PENDING',
-            }
-          ];
+          console.warn('Backend escalations inbox unavailable, returning empty inbox:', err);
+          return [];
         }
       },
       async resolve(id: string, payload: { resolution_note?: string }): Promise<any> {
