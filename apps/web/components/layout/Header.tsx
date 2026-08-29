@@ -51,8 +51,16 @@ export const Header: React.FC = () => {
         </div>
       </div>
 
+      {/* Top Center: Wisdom of the Day / Continuous Improvement */}
+      <div className="hidden md:flex items-center gap-2 px-3 py-1 bg-amber-50/80 border border-amber-200/80 rounded-full text-xs text-amber-900 shadow-2xs">
+        <span className="px-1.5 py-0.5 bg-amber-600 text-white text-[9px] font-black rounded uppercase tracking-wider">KAIZEN</span>
+        <span className="font-semibold">Continuous Improvement:</span>
+        <span className="text-amber-800 text-[11px]">Small daily refinements create compound clinical & operational excellence.</span>
+      </div>
+
       {/* Right Controls */}
       <div className="flex items-center gap-3.5">
+
         {/* Live Clock Readout */}
         <div className="hidden lg:flex items-center gap-2 px-3 py-1 bg-slate-50 border border-slate-200 rounded-lg text-xs font-mono text-slate-700 font-semibold">
           <Clock className="w-3.5 h-3.5 text-slate-500" />

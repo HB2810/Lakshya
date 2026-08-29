@@ -1,14 +1,27 @@
 export type Persona =
-  | 'STAVYANS'
+  | 'MASTER'
+  | 'MD'
+  | 'LEADER'
+  | 'EMPLOYEE'
+  // Existing system & organizational aliases:
   | 'MANAGING_DIRECTOR'
+  | 'STAVYANS'
   | 'ADMIN'
   | 'HR'
   | 'LEADERS'
-  | 'MD'
   | 'MD_OFFICE'
   | 'DEPARTMENT_HEAD'
-  | 'MANAGER'
-  | 'EMPLOYEE';
+  | 'MANAGER';
+
+export type StandardV1Role = 'MASTER' | 'MD' | 'LEADER' | 'EMPLOYEE';
+
+export function normalizeV1Role(role: Persona | string): StandardV1Role {
+  const upper = (role || '').toUpperCase();
+  if (upper === 'MASTER' || upper === 'ADMIN') return 'MASTER';
+  if (upper === 'MD' || upper === 'MANAGING_DIRECTOR' || upper === 'MD_OFFICE') return 'MD';
+  if (upper === 'LEADER' || upper === 'LEADERS' || upper === 'DEPARTMENT_HEAD' || upper === 'MANAGER') return 'LEADER';
+  return 'EMPLOYEE';
+}
 
 export interface BackendUser {
   id: string;
@@ -17,6 +30,8 @@ export interface BackendUser {
   is_active: boolean;
   organization_id: string;
   department_id?: string | null;
+  position_id?: string | null;
+  position_title?: string | null;
   created_at?: string;
   updated_at?: string;
   last_login_at?: string | null;
@@ -48,6 +63,9 @@ export interface User {
   roleTitle: string;
   departmentId: string;
   departmentName: string;
+  positionTitle?: string;
+  reportsToUserId?: string | null;
+  reportsToUserName?: string | null;
   avatarUrl?: string;
   roles?: string[];
   permissions?: string[];

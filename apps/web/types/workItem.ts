@@ -6,7 +6,16 @@ export interface WorkItemActivity {
   timestamp: string;
   authorId: string;
   authorName: string;
-  type: 'CREATED' | 'STATUS_CHANGE' | 'PROGRESS_UPDATE' | 'BLOCKER_REPORTED' | 'BLOCKER_RESOLVED' | 'COMPLETED';
+  type:
+    | 'CREATED'
+    | 'STATUS_CHANGE'
+    | 'PROGRESS_UPDATE'
+    | 'BLOCKER_REPORTED'
+    | 'BLOCKER_RESOLVED'
+    | 'ESCALATION_TRIGGERED'
+    | 'ESCALATION_RESOLVED'
+    | 'REASSIGNED'
+    | 'COMPLETED';
   note?: string;
   previousStatus?: WorkItemStatus;
   newStatus?: WorkItemStatus;
@@ -19,6 +28,50 @@ export interface BlockerDetails {
   helpedByPersonOrDept?: string;
   urgency: 'URGENT' | 'HIGH' | 'MEDIUM';
   reportedAt: string;
+}
+
+export interface WorkItemRACI {
+  responsible_id?: string | null;
+  responsible_name?: string | null;
+  accountable_id: string; // Primary Accountable owner
+  accountable_name: string;
+  consulted_ids?: string[];
+  consulted_names?: string[];
+  informed_ids?: string[];
+  informed_names?: string[];
+}
+
+export interface WorkItemEDC {
+  expected_outcome: string;
+  definition_of_done: string;
+  evidence_required?: string;
+  completion_criteria?: string[];
+}
+
+export type DependencyStatus = 'BLOCKED' | 'READY' | 'COMPLETED';
+
+export interface WorkItemDependencyItem {
+  id: string;
+  target_work_item_id: string;
+  target_title: string;
+  status: DependencyStatus;
+  notes?: string;
+}
+
+export type EscalationLevel = 'DIRECT_LEADER' | 'DEPARTMENT_HEAD' | 'MANAGING_DIRECTOR';
+
+export interface WorkItemEscalationRecord {
+  id: string;
+  level: EscalationLevel;
+  reason: string;
+  escalated_by_id: string;
+  escalated_by_name: string;
+  escalated_to_id: string;
+  escalated_to_name: string;
+  escalated_at: string;
+  status: 'PENDING' | 'ACKNOWLEDGED' | 'RESOLVED';
+  resolution_note?: string;
+  resolved_at?: string;
 }
 
 export interface IntakeRequestPayload {
@@ -68,6 +121,8 @@ export interface WorkItem {
   priority: WorkItemPriority;
   owner_id?: string | null;
   owner_name?: string | null;
+  department_id?: string | null;
+  department_name?: string | null;
   created_by: string;
   due_at?: string | null;
   completed_at?: string | null;
@@ -75,6 +130,13 @@ export interface WorkItem {
   blocked_at?: string | null;
   blocked_reason?: string | null;
   blocker_details?: BlockerDetails | null;
+  
+  // Execution Engineering (RACI, EDC, Dependencies, Escalations)
+  raci?: WorkItemRACI | null;
+  edc?: WorkItemEDC | null;
+  dependencies?: WorkItemDependencyItem[];
+  escalation?: WorkItemEscalationRecord | null;
+  
   origin_meeting_id?: string | null;
   source_type?: 'MANUAL' | 'MEETING' | 'STRATEGY' | 'SMART_INTAKE' | string;
   source_title?: string | null;
@@ -90,10 +152,16 @@ export interface WorkItemPatchPayload {
   status?: WorkItemStatus;
   priority?: WorkItemPriority;
   owner_id?: string | null;
+  owner_name?: string | null;
+  department_id?: string | null;
   due_at?: string | null;
   progressPercent?: number;
   blocked_reason?: string | null;
   blocker_details?: BlockerDetails | null;
+  raci?: WorkItemRACI | null;
+  edc?: WorkItemEDC | null;
+  dependencies?: WorkItemDependencyItem[];
+  escalation?: WorkItemEscalationRecord | null;
   update_note?: string;
 }
 
