@@ -753,7 +753,7 @@ export const DynamicHospitalOrgChart: React.FC<DynamicHospitalOrgChartProps> = (
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4.5">
           {group.children.map((child) => renderGroup(child))}
         </div>
       </div>
@@ -995,34 +995,52 @@ export const DynamicHospitalOrgChart: React.FC<DynamicHospitalOrgChartProps> = (
                   Executive Governance &amp; Founding Board
                 </h3>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4.5">
                 {STAVYA_ORG_STRUCTURE.governance.map((gov) => {
                   const matched = staffList.find((s) => s.name.toLowerCase() === gov.name.toLowerCase());
-                  const isMDGov = gov.name.includes('Mirant') || gov.title.toLowerCase().includes('managing director');
-                  const isFounderGov = gov.title.toLowerCase().includes('founder');
+                  const isMD = gov.name.includes('Mirant') || gov.title.toLowerCase() === 'managing director';
+                  const isFounder = gov.name.includes('Dr. Bharat') || gov.title.toLowerCase() === 'founder & chairman';
+                  const isCoFounder = gov.name.includes('Amita') || gov.title.toLowerCase().includes('vice chairperson');
+                  const isQuality = gov.name.includes('Akruti') || gov.title.toLowerCase().includes('quality');
+
+                  const badgeText = isMD
+                    ? 'Managing Director (MD)'
+                    : isFounder
+                    ? 'Founder & Chairman'
+                    : isCoFounder
+                    ? 'Co-Founder & Vice Chairperson'
+                    : isQuality
+                    ? 'Director of Quality & Safety'
+                    : 'Governing Board';
+
+                  const badgeStyle = isMD
+                    ? 'bg-blue-600 text-white shadow-2xs'
+                    : isFounder
+                    ? 'bg-purple-100 text-purple-800 border border-purple-200'
+                    : isCoFounder
+                    ? 'bg-indigo-50 text-indigo-700 border border-indigo-200'
+                    : isQuality
+                    ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                    : 'bg-slate-100 text-slate-700';
 
                   return (
                     <div
                       key={gov.name}
                       onClick={() => matched && openStaffDetail(matched)}
                       className={`bg-white border ${
-                        isMDGov ? 'border-blue-500 ring-2 ring-blue-100' : 'border-slate-200'
-                      } rounded-2xl p-4 shadow-2xs hover:shadow-sm transition-all cursor-pointer space-y-2`}
+                        isMD ? 'border-blue-500 ring-2 ring-blue-100' : 'border-slate-200'
+                      } rounded-2xl p-5 shadow-2xs hover:shadow-md transition-all cursor-pointer flex flex-col justify-between space-y-3 min-h-[145px]`}
                     >
-                      <span
-                        className={`px-2 py-0.5 text-[9px] font-black rounded uppercase tracking-wider ${
-                          isMDGov
-                            ? 'bg-blue-600 text-white'
-                            : isFounderGov
-                            ? 'bg-purple-100 text-purple-800'
-                            : 'bg-blue-50 text-blue-700'
-                        }`}
-                      >
-                        {isMDGov ? 'Managing Director' : isFounderGov ? 'Founder & Chairman' : 'Board'}
-                      </span>
-                      <h4 className="text-sm font-black text-slate-900">{gov.name}</h4>
-                      <p className="text-xs text-blue-700 font-bold">{gov.title}</p>
-                      <p className="text-[11px] text-slate-500">{gov.role}</p>
+                      <div className="space-y-2">
+                        <span className={`inline-block px-2.5 py-0.5 text-[9px] font-black rounded-md uppercase tracking-wider ${badgeStyle}`}>
+                          {badgeText}
+                        </span>
+                        <div>
+                          <h4 className="text-sm font-black text-slate-900 tracking-tight leading-snug">{gov.name}</h4>
+                          <p className="text-xs text-blue-700 font-bold mt-0.5">{gov.title}</p>
+                        </div>
+                      </div>
+                      <p className="text-[11px] text-slate-500 font-medium border-t border-slate-100 pt-2">{gov.role}</p>
                     </div>
                   );
                 })}
@@ -1039,7 +1057,7 @@ export const DynamicHospitalOrgChart: React.FC<DynamicHospitalOrgChartProps> = (
                   Clinical Specialty Divisions &amp; Medical Operations
                 </h3>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              <div className="space-y-4">
                 {STAVYA_ORG_STRUCTURE.clinical.map((grp) => renderGroup(grp))}
               </div>
             </div>
@@ -1054,7 +1072,7 @@ export const DynamicHospitalOrgChart: React.FC<DynamicHospitalOrgChartProps> = (
                   Hospital Administration, Operations &amp; Finance
                 </h3>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              <div className="space-y-4">
                 {STAVYA_ORG_STRUCTURE.admin.map((grp) => renderGroup(grp))}
               </div>
             </div>
