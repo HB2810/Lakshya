@@ -29,12 +29,15 @@ describe('LAKSHYA RCA, FMEA & 10-Milestone Strategic Priority Engine Suite', () 
     });
 
     it('updates status and adds CAPA items to 5-Why investigation', () => {
-      const list = rcaStore.getFiveWhyList();
-      const first = list[0];
-      rcaStore.updateFiveWhy(first.id, {
+      const created = rcaStore.addFiveWhy({
+        title: 'Investigation for CAPA test',
+        problemStatement: 'Problem for test',
+        whys: ['Why 1', 'Why 2', 'Why 3', 'Why 4', 'Why 5'],
+        rootCause: 'Root cause',
+      });
+      rcaStore.updateFiveWhy(created.id, {
         status: 'RESOLVED',
         capaList: [
-          ...first.capaList,
           {
             id: 'capa-test-1',
             actionType: 'PREVENTIVE',
@@ -46,7 +49,7 @@ describe('LAKSHYA RCA, FMEA & 10-Milestone Strategic Priority Engine Suite', () 
         ],
       });
 
-      const updated = rcaStore.getFiveWhyList().find(r => r.id === first.id);
+      const updated = rcaStore.getFiveWhyList().find(r => r.id === created.id);
       expect(updated?.status).toBe('RESOLVED');
       expect(updated?.capaList.length).toBeGreaterThan(0);
     });
@@ -68,13 +71,15 @@ describe('LAKSHYA RCA, FMEA & 10-Milestone Strategic Priority Engine Suite', () 
     });
 
     it('removes cause from fishbone category', () => {
+      rcaStore.addFishboneCause('people', 'Temporary test cause');
       const fishbone = rcaStore.getFishbone();
-      const cat = fishbone.categories[0];
-      const initialCount = cat.causes.length;
+      const peopleCat = fishbone.categories.find(c => c.key === 'people')!;
+      const initialCount = peopleCat.causes.length;
 
-      rcaStore.removeFishboneCause(cat.key, 0);
+      rcaStore.removeFishboneCause('people', initialCount - 1);
       const updated = rcaStore.getFishbone();
-      expect(updated.categories[0].causes.length).toBe(initialCount - 1);
+      const updatedPeople = updated.categories.find(c => c.key === 'people')!;
+      expect(updatedPeople.causes.length).toBe(initialCount - 1);
     });
   });
 
@@ -95,10 +100,15 @@ describe('LAKSHYA RCA, FMEA & 10-Milestone Strategic Priority Engine Suite', () 
     });
 
     it('recalculates RPN and revised RPN when parameters are updated', () => {
-      const fmea = rcaStore.getFMEA();
-      const firstRow = fmea.rows[0];
+      const row = rcaStore.addFMEARow({
+        processStep: 'FMEA Recalculation Step',
+        potentialFailureMode: 'Initial test failure mode',
+        severity: 5,
+        occurrence: 2,
+        detection: 2,
+      });
 
-      rcaStore.updateFMEARow(firstRow.id, {
+      rcaStore.updateFMEARow(row.id, {
         severity: 10,
         occurrence: 2,
         detection: 5,
@@ -107,7 +117,7 @@ describe('LAKSHYA RCA, FMEA & 10-Milestone Strategic Priority Engine Suite', () 
         revisedDetection: 1,
       });
 
-      const updated = rcaStore.getFMEA().rows.find(r => r.id === firstRow.id);
+      const updated = rcaStore.getFMEA().rows.find(r => r.id === row.id);
       expect(updated?.rpn).toBe(100); // 10 * 2 * 5
       expect(updated?.revisedRpn).toBe(10); // 10 * 1 * 1
     });
