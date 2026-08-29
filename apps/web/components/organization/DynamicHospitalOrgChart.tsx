@@ -70,9 +70,9 @@ export const DynamicHospitalOrgChart: React.FC<DynamicHospitalOrgChartProps> = (
 }) => {
   const { user } = useAuth();
   
-  // Strict MD vs Leader Gating: Only MD can modify org structure
-  const isMD = ['MD', 'MD_OFFICE', 'MANAGING_DIRECTOR', 'MASTER', 'ADMIN'].includes(user.role);
-  const isLeader = ['MD', 'MD_OFFICE', 'MANAGING_DIRECTOR', 'DEPARTMENT_HEAD', 'MANAGER', 'LEADER', 'LEADERS', 'MASTER', 'ADMIN'].includes(user.role);
+  // Dynamic Org Chart Gating: Both MD and Leaders can modify org structure
+  const isMD = ['MD', 'MD_OFFICE', 'MANAGING_DIRECTOR', 'DEPARTMENT_HEAD', 'MANAGER', 'LEADER', 'LEADERS', 'MASTER', 'ADMIN'].includes(user.role);
+  const isLeader = isMD;
 
   // Live dynamic staff state from store
   const [staffList, setStaffList] = useState<HospitalStaffMember[]>(() => dynamicOrgStore.getStaffList());
@@ -84,8 +84,8 @@ export const DynamicHospitalOrgChart: React.FC<DynamicHospitalOrgChartProps> = (
     return () => unsub();
   }, []);
 
-  // View Mode: 'tree' (Interactive Visual Org Tree) or 'grid' (Department & Unit Directory)
-  const [viewMode, setViewMode] = useState<'grid' | 'tree'>('grid');
+  // View Mode: 'tree' (Interactive Visual Org Tree) is now the default
+  const [viewMode, setViewMode] = useState<'grid' | 'tree'>('tree');
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTier, setActiveTier] = useState<'all' | 'gov' | 'clin' | 'nursing' | 'adm'>('all');
   const [filterWorkload, setFilterWorkload] = useState<'all' | 'active_tasks' | 'blocked' | 'probation' | 'wide_span'>('all');
@@ -468,7 +468,7 @@ export const DynamicHospitalOrgChart: React.FC<DynamicHospitalOrgChartProps> = (
               {isMDNode
                 ? 'Managing Director'
                 : isFounderNode
-                ? 'Founder & Chairman'
+                ? (staff.name.includes('Amita') ? 'Co-Founder & Vice Chairperson' : 'Founder & Chairman')
                 : staff.unit}
             </span>
 
@@ -782,29 +782,7 @@ export const DynamicHospitalOrgChart: React.FC<DynamicHospitalOrgChartProps> = (
 
           {/* Quick Metrics & View Mode Switcher */}
           <div className="flex flex-wrap items-center gap-3">
-            <div className="flex items-center bg-slate-100 p-1 rounded-2xl border border-slate-200/80">
-              <button
-                type="button"
-                onClick={() => setViewMode('tree')}
-                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
-                  viewMode === 'tree' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600 hover:text-slate-900'
-                }`}
-              >
-                <Network className="w-3.5 h-3.5 text-blue-600" />
-                <span>Hierarchical Tree</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setViewMode('grid')}
-                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
-                  viewMode === 'grid' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600 hover:text-slate-900'
-                }`}
-              >
-                <Layers className="w-3.5 h-3.5 text-blue-600" />
-                <span>Department Grid</span>
-              </button>
-            </div>
-
+            {/* Removed View Mode Switcher per user request */}
             <div className="hidden sm:flex items-center gap-2">
               <div className="bg-slate-50 px-3.5 py-2 rounded-xl text-center border border-slate-200">
                 <span className="block text-sm font-black text-slate-900">{totalStaff}</span>
