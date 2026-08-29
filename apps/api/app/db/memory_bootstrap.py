@@ -11,14 +11,24 @@ import uuid
 from datetime import date, datetime, timezone
 from typing import Any
 
-from sqlalchemy import Engine, create_engine, text
+from sqlalchemy import CheckConstraint, Engine, create_engine, text
+from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
+import app.modules.access.models
+import app.modules.audit.models
+import app.modules.calendar.models
+import app.modules.identity.models
+import app.modules.meeting.models
+import app.modules.organization.models
+import app.modules.strategy.models
+from app.core.clock import utcnow
 from app.core.config import Settings
 from app.core.security import PASSWORD_ALGORITHM, PasswordHasherService
 from app.db.base import Base
-from app.modules.access.catalog import ScopeType
+from app.modules.access.catalog import PERMISSION_CATALOG, ScopeType
 from app.modules.access.models import Permission, Role, RoleAssignment, RolePermission
 from app.modules.audit.models import AuditEvent
 from app.modules.identity.models import CREDENTIAL_KIND_PASSWORD, Credential, User
@@ -34,10 +44,15 @@ BOOTSTRAP_ROLE_KEY = "local_bootstrap_admin"
 DEFAULT_ORG_ID = uuid.UUID("00000000-0000-4000-8000-000000000001")
 
 
+@compiles(JSONB, "sqlite")
+def compile_jsonb_sqlite(type_: Any, compiler: Any, **kw: Any) -> str:
+    return "JSON"
+
+
 def build_memory_engine_and_bootstrap(settings: Settings) -> Engine:
     """Build an in-memory SQLite database engine seeded with demo bootstrap data."""
     logger.info("Initializing in-memory SQLite database for offline testing...")
-    
+
     engine = create_engine(
         "sqlite:///:memory:",
         connect_args={"check_same_thread": False},
@@ -45,8 +60,19 @@ def build_memory_engine_and_bootstrap(settings: Settings) -> Engine:
         future=True,
     )
 
+    from sqlalchemy import event
+
+    @event.listens_for(engine, "connect")
+    def setup_sqlite_functions(dbapi_connection: Any, connection_record: Any) -> None:
+        dbapi_connection.create_function("now", 0, lambda: datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S"))
+        dbapi_connection.create_function("btrim", 1, lambda s: s.strip() if s is not None else None)
+
+    # Filter out Postgres-specific CHECK constraints for SQLite table creation
+    for table in Base.metadata.tables.values():
+        table.constraints = {c for c in table.constraints if not isinstance(c, CheckConstraint)}
+
     Base.metadata.create_all(bind=engine)
-    
+
     session_factory = sessionmaker(bind=engine, autoflush=False, expire_on_commit=False)
     with session_factory() as session:
         bootstrap_seed_data(session, settings)
@@ -58,9 +84,9 @@ def build_memory_engine_and_bootstrap(settings: Settings) -> Engine:
 
 def bootstrap_seed_data(session: Session, settings: Settings) -> None:
     """Seed permissions, roles, demo users and organization into SQLite."""
-    now = datetime.now(timezone.utc)
+    now = utcnow()
 
-    # 1. Seed Organization
+    # 1. Seed Organization first
     org = Organization(
         id=DEFAULT_ORG_ID,
         name="Stavya Spine Hospital",
@@ -70,33 +96,58 @@ def bootstrap_seed_data(session: Session, settings: Settings) -> None:
     )
     session.add(org)
 
-    # 2. Seed Departments
-    dept_spine = Department(id=uuid.uuid4(), organization_id=org.id, name="Spine Surgery & Clinical", code="SPINE", is_active=True)
-    dept_it = Department(id=uuid.uuid4(), organization_id=org.id, name="IT & Digital Health", code="IT", is_active=True)
-    dept_ops = Department(id=uuid.uuid4(), organization_id=org.id, name="Hospital Operations", code="OPS", is_active=True)
-    dept_mdoffice = Department(id=uuid.uuid4(), organization_id=org.id, name="MD Office Strategic Cell", code="MDOFFICE", is_active=True)
+    # 2. Seed Permissions Catalog
+    permissions_by_key: dict[str, Permission] = {}
+    for entry in PERMISSION_CATALOG:
+        perm = Permission(
+            id=uuid.uuid4(),
+            key=entry.key,
+            resource=entry.resource,
+            action=entry.action,
+            description=entry.description,
+            created_at=now,
+            updated_at=now,
+        )
+        session.add(perm)
+        permissions_by_key[entry.key] = perm
+
+    # 3. Seed Departments
+    dept_spine = Department(id=uuid.uuid4(), organization_id=org.id, name="Spine Surgery & Clinical", code="SPINE", is_active=True, created_at=now, updated_at=now)
+    dept_it = Department(id=uuid.uuid4(), organization_id=org.id, name="IT & Digital Health", code="IT", is_active=True, created_at=now, updated_at=now)
+    dept_ops = Department(id=uuid.uuid4(), organization_id=org.id, name="Hospital Operations", code="OPS", is_active=True, created_at=now, updated_at=now)
+    dept_mdoffice = Department(id=uuid.uuid4(), organization_id=org.id, name="MD Office Strategic Cell", code="MDOFFICE", is_active=True, created_at=now, updated_at=now)
 
     depts = [dept_spine, dept_it, dept_ops, dept_mdoffice]
     for d in depts:
         session.add(d)
 
-    # 3. Seed Roles: MASTER, MD, LEADER, EMPLOYEE
-    role_master = Role(id=uuid.uuid4(), organization_id=org.id, key="master", name="Master Administrator", is_active=True)
-    role_md = Role(id=uuid.uuid4(), organization_id=org.id, key="md", name="Managing Director", is_active=True)
-    role_leader = Role(id=uuid.uuid4(), organization_id=org.id, key="leader", name="Operational Leader", is_active=True)
-    role_employee = Role(id=uuid.uuid4(), organization_id=org.id, key="employee", name="Stavya Staff / Employee", is_active=True)
+    # 4. Seed Roles: MASTER, MD, LEADER, EMPLOYEE
+    role_master = Role(id=uuid.uuid4(), organization_id=org.id, key="master", name="Master Administrator", is_active=True, created_at=now, updated_at=now)
+    role_md = Role(id=uuid.uuid4(), organization_id=org.id, key="md", name="Managing Director", is_active=True, created_at=now, updated_at=now)
+    role_leader = Role(id=uuid.uuid4(), organization_id=org.id, key="leader", name="Operational Leader", is_active=True, created_at=now, updated_at=now)
+    role_employee = Role(id=uuid.uuid4(), organization_id=org.id, key="employee", name="Stavya Staff / Employee", is_active=True, created_at=now, updated_at=now)
 
     roles = [role_master, role_md, role_leader, role_employee]
     for r in roles:
         session.add(r)
 
-    # 4. Seed Users & Password Credentials
+    for perm in permissions_by_key.values():
+        for r in roles:
+            role_perm = RolePermission(
+                id=uuid.uuid4(),
+                role_id=r.id,
+                permission_id=perm.id,
+                created_at=now,
+            )
+            session.add(role_perm)
+
+    # 5. Seed Users & Password Credentials
     hasher = PasswordHasherService(settings)
-    password_hash = hasher.hash_password("password123")
+    password_hash = hasher.hash("password123")
 
     demo_users = [
         ("master@stavya.local", "Master System Admin", role_master, dept_mdoffice),
-        ("md@stavya.local", "Dr. Rohan Sharma (MD)", role_md, dept_mdoffice),
+        ("md@stavya.local", "Dr. Mirant Dave (MD)", role_md, dept_mdoffice),
         ("leader@stavya.local", "Priyesh Shah (IT & Digital Health Lead)", role_leader, dept_it),
         ("employee@stavya.local", "Sister Sunita Rao (Senior Spine Nurse)", role_employee, dept_spine),
     ]
@@ -107,9 +158,11 @@ def bootstrap_seed_data(session: Session, settings: Settings) -> None:
             id=uuid.uuid4(),
             organization_id=org.id,
             email=email_raw,
-            normalized_email=email_raw.lower(),
+            normalized_email=email_raw.strip().lower(),
             full_name=name,
             is_active=True,
+            created_at=now,
+            updated_at=now,
         )
         session.add(user)
         created_users[email_raw] = user
@@ -124,6 +177,8 @@ def bootstrap_seed_data(session: Session, settings: Settings) -> None:
             is_active=True,
             password_updated_at=now,
             must_change_password=False,
+            created_at=now,
+            updated_at=now,
         )
         session.add(cred)
 
@@ -135,6 +190,9 @@ def bootstrap_seed_data(session: Session, settings: Settings) -> None:
             scope_type="organization" if user_role in (role_master, role_md) else "department",
             department_id=None if user_role in (role_master, role_md) else user_dept.id,
             effective_from=date(2026, 1, 1),
+            effective_to=None,
+            created_at=now,
+            updated_at=now,
         )
         session.add(assignment)
 
@@ -145,18 +203,23 @@ def bootstrap_seed_data(session: Session, settings: Settings) -> None:
             department_id=user_dept.id,
             is_primary=True,
             started_on=date(2026, 1, 1),
+            ended_on=None,
+            created_at=now,
+            updated_at=now,
         )
         session.add(membership)
 
-    # 4b. Seed Canonical Positions and Hierarchy for Org Chart Tree
+    # 6. Seed Canonical Positions and Hierarchy for Org Chart Tree
     pos_md = Position(
         id=uuid.uuid4(),
         organization_id=org.id,
         department_id=dept_mdoffice.id,
-        title="Managing Director & Chief Spine Surgeon",
+        title="Managing Director & Consultant Spine Surgeon",
         code="MD-EXEC",
         is_leadership=True,
         is_active=True,
+        created_at=now,
+        updated_at=now,
     )
     session.add(pos_md)
 
@@ -169,6 +232,8 @@ def bootstrap_seed_data(session: Session, settings: Settings) -> None:
         reports_to_position_id=pos_md.id,
         is_leadership=True,
         is_active=True,
+        created_at=now,
+        updated_at=now,
     )
     session.add(pos_it_lead)
 
@@ -181,6 +246,8 @@ def bootstrap_seed_data(session: Session, settings: Settings) -> None:
         reports_to_position_id=pos_it_lead.id,
         is_leadership=False,
         is_active=True,
+        created_at=now,
+        updated_at=now,
     )
     session.add(pos_it_eng)
 
@@ -193,6 +260,8 @@ def bootstrap_seed_data(session: Session, settings: Settings) -> None:
         reports_to_position_id=pos_md.id,
         is_leadership=False,
         is_active=True,
+        created_at=now,
+        updated_at=now,
     )
     session.add(pos_nurse)
 
@@ -205,6 +274,8 @@ def bootstrap_seed_data(session: Session, settings: Settings) -> None:
         reports_to_position_id=pos_md.id,
         is_leadership=True,
         is_active=True,
+        created_at=now,
+        updated_at=now,
     )
     session.add(pos_admin)
 
@@ -223,10 +294,12 @@ def bootstrap_seed_data(session: Session, settings: Settings) -> None:
             user_id=u_id,
             position_id=p_id,
             started_on=date(2026, 1, 1),
+            created_at=now,
+            updated_at=now,
         )
         session.add(asg)
 
-    # 5. Seed Canonical WorkItems with RACI, EDC, Dependencies, Escalation
+    # 7. Seed Canonical WorkItems with RACI, EDC, Dependencies, Escalation
     emp_user = created_users["employee@stavya.local"]
     ldr_user = created_users["leader@stavya.local"]
     md_user = created_users["md@stavya.local"]
@@ -306,7 +379,7 @@ def bootstrap_seed_data(session: Session, settings: Settings) -> None:
     )
     session.add(wi2)
 
-    # 6. Seed Strategic Priorities with 10-Milestone Delivery Stepper
+    # 8. Seed Strategic Priorities with 10-Milestone Delivery Stepper
     milestones = [MilestoneStepSchema(**m) for m in DEFAULT_10_MILESTONE_TEMPLATES]
     qp1 = QuarterlyPriority(
         id=uuid.uuid4(),
@@ -326,10 +399,12 @@ def bootstrap_seed_data(session: Session, settings: Settings) -> None:
         fy_start_year=2026,
         quarter="Q3",
         status="ACTIVE",
+        created_at=now,
+        updated_at=now,
     )
     session.add(qp1)
 
-    # 7. Seed Sample Audit Events
+    # 9. Seed Sample Audit Events
     evt1 = AuditEvent(
         id=uuid.uuid4(),
         organization_id=org.id,

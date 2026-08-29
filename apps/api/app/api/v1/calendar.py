@@ -140,7 +140,11 @@ def list_calendar_outbox(
         user=ctx.authenticated.user,
         status_filter=status_filter.value if status_filter else None,
     )
+<<<<<<< HEAD
     return [CalendarSyncOutboxResponse.model_validate(i) for i in items]
+=======
+    return [CalendarSyncOutboxResponse.model_validate(item) for item in items]
+>>>>>>> origin/main
 
 
 @router.get("/integrations", response_model=UserCalendarIntegrationResponse | None)
@@ -151,6 +155,7 @@ def get_user_calendar_integration(
     """Get active user calendar integration."""
     integration = CalendarService.get_user_integration(db=db, user=ctx.authenticated.user)
     return UserCalendarIntegrationResponse.model_validate(integration) if integration else None
+<<<<<<< HEAD
 
 
 @router.get("/integrations/google/auth-url", response_model=GoogleAuthUrlResponse)
@@ -160,6 +165,8 @@ def get_google_auth_url(
     """Get Google OAuth 2.0 authorization URL."""
     data = CalendarService.get_google_auth_url(user=ctx.authenticated.user)
     return GoogleAuthUrlResponse(**data)
+=======
+>>>>>>> origin/main
 
 
 @router.post("/integrations/connect", response_model=UserCalendarIntegrationResponse)
@@ -169,6 +176,7 @@ def connect_google_calendar_integration(
     db: Session = Depends(get_db),
     ctx: RequestContext = CurrentContext,
 ) -> UserCalendarIntegrationResponse:
+<<<<<<< HEAD
     """Connect Google Calendar with OAuth credentials."""
     integration = CalendarService.connect_integration(db=db, user=ctx.authenticated.user, payload=payload)
     return UserCalendarIntegrationResponse.model_validate(integration)
@@ -192,3 +200,8 @@ def trigger_calendar_sync(
     """Trigger processing of sync outbox items with external calendar provider."""
     data = CalendarService.trigger_sync(db=db, user=ctx.authenticated.user)
     return CalendarSyncTriggerResponse(**data)
+=======
+    """Disabled in Phase 3. Returns HTTP 501 Not Implemented per Phase 5 OAuth scope rule."""
+    integration = CalendarService.connect_integration(db=db, user=ctx.authenticated.user, payload=payload)
+    return UserCalendarIntegrationResponse.model_validate(integration)
+>>>>>>> origin/main
