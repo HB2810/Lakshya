@@ -199,3 +199,119 @@ class DepartmentMembership(Base, TimestampMixin):
     @property
     def is_current(self) -> bool:
         return self.ended_on is None
+
+
+class Position(Base, TimestampMixin, VersionMixin):
+    """A defined organizational post / position.
+
+    Core principle: "A person is not a post." A post exists independently of
+    whether a person occupies it. Reporting lines exist structurally between
+    positions via ``reports_to_position_id``.
+    """
+
+    __tablename__ = "positions"
+    __table_args__ = (
+        UniqueConstraint("organization_id", "id", name="uq_positions_organization_id_id"),
+        ForeignKeyConstraint(
+            ["organization_id", "department_id"],
+            ["departments.organization_id", "departments.id"],
+            name="fk_positions_department_same_organization",
+            ondelete="RESTRICT",
+        ),
+        ForeignKeyConstraint(
+            ["organization_id", "reports_to_position_id"],
+            ["positions.organization_id", "positions.id"],
+            name="fk_positions_reports_to_same_organization",
+            ondelete="RESTRICT",
+        ),
+        CheckConstraint(
+            "reports_to_position_id IS NULL OR reports_to_position_id <> id",
+            name="reports_to_is_not_self",
+        ),
+        CheckConstraint("length(btrim(title)) > 0", name="title_not_blank"),
+        CheckConstraint("code IS NULL OR length(btrim(code)) > 0", name="position_code_not_blank"),
+        CheckConstraint(
+            "(is_active AND archived_at IS NULL) OR (NOT is_active)",
+            name="position_archived_implies_inactive",
+        ),
+        Index("ix_positions_organization_id_is_active", "organization_id", "is_active"),
+        Index("ix_positions_department_id", "department_id"),
+        Index("ix_positions_reports_to_position_id", "reports_to_position_id"),
+    )
+
+    id: Mapped[uuid.UUID] = uuid_pk()
+    organization_id: Mapped[uuid.UUID] = mapped_column(
+        UUID_PK, ForeignKey("organizations.id", ondelete="RESTRICT"), nullable=False
+    )
+    department_id: Mapped[uuid.UUID] = mapped_column(UUID_PK, nullable=False)
+    reports_to_position_id: Mapped[uuid.UUID | None] = mapped_column(UUID_PK, nullable=True)
+
+    title: Mapped[str] = mapped_column(String(200), nullable=False)
+    code: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    is_leadership: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, server_default=text("false")
+    )
+
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=text("true"))
+    archived_at: Mapped[datetime | None] = mapped_column(UTC_TIMESTAMP, nullable=True)
+
+
+class PositionAssignment(Base, TimestampMixin):
+    """Effective-dated assignment of a person (User) to a Position.
+
+    Retains complete history of who occupied what position when. When a user
+    transfers positions, the active assignment is ended (ended_on set) and a new
+    assignment is created.
+    """
+
+    __tablename__ = "position_assignments"
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["organization_id", "user_id"],
+            ["users.organization_id", "users.id"],
+            name="fk_position_assignments_user_same_organization",
+            ondelete="RESTRICT",
+        ),
+        ForeignKeyConstraint(
+            ["organization_id", "position_id"],
+            ["positions.organization_id", "positions.id"],
+            name="fk_position_assignments_position_same_organization",
+            ondelete="RESTRICT",
+        ),
+        CheckConstraint(
+            "ended_on IS NULL OR ended_on >= started_on", name="pos_assign_end_after_start"
+        ),
+        Index(
+            "uq_position_assignments_active",
+            "user_id",
+            "position_id",
+            unique=True,
+            postgresql_where=text("ended_on IS NULL"),
+        ),
+        Index(
+            "ix_position_assignments_position_id_ended_on",
+            "position_id",
+            "ended_on",
+        ),
+        Index("ix_position_assignments_user_id_ended_on", "user_id", "ended_on"),
+    )
+
+    id: Mapped[uuid.UUID] = uuid_pk()
+    organization_id: Mapped[uuid.UUID] = mapped_column(
+        UUID_PK, ForeignKey("organizations.id", ondelete="RESTRICT"), nullable=False
+    )
+    user_id: Mapped[uuid.UUID] = mapped_column(UUID_PK, nullable=False)
+    position_id: Mapped[uuid.UUID] = mapped_column(UUID_PK, nullable=False)
+
+    is_primary: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=text("true"))
+    started_on: Mapped[date] = mapped_column(Date, nullable=False)
+    ended_on: Mapped[date | None] = mapped_column(Date, nullable=True)
+    transfer_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    assigned_by_user_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID_PK, ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+
+    @property
+    def is_current(self) -> bool:
+        return self.ended_on is None
+

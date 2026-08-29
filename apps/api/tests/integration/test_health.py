@@ -26,7 +26,8 @@ def test_readiness_reports_database_and_migration_state(client: ApiClient) -> No
     checks = {check["name"]: check["status"] for check in body["checks"]}
     assert checks == {"database": "ok", "migrations": "ok"}
     # Confirms migrations were applied by the release step, not by the API.
-    assert body["schema_revision"] == "0005"
+    assert body["schema_revision"] == "0007"
+
 
 
 def test_probes_expose_no_configuration(client: ApiClient) -> None:

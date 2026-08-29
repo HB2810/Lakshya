@@ -32,9 +32,402 @@ from app.modules.organization.models import Department, DepartmentMembership
 from tests.conftest import ApiClient, Factory
 
 pytestmark = pytest.mark.db
+class TestOrganizationFoundation:
+    def test_positions_can_exist_vacant_or_occupied(self, factory: Factory, db_session: Session) -> None:
+        from app.core.clock import utcnow
+        from app.modules.access.authorization import AuthorizationContext
+        from app.modules.audit.service import AuditRecorder
+        from app.modules.organization.models import Position, PositionAssignment
+        from app.modules.organization.service import PositionService
+
+        org = factory.organization(slug="org-pos-1")
+        dept = factory.department(org, name="Spine Surgery")
+        user = factory.user(org, email="surgeon@example.com", full_name="Dr. Mehta")
+
+        # Create vacant position
+        pos = Position(
+            organization_id=org.id,
+            department_id=dept.id,
+            title="Junior Spine Consultant",
+            code="JSC-01",
+            is_leadership=False,
+        )
+        db_session.add(pos)
+        db_session.flush()
+
+        pos_service = PositionService(db_session, AuditRecorder(db_session))
+        ctx = AuthorizationContext(
+            user_id=user.id,
+            organization_id=org.id,
+            grants=(),
+            member_department_ids=frozenset([dept.id]),
+        )
+
+        positions = pos_service.list_positions(ctx)
+        assert len(positions) == 1
+        assert positions[0].title == "Junior Spine Consultant"
+        assert positions[0].current_occupant_id is None
+
+        # Assign occupant (now occupied)
+        assign = PositionAssignment(
+            organization_id=org.id,
+            user_id=user.id,
+            position_id=pos.id,
+            is_primary=True,
+            started_on=utcnow().date(),
+        )
+        db_session.add(assign)
+        db_session.flush()
+
+        positions = pos_service.list_positions(ctx)
+        assert len(positions) == 1
+        assert positions[0].current_occupant_id == user.id
+        assert positions[0].current_occupant_name == "Dr. Mehta"
+
+    def test_reporting_chain_and_subordinate_scope(self, factory: Factory, db_session: Session) -> None:
+        from app.core.clock import utcnow
+        from app.modules.access.authorization import AuthorizationContext
+        from app.modules.audit.service import AuditRecorder
+        from app.modules.organization.models import Position, PositionAssignment
+        from app.modules.organization.service import PositionService
+
+        org = factory.organization(slug="org-rep-1")
+        dept = factory.department(org, name="Orthopedics")
+
+        md_user = factory.user(org, email="md_rep@example.com", full_name="Dr. MD")
+        hod_user = factory.user(org, email="hod_rep@example.com", full_name="Dr. HOD")
+        nurse_user = factory.user(org, email="nurse_rep@example.com", full_name="Nurse Alice")
+
+        # MD Position
+        md_pos = Position(
+            organization_id=org.id,
+            department_id=dept.id,
+            title="Managing Director",
+            is_leadership=True,
+        )
+        db_session.add(md_pos)
+        db_session.flush()
+
+        # HOD Position (reports to MD)
+        hod_pos = Position(
+            organization_id=org.id,
+            department_id=dept.id,
+            title="Department Head",
+            reports_to_position_id=md_pos.id,
+            is_leadership=True,
+        )
+        db_session.add(hod_pos)
+        db_session.flush()
+
+        # Nurse Position (reports to HOD)
+        nurse_pos = Position(
+            organization_id=org.id,
+            department_id=dept.id,
+            title="OT Staff Nurse",
+            reports_to_position_id=hod_pos.id,
+            is_leadership=False,
+        )
+        db_session.add(nurse_pos)
+        db_session.flush()
+
+        # Assign people
+        today = utcnow().date()
+        db_session.add(PositionAssignment(organization_id=org.id, user_id=md_user.id, position_id=md_pos.id, started_on=today))
+        db_session.add(PositionAssignment(organization_id=org.id, user_id=hod_user.id, position_id=hod_pos.id, started_on=today))
+        db_session.add(PositionAssignment(organization_id=org.id, user_id=nurse_user.id, position_id=nurse_pos.id, started_on=today))
+        db_session.flush()
+
+        pos_service = PositionService(db_session, AuditRecorder(db_session))
+        ctx = AuthorizationContext(
+            user_id=nurse_user.id,
+            organization_id=org.id,
+            grants=(),
+            member_department_ids=frozenset([dept.id]),
+        )
+
+        # 1. Reporting Chain for Nurse
+        chain = pos_service.get_user_reporting_chain(ctx, nurse_user.id)
+        assert len(chain) == 3
+        assert chain[0]["position_title"] == "OT Staff Nurse"
+        assert chain[0]["occupant_name"] == "Nurse Alice"
+        assert chain[1]["position_title"] == "Department Head"
+        assert chain[1]["occupant_name"] == "Dr. HOD"
+        assert chain[2]["position_title"] == "Managing Director"
+        assert chain[2]["occupant_name"] == "Dr. MD"
+
+        # 2. Subordinates for HOD
+        hod_subs = pos_service.get_subordinate_user_ids(org.id, hod_user.id)
+        assert hod_subs == {nurse_user.id}
+
+        # 3. Subordinates for MD
+        md_subs = pos_service.get_subordinate_user_ids(org.id, md_user.id)
+        assert md_subs == {hod_user.id, nurse_user.id}
+
+    def test_single_transfer_mutation_and_audit(self, factory: Factory, db_session: Session) -> None:
+        from app.modules.access.authorization import AuthorizationContext
+        from app.modules.audit.service import AuditActor, AuditRecorder
+        from app.modules.organization.models import Position, PositionAssignment
+        from app.modules.organization.service import PositionService
+
+        org = factory.organization(slug="org-trans-1")
+        dept_icu = factory.department(org, name="ICU")
+        dept_opd = factory.department(org, name="OPD")
+
+        nurse = factory.user(org, email="nurse_bob@example.com", full_name="Nurse Bob")
+        admin_actor = AuditActor.system("integration-test")
+
+        pos_icu = Position(organization_id=org.id, department_id=dept_icu.id, title="ICU Nurse")
+        pos_opd = Position(organization_id=org.id, department_id=dept_opd.id, title="OPD Nurse")
+        db_session.add_all([pos_icu, pos_opd])
+        db_session.flush()
+
+        # Initial assignment in ICU
+        day1 = date(2026, 1, 1)
+        db_session.add(PositionAssignment(organization_id=org.id, user_id=nurse.id, position_id=pos_icu.id, started_on=day1))
+        db_session.flush()
+
+        # Perform Transfer to OPD
+        day2 = date(2026, 3, 1)
+        pos_service = PositionService(db_session, AuditRecorder(db_session))
+        ctx = AuthorizationContext(
+            user_id=nurse.id,
+            organization_id=org.id,
+            grants=(),
+            member_department_ids=frozenset([dept_icu.id]),
+        )
+
+        new_assign = pos_service.transfer_person(
+            ctx,
+            user_id=nurse.id,
+            new_position_id=pos_opd.id,
+            started_on=day2,
+            transfer_reason="Shift to OPD rotation",
+            actor=admin_actor,
+        )
+
+        assert new_assign.position_id == pos_opd.id
+        assert new_assign.started_on == day2
+        assert new_assign.is_current is True
+
+        # Verify old assignment ended
+        from sqlalchemy import select
+        old_assigns = list(db_session.execute(
+            select(PositionAssignment).where(
+                PositionAssignment.user_id == nurse.id,
+                PositionAssignment.position_id == pos_icu.id,
+            )
+        ).scalars())
+        assert len(old_assigns) == 1
+        assert old_assigns[0].ended_on == day2
+        assert old_assigns[0].is_current is False
+
+    def test_work_item_ownership_retained_and_leader_visibility_switches_on_transfer(
+        self, factory: Factory, db_session: Session
+    ) -> None:
+        from app.core.clock import utcnow
+        from app.modules.access.authorization import AuthorizationContext
+        from app.modules.audit.service import AuditActor, AuditRecorder
+        from app.modules.organization.models import Position, PositionAssignment
+        from app.modules.organization.service import PositionService
+        from app.modules.work_item.models import WorkItem
+        from app.modules.work_item.schemas import WorkItemCreate
+        from app.modules.work_item.service import WorkItemService
+
+        org = factory.organization(slug="org-work-trans")
+        dept_icu = factory.department(org, name="ICU")
+        dept_opd = factory.department(org, name="OPD")
+
+        leader_icu = factory.user(org, email="leader_icu@example.com", full_name="ICU Leader")
+        leader_opd = factory.user(org, email="leader_opd@example.com", full_name="OPD Leader")
+        nurse = factory.user(org, email="nurse_carol@example.com", full_name="Nurse Carol")
+
+        pos_lead_icu = Position(organization_id=org.id, department_id=dept_icu.id, title="ICU Incharge", is_leadership=True)
+        pos_lead_opd = Position(organization_id=org.id, department_id=dept_opd.id, title="OPD Incharge", is_leadership=True)
+        db_session.add_all([pos_lead_icu, pos_lead_opd])
+        db_session.flush()
+
+        pos_nurse_icu = Position(organization_id=org.id, department_id=dept_icu.id, title="ICU Staff", reports_to_position_id=pos_lead_icu.id)
+        pos_nurse_opd = Position(organization_id=org.id, department_id=dept_opd.id, title="OPD Staff", reports_to_position_id=pos_lead_opd.id)
+        db_session.add_all([pos_nurse_icu, pos_nurse_opd])
+        db_session.flush()
+
+        today = utcnow().date()
+        db_session.add(PositionAssignment(organization_id=org.id, user_id=leader_icu.id, position_id=pos_lead_icu.id, started_on=today))
+        db_session.add(PositionAssignment(organization_id=org.id, user_id=leader_opd.id, position_id=pos_lead_opd.id, started_on=today))
+        db_session.add(PositionAssignment(organization_id=org.id, user_id=nurse.id, position_id=pos_nurse_icu.id, started_on=today))
+        db_session.flush()
+
+        # Nurse creates task while in ICU
+        task = WorkItemService.create_work_item(
+            session=db_session,
+            payload=WorkItemCreate(title="Patient Charting Protocol", priority="high", raci={"R": [str(nurse.id)]}),
+            current_user=nurse,
+        )
+
+        pos_service = PositionService(db_session, AuditRecorder(db_session))
+
+        # Check visibility before transfer: ICU Leader sees it, OPD Leader does NOT
+        icu_subs = pos_service.get_subordinate_user_ids(org.id, leader_icu.id)
+        opd_subs = pos_service.get_subordinate_user_ids(org.id, leader_opd.id)
+
+        icu_tasks = WorkItemService.list_work_items(
+            session=db_session,
+            current_user=leader_icu,
+            effective_roles=["LEADER"],
+            user_department_ids=[],
+            subordinate_user_ids=icu_subs,
+        )
+        opd_tasks = WorkItemService.list_work_items(
+            session=db_session,
+            current_user=leader_opd,
+            effective_roles=["LEADER"],
+            user_department_ids=[],
+            subordinate_user_ids=opd_subs,
+        )
+
+        assert any(t.id == task.id for t in icu_tasks)
+        assert not any(t.id == task.id for t in opd_tasks)
+
+        # Execute Transfer: Carol moves to OPD Staff
+        ctx_nurse = AuthorizationContext(
+            user_id=nurse.id,
+            organization_id=org.id,
+            grants=(),
+            member_department_ids=frozenset([dept_icu.id]),
+        )
+        pos_service.transfer_person(
+            ctx_nurse,
+            user_id=nurse.id,
+            new_position_id=pos_nurse_opd.id,
+            started_on=today,
+            actor=AuditActor.system("test"),
+        )
+
+        # Check visibility after transfer:
+        # Task owner is STILL Carol (not rewritten)
+        refreshed_task = db_session.get(WorkItem, task.id)
+        assert refreshed_task.owner_id == nurse.id
+
+        # New subordinate scopes
+        icu_subs_after = pos_service.get_subordinate_user_ids(org.id, leader_icu.id)
+        opd_subs_after = pos_service.get_subordinate_user_ids(org.id, leader_opd.id)
+
+        icu_tasks_after = WorkItemService.list_work_items(
+            session=db_session,
+            current_user=leader_icu,
+            effective_roles=["LEADER"],
+            user_department_ids=[],
+            subordinate_user_ids=icu_subs_after,
+        )
+        opd_tasks_after = WorkItemService.list_work_items(
+            session=db_session,
+            current_user=leader_opd,
+            effective_roles=["LEADER"],
+            user_department_ids=[],
+            subordinate_user_ids=opd_subs_after,
+        )
+
+        # ICU Leader no longer sees Carol's task; OPD Leader sees it dynamically from org hierarchy!
+        assert not any(t.id == task.id for t in icu_tasks_after)
+        assert any(t.id == task.id for t in opd_tasks_after)
+
+    def test_contextual_escalation_derives_manager_from_org_graph(
+        self, factory: Factory, db_session: Session
+    ) -> None:
+        from app.core.clock import utcnow
+        from app.modules.organization.models import Position, PositionAssignment
+        from app.modules.work_item.schemas import EscalateRequest, WorkItemCreate
+        from app.modules.work_item.service import WorkItemService
+
+        org = factory.organization(slug="org-esc-1")
+        dept = factory.department(org, name="Pharmacy")
+
+        mgr = factory.user(org, email="pharm_mgr@example.com", full_name="Pharmacy Manager")
+        staff = factory.user(org, email="pharm_staff@example.com", full_name="Staff Pharmacist")
+
+        pos_mgr = Position(organization_id=org.id, department_id=dept.id, title="Chief Pharmacist", is_leadership=True)
+        db_session.add(pos_mgr)
+        db_session.flush()
+
+        pos_staff = Position(organization_id=org.id, department_id=dept.id, title="Junior Pharmacist", reports_to_position_id=pos_mgr.id)
+        db_session.add(pos_staff)
+        db_session.flush()
+
+
+        today = utcnow().date()
+        db_session.add(PositionAssignment(organization_id=org.id, user_id=mgr.id, position_id=pos_mgr.id, started_on=today))
+        db_session.add(PositionAssignment(organization_id=org.id, user_id=staff.id, position_id=pos_staff.id, started_on=today))
+        db_session.flush()
+
+        task = WorkItemService.create_work_item(
+            session=db_session,
+            payload=WorkItemCreate(title="Narcotics Inventory Reconcile", priority="urgent"),
+            current_user=staff,
+        )
+
+        # Escalate without providing escalated_to_id explicitly
+        escalation = WorkItemService.escalate_work_item(
+            session=db_session,
+            work_item_id=task.id,
+            payload=EscalateRequest(level="DIRECT_LEADER", reason="Discrepancy in stock count"),
+            current_user=staff,
+            effective_roles=["EMPLOYEE"],
+            user_department_ids=[dept.id],
+        )
+
+        # Dynamic resolution should target mgr.id (Pharmacy Manager)
+        assert escalation.escalated_to_id == mgr.id
+        assert escalation.escalated_to_name == "Pharmacy Manager"
+
+    def test_organization_tree_api_endpoint(self, client: ApiClient, factory: Factory, db_session: Session) -> None:
+        from app.core.clock import utcnow
+        from app.modules.access.catalog import ORGANIZATION_READ, ScopeType
+        from app.modules.organization.models import Position, PositionAssignment
+        from tests.conftest import TEST_PASSWORD
+
+        org = factory.organization(slug="org-tree-api", name="Stavya Spine Center")
+        dept = factory.department(org, name="Spine OPD")
+
+        md = factory.user(org, email="md_tree@example.com", password=TEST_PASSWORD, full_name="Dr. Chief")
+        role = factory.role(org, permissions=(ORGANIZATION_READ,))
+        factory.assign(md, role, scope=ScopeType.ORGANIZATION)
+
+        doc = factory.user(org, email="doc_tree@example.com", full_name="Dr. Spine Specialist")
+
+        pos_chief = Position(organization_id=org.id, department_id=dept.id, title="Medical Director", is_leadership=True)
+        db_session.add(pos_chief)
+        db_session.flush()
+
+        pos_doc = Position(organization_id=org.id, department_id=dept.id, title="Specialist Surgeon", reports_to_position_id=pos_chief.id)
+        db_session.add(pos_doc)
+        db_session.flush()
+
+
+        today = utcnow().date()
+        db_session.add(PositionAssignment(organization_id=org.id, user_id=md.id, position_id=pos_chief.id, started_on=today))
+        db_session.add(PositionAssignment(organization_id=org.id, user_id=doc.id, position_id=pos_doc.id, started_on=today))
+        db_session.commit()
+
+        client.login_or_fail("md_tree@example.com")
+        res = client.get("/api/v1/organizations/tree")
+        assert res.status_code == 200
+        data = res.json()
+        assert data["organization_name"] == "Stavya Spine Center"
+        assert len(data["root_nodes"]) == 1
+        root = data["root_nodes"][0]
+        assert root["title"] == "Medical Director"
+        assert root["current_occupant"]["full_name"] == "Dr. Chief"
+        assert len(root["subordinates"]) == 1
+        sub = root["subordinates"][0]
+        assert sub["title"] == "Specialist Surgeon"
+        assert sub["current_occupant"]["full_name"] == "Dr. Spine Specialist"
+
+
 
 
 class TestOrganizationIsolation:
+
+
     def test_organization_endpoint_returns_only_the_callers_tenant(
         self, client: ApiClient, factory: Factory
     ) -> None:

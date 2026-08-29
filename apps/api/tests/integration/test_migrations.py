@@ -116,7 +116,8 @@ def test_schema_matches_the_models(engine: Engine) -> None:
 def test_migration_head_is_recorded(engine: Engine) -> None:
     with engine.connect() as connection:
         revision = connection.execute(text("SELECT version_num FROM alembic_version")).scalar_one()
-    assert revision == "0005"
+    assert revision == "0007"
+
 
 
 def test_permission_catalog_is_seeded(engine: Engine) -> None:

@@ -71,6 +71,14 @@ class AuthorizationContext:
     #: Departments the actor currently belongs to. Recorded for the ``self`` /
     #: ``related`` scopes that later modules need; it grants nothing on its own.
     member_department_ids: frozenset[uuid.UUID]
+    #: User IDs of direct and indirect reportees under the actor's current position(s).
+    subordinate_user_ids: frozenset[uuid.UUID] = frozenset()
+    #: Effective role keys currently held by the user.
+    effective_roles: frozenset[str] = frozenset()
+
+    @property
+    def department_ids(self) -> list[uuid.UUID]:
+        return list(self.member_department_ids)
 
     # -- Queries ----------------------------------------------------------
 
@@ -88,6 +96,7 @@ class AuthorizationContext:
         """True when the actor holds ``permission_key`` at any scope."""
         _assert_known(permission_key)
         return any(grant.permission_key == permission_key for grant in self.grants)
+
 
     def has_organization_scope(self, permission_key: str) -> bool:
         """True when the actor holds ``permission_key`` organization-wide."""
@@ -229,12 +238,24 @@ class AuthorizationService:
                 )
             )
 
+        effective_roles = frozenset(self.load_effective_role_keys(user, as_of=effective_date))
+
+        from app.modules.organization.service import PositionService
+        subordinates = frozenset(
+            PositionService(self._session, None).get_subordinate_user_ids(  # type: ignore[arg-type]
+                user.organization_id, user.id
+            )
+        )
+
         return AuthorizationContext(
             user_id=user.id,
             organization_id=user.organization_id,
             grants=tuple(grants),
             member_department_ids=self._current_department_ids(user),
+            subordinate_user_ids=subordinates,
+            effective_roles=effective_roles,
         )
+
 
     def load_effective_role_keys(self, user: User, *, as_of: date | None = None) -> list[str]:
         """Role keys the user actually holds right now.

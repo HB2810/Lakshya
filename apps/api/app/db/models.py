@@ -14,8 +14,15 @@ from app.modules.identity.models import Credential, User, UserSession
 from app.modules.kpi.models import KPIDefinition, KPIValue
 from app.modules.meeting.models import Meeting, MeetingAgenda, MeetingCheckin, MeetingHeadline, MeetingParticipant
 from app.modules.oo.models import OAndOItem
-from app.modules.organization.models import Department, DepartmentMembership, Organization
+from app.modules.organization.models import (
+    Department,
+    DepartmentMembership,
+    Organization,
+    Position,
+    PositionAssignment,
+)
 from app.modules.strategy.models import AnnualGoal, MonthlyPriority, QuarterlyPriority, WeeklyMilestone
+from app.modules.work_item.models import WorkItem, WorkItemActivity, WorkItemEscalation
 
 __all__ = [
     "AnnualGoal",
@@ -37,6 +44,8 @@ __all__ = [
     "OAndOItem",
     "Organization",
     "Permission",
+    "Position",
+    "PositionAssignment",
     "QuarterlyPriority",
     "Role",
     "RoleAssignment",
@@ -45,4 +54,9 @@ __all__ = [
     "UserCalendarIntegration",
     "UserSession",
     "WeeklyMilestone",
+    "WorkItem",
+    "WorkItemActivity",
+    "WorkItemEscalation",
 ]
+
+

@@ -14,7 +14,9 @@ from __future__ import annotations
 
 import uuid
 from collections.abc import Sequence
+from datetime import date
 from typing import Any
+
 
 from sqlalchemy import Select, func, select
 from sqlalchemy.orm import Session
@@ -446,3 +448,520 @@ def _department_snapshot(department: Department) -> dict[str, Any]:
         "archived_at": department.archived_at,
         "version": department.version,
     }
+
+
+# ---------------------------------------------------------------------------
+# Position and Organizational Hierarchy Service
+# ---------------------------------------------------------------------------
+
+from app.modules.identity.models import User
+from app.modules.organization.models import Position, PositionAssignment
+from app.modules.organization.schemas import (
+    OrgNode,
+    OrgNodeOccupant,
+    OrgTreeResponse,
+    PositionResponse,
+)
+
+POSITION_CREATED = "organization.position.created"
+POSITION_UPDATED = "organization.position.updated"
+POSITION_TRANSFERRED = "organization.position.transferred"
+
+
+class PositionService:
+    """Canonical position management, employee transfer, reporting line & tree queries."""
+
+    def __init__(self, session: Session, audit: AuditRecorder) -> None:
+        self._session = session
+        self._audit = audit
+
+    # -- Position CRUD ----------------------------------------------------
+
+    def list_positions(
+        self,
+        context: AuthorizationContext,
+        *,
+        department_id: uuid.UUID | None = None,
+        include_inactive: bool = False,
+    ) -> list[PositionResponse]:
+        """List positions with their current occupant details."""
+        query = select(Position).where(Position.organization_id == context.organization_id)
+        if not include_inactive:
+            query = query.where(Position.is_active.is_(True))
+        if department_id is not None:
+            query = query.where(Position.department_id == department_id)
+
+        positions = list(self._session.execute(query.order_by(Position.title)).scalars())
+
+        # Load active assignments
+        pos_ids = [p.id for p in positions]
+        occupants_map: dict[uuid.UUID, tuple[uuid.UUID, str, str]] = {}
+        if pos_ids:
+            assign_query = (
+                select(
+                    PositionAssignment.position_id,
+                    User.id,
+                    User.full_name,
+                    User.email,
+                )
+                .join(User, User.id == PositionAssignment.user_id)
+                .where(
+                    PositionAssignment.organization_id == context.organization_id,
+                    PositionAssignment.position_id.in_(pos_ids),
+                    PositionAssignment.ended_on.is_(None),
+                )
+            )
+            for row in self._session.execute(assign_query):
+                occupants_map[row[0]] = (row[1], row[2], row[3])
+
+        results: list[PositionResponse] = []
+        for p in positions:
+            occupant = occupants_map.get(p.id)
+            results.append(
+                PositionResponse(
+                    id=p.id,
+                    organization_id=p.organization_id,
+                    department_id=p.department_id,
+                    reports_to_position_id=p.reports_to_position_id,
+                    title=p.title,
+                    code=p.code,
+                    is_leadership=p.is_leadership,
+                    is_active=p.is_active,
+                    archived_at=p.archived_at,
+                    created_at=p.created_at,
+                    updated_at=p.updated_at,
+                    version=p.version,
+                    current_occupant_id=occupant[0] if occupant else None,
+                    current_occupant_name=occupant[1] if occupant else None,
+                    current_occupant_email=occupant[2] if occupant else None,
+                )
+            )
+        return results
+
+    def create_position(
+        self,
+        context: AuthorizationContext,
+        *,
+        department_id: uuid.UUID,
+        title: str,
+        code: str | None = None,
+        reports_to_position_id: uuid.UUID | None = None,
+        is_leadership: bool = False,
+        actor: AuditActor,
+    ) -> Position:
+        """Create a new post in a department."""
+        dept = self._session.execute(
+            select(Department).where(
+                Department.id == department_id,
+                Department.organization_id == context.organization_id,
+                Department.is_active.is_(True),
+            )
+        ).scalar_one_or_none()
+        if not dept:
+            raise ValidationFailedError("Valid active department in this organization is required.")
+
+        if reports_to_position_id is not None:
+            parent_pos = self._session.execute(
+                select(Position).where(
+                    Position.id == reports_to_position_id,
+                    Position.organization_id == context.organization_id,
+                    Position.is_active.is_(True),
+                )
+            ).scalar_one_or_none()
+            if not parent_pos:
+                raise ValidationFailedError("reports_to_position_id must reference a valid active position.")
+
+        pos = Position(
+            organization_id=context.organization_id,
+            department_id=department_id,
+            reports_to_position_id=reports_to_position_id,
+            title=normalize_name(title),
+            code=code.strip() if code else None,
+            is_leadership=is_leadership,
+        )
+        self._session.add(pos)
+        self._session.flush()
+
+        self._audit.record(
+            action=POSITION_CREATED,
+            entity_type="position",
+            entity_id=pos.id,
+            actor=actor,
+            organization_id=context.organization_id,
+            after={
+                "title": pos.title,
+                "department_id": pos.department_id,
+                "reports_to_position_id": pos.reports_to_position_id,
+                "is_leadership": pos.is_leadership,
+            },
+            diff_only=False,
+        )
+        return pos
+
+    # -- Canonical Transfer Mutation --------------------------------------
+
+    def transfer_person(
+        self,
+        context: AuthorizationContext,
+        *,
+        user_id: uuid.UUID,
+        new_position_id: uuid.UUID,
+        started_on: date,
+        transfer_reason: str | None = None,
+        actor: AuditActor,
+    ) -> PositionAssignment:
+        """Transfer an employee to a new position.
+
+        Single unified mutation:
+        1. Closes current active position assignment for user (ended_on = started_on).
+        2. Closes existing occupant of target position if any.
+        3. Creates new active PositionAssignment.
+        4. Updates primary DepartmentMembership to match target position's department.
+        5. Emits POSITION_TRANSFERRED audit event.
+        """
+        user = self._session.execute(
+            select(User).where(
+                User.id == user_id,
+                User.organization_id == context.organization_id,
+                User.is_active.is_(True),
+            )
+        ).scalar_one_or_none()
+        if not user:
+            raise ResourceNotFoundError("User not found in organization.")
+
+        target_pos = self._session.execute(
+            select(Position).where(
+                Position.id == new_position_id,
+                Position.organization_id == context.organization_id,
+                Position.is_active.is_(True),
+            )
+        ).scalar_one_or_none()
+        if not target_pos:
+            raise ResourceNotFoundError("Target position not found or inactive.")
+
+        # 1. Close current active position assignment(s) for this user
+        active_assignments = list(
+            self._session.execute(
+                select(PositionAssignment).where(
+                    PositionAssignment.organization_id == context.organization_id,
+                    PositionAssignment.user_id == user.id,
+                    PositionAssignment.ended_on.is_(None),
+                )
+            ).scalars()
+        )
+        prev_pos_id: uuid.UUID | None = None
+        for old_assign in active_assignments:
+            old_assign.ended_on = started_on
+            old_assign.is_primary = False
+            prev_pos_id = old_assign.position_id
+
+        # 2. Close existing occupant on target position if any
+        target_occupants = list(
+            self._session.execute(
+                select(PositionAssignment).where(
+                    PositionAssignment.organization_id == context.organization_id,
+                    PositionAssignment.position_id == target_pos.id,
+                    PositionAssignment.ended_on.is_(None),
+                )
+            ).scalars()
+        )
+        for occ in target_occupants:
+            occ.ended_on = started_on
+            occ.is_primary = False
+
+        # 3. Create new PositionAssignment
+        new_assignment = PositionAssignment(
+            organization_id=context.organization_id,
+            user_id=user.id,
+            position_id=target_pos.id,
+            is_primary=True,
+            started_on=started_on,
+            transfer_reason=transfer_reason,
+            assigned_by_user_id=context.user_id,
+        )
+        self._session.add(new_assignment)
+        self._session.flush()
+
+        # 4. Synchronize DepartmentMembership
+        # End current primary membership
+        current_memberships = list(
+            self._session.execute(
+                select(DepartmentMembership).where(
+                    DepartmentMembership.organization_id == context.organization_id,
+                    DepartmentMembership.user_id == user.id,
+                    DepartmentMembership.ended_on.is_(None),
+                )
+            ).scalars()
+        )
+        for dm in current_memberships:
+            if dm.department_id != target_pos.department_id:
+                dm.ended_on = started_on
+                dm.is_primary = False
+
+        # Ensure membership in target department exists
+        target_dm = self._session.execute(
+            select(DepartmentMembership).where(
+                DepartmentMembership.organization_id == context.organization_id,
+                DepartmentMembership.user_id == user.id,
+                DepartmentMembership.department_id == target_pos.department_id,
+                DepartmentMembership.ended_on.is_(None),
+            )
+        ).scalar_one_or_none()
+        if not target_dm:
+            target_dm = DepartmentMembership(
+                organization_id=context.organization_id,
+                user_id=user.id,
+                department_id=target_pos.department_id,
+                is_primary=True,
+                started_on=started_on,
+                note=f"Transferred to position '{target_pos.title}'",
+            )
+            self._session.add(target_dm)
+        else:
+            target_dm.is_primary = True
+
+        self._session.flush()
+
+        self._audit.record(
+            action=POSITION_TRANSFERRED,
+            entity_type="position_assignment",
+            entity_id=new_assignment.id,
+            actor=actor,
+            organization_id=context.organization_id,
+            before={"position_id": prev_pos_id, "user_id": user.id},
+            after={
+                "position_id": target_pos.id,
+                "department_id": target_pos.department_id,
+                "user_id": user.id,
+                "started_on": started_on.isoformat(),
+            },
+            reason=transfer_reason,
+        )
+        return new_assignment
+
+    # -- Org Tree and Reporting Graph -------------------------------------
+
+    def get_organization_tree(self, context: AuthorizationContext) -> OrgTreeResponse:
+        """Build the full canonical hierarchical organization chart from database."""
+        org = self._session.get(Organization, context.organization_id)
+        if not org:
+            raise ResourceNotFoundError("Organization not found.")
+
+        # 1. Load departments
+        depts = {
+            d.id: d.name
+            for d in self._session.execute(
+                select(Department).where(
+                    Department.organization_id == context.organization_id,
+                    Department.is_active.is_(True),
+                )
+            ).scalars()
+        }
+
+        # 2. Load positions
+        positions = list(
+            self._session.execute(
+                select(Position).where(
+                    Position.organization_id == context.organization_id,
+                    Position.is_active.is_(True),
+                )
+            ).scalars()
+        )
+
+        # 3. Load active occupants
+        occupant_query = (
+            select(
+                PositionAssignment.position_id,
+                User.id,
+                User.full_name,
+                User.email,
+                PositionAssignment.started_on,
+            )
+            .join(User, User.id == PositionAssignment.user_id)
+            .where(
+                PositionAssignment.organization_id == context.organization_id,
+                PositionAssignment.ended_on.is_(None),
+            )
+        )
+        occupants: dict[uuid.UUID, OrgNodeOccupant] = {}
+        for row in self._session.execute(occupant_query):
+            occupants[row[0]] = OrgNodeOccupant(
+                user_id=row[1],
+                full_name=row[2],
+                email=row[3],
+                started_on=row[4].isoformat(),
+            )
+
+        # 4. Assemble Tree Nodes
+        nodes_by_id: dict[uuid.UUID, OrgNode] = {}
+        for p in positions:
+            dept_name = depts.get(p.department_id, "General")
+            nodes_by_id[p.id] = OrgNode(
+                position_id=p.id,
+                title=p.title,
+                code=p.code,
+                is_leadership=p.is_leadership,
+                department_id=p.department_id,
+                department_name=dept_name,
+                reports_to_position_id=p.reports_to_position_id,
+                current_occupant=occupants.get(p.id),
+                subordinates=[],
+            )
+
+        root_nodes: list[OrgNode] = []
+        for pos_id, node in nodes_by_id.items():
+            if node.reports_to_position_id and node.reports_to_position_id in nodes_by_id:
+                nodes_by_id[node.reports_to_position_id].subordinates.append(node)
+            else:
+                root_nodes.append(node)
+
+        return OrgTreeResponse(
+            organization_id=org.id,
+            organization_name=org.name,
+            root_nodes=root_nodes,
+        )
+
+    def get_scoped_organization_tree(self, context: AuthorizationContext) -> OrgTreeResponse:
+        """Build the scoped organization tree rooted at the caller's position subtree."""
+        full_tree = self.get_organization_tree(context)
+
+        upper_roles = [r.upper() for r in context.effective_roles]
+        if any(r in upper_roles for r in ("MD", "MANAGING_DIRECTOR", "MD_OFFICE", "MASTER", "ADMIN")):
+            return full_tree
+
+        # Find leader's active position
+        leader_pos_id = self._session.execute(
+            select(PositionAssignment.position_id).where(
+                PositionAssignment.organization_id == context.organization_id,
+                PositionAssignment.user_id == context.user_id,
+                PositionAssignment.ended_on.is_(None),
+            )
+        ).scalar_one_or_none()
+
+        if not leader_pos_id:
+            return OrgTreeResponse(
+                organization_id=full_tree.organization_id,
+                organization_name=full_tree.organization_name,
+                root_nodes=[],
+            )
+
+        def _find_node(nodes: list[OrgNode], target_id: uuid.UUID) -> OrgNode | None:
+            for n in nodes:
+                if n.position_id == target_id:
+                    return n
+                sub = _find_node(n.subordinates, target_id)
+                if sub:
+                    return sub
+            return None
+
+        scoped_root = _find_node(full_tree.root_nodes, leader_pos_id)
+        return OrgTreeResponse(
+            organization_id=full_tree.organization_id,
+            organization_name=full_tree.organization_name,
+            root_nodes=[scoped_root] if scoped_root else [],
+        )
+
+
+    def get_user_reporting_chain(
+        self, context: AuthorizationContext, user_id: uuid.UUID
+    ) -> list[dict[str, Any]]:
+        """Walk up the reporting structure for a user."""
+        chain: list[dict[str, Any]] = []
+
+        # Find user's active position
+        current_pos_id = self._session.execute(
+            select(PositionAssignment.position_id).where(
+                PositionAssignment.organization_id == context.organization_id,
+                PositionAssignment.user_id == user_id,
+                PositionAssignment.ended_on.is_(None),
+            )
+        ).scalar_one_or_none()
+
+        curr_pos_id = current_pos_id
+        depth = 0
+        while curr_pos_id and depth < _MAX_HIERARCHY_DEPTH:
+            pos = self._session.get(Position, curr_pos_id)
+            if not pos:
+                break
+
+            # Find occupant
+            occ_query = (
+                select(User.id, User.full_name, User.email)
+                .join(PositionAssignment, PositionAssignment.user_id == User.id)
+                .where(
+                    PositionAssignment.position_id == pos.id,
+                    PositionAssignment.ended_on.is_(None),
+                )
+            )
+            occ_row = self._session.execute(occ_query).first()
+
+            dept = self._session.get(Department, pos.department_id)
+            chain.append({
+                "position_id": str(pos.id),
+                "position_title": pos.title,
+                "department_name": dept.name if dept else "General",
+                "occupant_id": str(occ_row[0]) if occ_row else None,
+                "occupant_name": occ_row[1] if occ_row else "Vacant",
+                "occupant_email": occ_row[2] if occ_row else None,
+                "is_leadership": pos.is_leadership,
+            })
+            curr_pos_id = pos.reports_to_position_id
+            depth += 1
+
+        return chain
+
+    def get_subordinate_user_ids(
+        self, organization_id: uuid.UUID, leader_user_id: uuid.UUID
+    ) -> set[uuid.UUID]:
+        """Compute all direct and indirect reportee user IDs under leader."""
+        # 1. Find all active positions held by leader
+        leader_pos_ids = set(
+            self._session.execute(
+                select(PositionAssignment.position_id).where(
+                    PositionAssignment.organization_id == organization_id,
+                    PositionAssignment.user_id == leader_user_id,
+                    PositionAssignment.ended_on.is_(None),
+                )
+            ).scalars()
+        )
+        if not leader_pos_ids:
+            return set()
+
+        # 2. Walk down position hierarchy
+        all_positions = list(
+            self._session.execute(
+                select(Position.id, Position.reports_to_position_id).where(
+                    Position.organization_id == organization_id,
+                    Position.is_active.is_(True),
+                )
+            ).all()
+        )
+        children_map: dict[uuid.UUID, list[uuid.UUID]] = {}
+        for pid, parent_id in all_positions:
+            if parent_id:
+                children_map.setdefault(parent_id, []).append(pid)
+
+        descendant_pos_ids: set[uuid.UUID] = set()
+        queue = list(leader_pos_ids)
+        while queue:
+            curr = queue.pop(0)
+            for child in children_map.get(curr, []):
+                if child not in descendant_pos_ids:
+                    descendant_pos_ids.add(child)
+                    queue.append(child)
+
+        if not descendant_pos_ids:
+            return set()
+
+        # 3. Find active occupants of descendant positions
+        sub_users = set(
+            self._session.execute(
+                select(PositionAssignment.user_id).where(
+                    PositionAssignment.organization_id == organization_id,
+                    PositionAssignment.position_id.in_(descendant_pos_ids),
+                    PositionAssignment.ended_on.is_(None),
+                )
+            ).scalars()
+        )
+        return sub_users
+

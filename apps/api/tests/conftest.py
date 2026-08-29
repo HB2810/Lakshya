@@ -54,6 +54,8 @@ _TRUNCATE_TABLES = (
     "audit_events",
     "sessions",
     "credentials",
+    "position_assignments",
+    "positions",
     "department_memberships",
     "role_assignments",
     "role_permissions",
@@ -75,6 +77,7 @@ _TRUNCATE_TABLES = (
     "quarterly_priorities",
     "annual_goals",
 )
+
 
 
 def resolve_test_database_url() -> str | None:

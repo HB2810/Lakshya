@@ -83,6 +83,43 @@ AUDIT_FIELD_ALLOWLIST: dict[str, frozenset[str]] = {
             "revoked_reason",
         }
     ),
+    "position": frozenset(
+        {
+            "title",
+            "code",
+            "department_id",
+            "reports_to_position_id",
+            "is_leadership",
+            "is_active",
+            "version",
+        }
+    ),
+    "position_assignment": frozenset(
+        {
+            "user_id",
+            "position_id",
+            "department_id",
+            "is_primary",
+            "started_on",
+            "ended_on",
+            "transfer_reason",
+        }
+    ),
+    "work_item": frozenset(
+        {
+            "title",
+            "description",
+            "priority",
+            "status",
+            "owner_id",
+            "department_id",
+            "progress_percent",
+            "blocked_reason",
+            "blocked_at",
+            "version",
+        }
+    ),
+
     # Authentication events record the account and session identity plus
     # non-secret session metadata. No hash, no token, no password field is
     # listed, so none can be captured.

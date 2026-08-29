@@ -146,3 +146,114 @@ class DepartmentListResponse(BaseModel):
 
     items: list[DepartmentResponse]
     next_cursor: uuid.UUID | None = None
+
+
+# ---------------------------------------------------------------------------
+# Positions & Organizational Hierarchy
+# ---------------------------------------------------------------------------
+
+
+class PositionResponse(BaseModel):
+    """Position / Post projection."""
+
+    id: uuid.UUID
+    organization_id: uuid.UUID
+    department_id: uuid.UUID
+    reports_to_position_id: uuid.UUID | None
+    title: str
+    code: str | None
+    is_leadership: bool
+    is_active: bool
+    archived_at: datetime | None
+    created_at: datetime
+    updated_at: datetime
+    version: int
+
+    # Current occupant summary if any
+    current_occupant_id: uuid.UUID | None = None
+    current_occupant_name: str | None = None
+    current_occupant_email: str | None = None
+
+
+class PositionCreateRequest(BaseModel):
+    """Create a new organizational position."""
+
+    model_config = _REQUEST_CONFIG
+
+    department_id: uuid.UUID
+    title: Name
+    code: str | None = None
+    reports_to_position_id: uuid.UUID | None = None
+    is_leadership: bool = False
+
+
+class PositionUpdateRequest(BaseModel):
+    """Update a position."""
+
+    model_config = _REQUEST_CONFIG
+
+    title: Name | None = None
+    code: str | None = None
+    department_id: uuid.UUID | None = None
+    reports_to_position_id: uuid.UUID | None = None
+    is_leadership: bool | None = None
+    is_active: bool | None = None
+
+
+class PositionAssignmentResponse(BaseModel):
+    """Position assignment projection."""
+
+    id: uuid.UUID
+    organization_id: uuid.UUID
+    user_id: uuid.UUID
+    position_id: uuid.UUID
+    position_title: str | None = None
+    department_id: uuid.UUID | None = None
+    department_name: str | None = None
+    user_name: str | None = None
+    is_primary: bool
+    started_on: str
+    ended_on: str | None
+    transfer_reason: str | None
+    is_current: bool
+
+
+class PositionTransferRequest(BaseModel):
+    """Single transfer mutation: Move an employee to a new position."""
+
+    model_config = _REQUEST_CONFIG
+
+    user_id: uuid.UUID
+    new_position_id: uuid.UUID
+    started_on: str | None = None
+    transfer_reason: str | None = None
+
+
+class OrgNodeOccupant(BaseModel):
+    user_id: uuid.UUID
+    full_name: str
+    email: str
+    started_on: str
+
+
+class OrgNode(BaseModel):
+    """A node in the canonical Organization Chart."""
+
+    position_id: uuid.UUID
+    title: str
+    code: str | None
+    is_leadership: bool
+    department_id: uuid.UUID
+    department_name: str
+    reports_to_position_id: uuid.UUID | None
+    current_occupant: OrgNodeOccupant | None = None
+    subordinates: list[OrgNode] = []
+
+
+class OrgTreeResponse(BaseModel):
+    """Full canonical organization chart tree backed by real database data."""
+
+    organization_id: uuid.UUID
+    organization_name: str
+    root_nodes: list[OrgNode]
+

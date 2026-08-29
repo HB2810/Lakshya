@@ -357,7 +357,19 @@ def get_role_service(
     return RoleService(session, audit, authentication)
 
 
+from app.modules.organization.service import PositionService
+
+
+def get_position_service(
+    session: Session = Depends(get_db),
+    audit: AuditRecorder = Depends(get_audit_recorder),
+) -> PositionService:
+    return PositionService(session, audit)
+
+
+
 def get_permission_catalog_service(
     session: Session = Depends(get_db),
 ) -> PermissionCatalogService:
     return PermissionCatalogService(session)
+
