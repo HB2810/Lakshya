@@ -436,6 +436,12 @@ export const apiClient = {
     async getAuditEvents() {
       return MOCK_AUDIT_EVENTS; // Mock fallback kept as no v1 audit endpoint exists
     },
+    async transfer(payload: { user_id: string; new_position_id: string; started_on?: string; transfer_reason?: string }) {
+      return await apiFetch<any>('/organizations/transfer', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+    },
   },
 
   calendar: {

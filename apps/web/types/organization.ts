@@ -45,6 +45,31 @@ export interface OrgNode {
   children?: OrgNode[];
 }
 
+export interface OrgNodeOccupant {
+  user_id: string;
+  full_name: string;
+  assignment_id: string;
+  started_on?: string;
+}
+
+export interface CanonicalOrgNode {
+  position_id: string;
+  title: string;
+  code?: string | null;
+  is_leadership: boolean;
+  department_id: string;
+  department_name: string;
+  reports_to_position_id?: string | null;
+  current_occupant?: OrgNodeOccupant | null;
+  subordinates: CanonicalOrgNode[];
+}
+
+export interface OrgTreeResponse {
+  organization_id: string;
+  organization_name: string;
+  root_nodes: CanonicalOrgNode[];
+}
+
 export interface RoleDefinition {
   name: Persona;
   title: string;

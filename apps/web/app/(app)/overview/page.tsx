@@ -29,8 +29,9 @@ import { SmartIntakeBox } from '../../../components/intake/SmartIntakeBox';
 import { AttentionRequiredCard } from '../../../components/leader/AttentionRequiredCard';
 import { TeamWorkloadGrid } from '../../../components/leader/TeamWorkloadGrid';
 import { ScopedOrgTree } from '../../../components/leader/ScopedOrgTree';
-import { OrgNode } from '../../../types/organization';
 import { EscalationDetailDrawer } from '../../../components/leader/EscalationDetailDrawer';
+import { PositionDetailDrawer } from '../../../components/leader/PositionDetailDrawer';
+import { CanonicalOrgNode, OrgTreeResponse } from '../../../types/organization';
 import { WorkItemEscalationRecord } from '../../../types/workItem';
 
 export default function OverviewPage() {
@@ -45,6 +46,9 @@ export default function OverviewPage() {
   const [escalations, setEscalations] = useState<WorkItemEscalationRecord[]>([]);
   const [selectedEscalation, setSelectedEscalation] = useState<WorkItemEscalationRecord | null>(null);
   const [isEscalationDrawerOpen, setIsEscalationDrawerOpen] = useState(false);
+  const [orgTree, setOrgTree] = useState<OrgTreeResponse | null>(null);
+  const [selectedOrgNode, setSelectedOrgNode] = useState<CanonicalOrgNode | null>(null);
+  const [isOrgNodeDrawerOpen, setIsOrgNodeDrawerOpen] = useState(false);
 
   // Data Fetching State
   const [isLoading, setIsLoading] = useState(true);
@@ -56,8 +60,7 @@ export default function OverviewPage() {
   const [showAddSuccess, setShowAddSuccess] = useState(false);
 
   // Leader Specific State
-  const [orgTree, setOrgTree] = useState<any>(null);
-  const [teamMembers, setTeamMembers] = useState<OrgNode[]>([]);
+  const [teamMembers, setTeamMembers] = useState<any[]>([]);
   const isLeader = ['MD', 'MD_OFFICE', 'DEPARTMENT_HEAD', 'MANAGER', 'LEADER'].includes(user.role);
 
   const refreshTasks = useCallback(async () => {
@@ -85,16 +88,15 @@ export default function OverviewPage() {
         if (treeData) {
           setOrgTree(treeData);
           
-          // Flatten tree into teamMembers for workload grid (excluding root node if it's the leader themselves, or just using immediate subordinates)
-          const members: OrgNode[] = [];
+          // Flatten tree into teamMembers for workload grid
+          const members: any[] = [];
           if (treeData.root_nodes) {
             treeData.root_nodes.forEach((node: any) => {
               if (node.subordinates) {
-                members.push(...node.subordinates); // Immediate team members
+                members.push(...node.subordinates);
               }
             });
           }
-          // Fetch tasks for these members to get active/blocked counts (mock logic here based on frontend fetching)
           setTeamMembers(members);
         }
       }
@@ -103,7 +105,7 @@ export default function OverviewPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [user.id, selectedTask]);
+  }, [user.id, selectedTask, isLeader]);
 
   useEffect(() => {
     refreshTasks();
@@ -147,6 +149,11 @@ export default function OverviewPage() {
     setIsEscalationDrawerOpen(true);
   };
 
+  const openOrgNodeDetail = (node: CanonicalOrgNode) => {
+    setSelectedOrgNode(node);
+    setIsOrgNodeDrawerOpen(true);
+  };
+
   // Categorize work items for "My Day"
   const pendingTasks = workItems.filter(w => w.status !== 'completed');
   const highOrUrgentTasks = pendingTasks.filter(w => w.priority === 'urgent' || w.priority === 'high');
@@ -168,7 +175,7 @@ export default function OverviewPage() {
     return dateStr > '2026-08-28';
   });
 
-  // Primary Next Action: Top active in-progress item or highest priority pending item
+  // Primary Next Action
   const primaryNextAction =
     workItems.find(w => w.status === 'in_progress') ||
     workItems.find(w => w.status === 'todo' && (w.priority === 'urgent' || w.priority === 'high')) ||
@@ -217,7 +224,6 @@ export default function OverviewPage() {
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
-      {/* 1. MY DAY GREETING & FOCUS BANNER */}
       <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
           <div className="flex items-center gap-2">
@@ -283,7 +289,6 @@ export default function OverviewPage() {
         </div>
       </div>
 
-      {/* 2. PRIMARY NEXT ACTION SPOTLIGHT CARD (MODERN LIGHT THEME) */}
       {primaryNextAction ? (
         <div className="bg-white border-2 border-blue-500/30 rounded-3xl p-6 shadow-xs relative overflow-hidden bg-gradient-to-br from-blue-50/50 via-white to-indigo-50/30">
           <div className="relative z-10 space-y-4">
@@ -360,11 +365,8 @@ export default function OverviewPage() {
         </div>
       )}
 
-      {/* 3. TWO-COLUMN WORKFLOW GRID */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* LEFT 2 COLUMNS: NEEDS ATTENTION & DUE TODAY QUEUES */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Section: Needs Attention (Overdue & Blocked) */}
           <AttentionRequiredCard 
             blockedTasks={blockedTasks}
             overdueTasks={overdueTasks}
@@ -374,7 +376,6 @@ export default function OverviewPage() {
             onOpenEscalation={openEscalationDetail}
           />
 
-          {/* Section: Due Today & In Progress */}
           <div className="bg-white border border-slate-200 rounded-3xl p-5 space-y-4 shadow-xs">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div>
@@ -437,7 +438,6 @@ export default function OverviewPage() {
             )}
           </div>
 
-          {/* Section: Upcoming (Tomorrow & This Week) */}
           {upcomingTasks.length > 0 && (
             <div className="bg-white border border-slate-200 rounded-3xl p-5 space-y-3 shadow-xs">
               <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500">
@@ -463,18 +463,20 @@ export default function OverviewPage() {
             </div>
           )}
           
-          {/* Section: Leader Team Workload & Scope Tree */}
           {isLeader && (
-            <>
-              <TeamWorkloadGrid teamMembers={teamMembers} isLoading={isLoading} />
-              <ScopedOrgTree treeData={orgTree} isLoading={isLoading} />
-            </>
+            <div className="flex-1 mt-6 xl:mt-0 space-y-6">
+              <TeamWorkloadGrid teamMembers={teamMembers} workItems={workItems} isLoading={isLoading} />
+              
+              <ScopedOrgTree 
+                treeData={orgTree} 
+                isLoading={isLoading} 
+                onSelectNode={openOrgNodeDetail}
+              />
+            </div>
           )}
         </div>
 
-        {/* RIGHT 1 COLUMN: QUICK TASK CAPTURE & TODAY'S SCHEDULE */}
         <div className="space-y-6">
-          {/* Quick Intake Form */}
           {isLeader ? (
             <SmartIntakeBox 
               onPlanGenerated={(plan) => {
@@ -627,6 +629,21 @@ export default function OverviewPage() {
         onResolved={() => {
           setIsEscalationDrawerOpen(false);
           setSelectedEscalation(null);
+          refreshTasks();
+        }}
+      />
+
+      {/* 7. POSITION DETAIL DRAWER */}
+      <PositionDetailDrawer
+        node={selectedOrgNode}
+        treeData={orgTree}
+        isOpen={isOrgNodeDrawerOpen}
+        onClose={() => {
+          setIsOrgNodeDrawerOpen(false);
+          setSelectedOrgNode(null);
+        }}
+        onUpdated={() => {
+          // Refresh tree to show transfer result
           refreshTasks();
         }}
       />

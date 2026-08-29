@@ -1,27 +1,37 @@
 import React from 'react';
 import { Network, ChevronDown, ChevronRight, User } from 'lucide-react';
+import { CanonicalOrgNode, OrgTreeResponse } from '../../types/organization';
 
 interface ScopedOrgTreeProps {
-  treeData: any; // OrgTreeResponse
+  treeData: OrgTreeResponse | null;
   isLoading?: boolean;
+  onSelectNode?: (node: CanonicalOrgNode) => void;
 }
 
-const TreeNode: React.FC<{ node: any; depth?: number }> = ({ node, depth = 0 }) => {
+const TreeNode: React.FC<{ 
+  node: CanonicalOrgNode; 
+  depth?: number;
+  onSelect?: (node: CanonicalOrgNode) => void;
+}> = ({ node, depth = 0, onSelect }) => {
   const [isExpanded, setIsExpanded] = React.useState(true);
   const hasChildren = node.subordinates && node.subordinates.length > 0;
   
-  // Handle both the Python backend names and frontend names gracefully
-  const title = node.title || node.positionTitle;
-  const occupant = node.current_occupant || node.currentOccupant || null;
-  const occupantName = occupant ? (occupant.full_name || occupant.userName) : (node.userName || null);
+  // Handle backend names
+  const title = node.title;
+  const occupant = node.current_occupant;
+  const occupantName = occupant ? occupant.full_name : null;
 
   return (
     <div className="space-y-1">
       <div 
-        className={`flex items-center gap-2 p-2 rounded-lg hover:bg-slate-50 transition-colors ${depth > 0 ? 'ml-6 border-l-2 border-slate-100 pl-4' : ''}`}
+        className={`flex items-center gap-2 p-2 rounded-lg transition-colors cursor-pointer hover:bg-slate-50 ${depth > 0 ? 'ml-6 border-l-2 border-slate-100 pl-4' : ''}`}
+        onClick={() => onSelect?.(node)}
       >
         <button 
-          onClick={() => setIsExpanded(!isExpanded)}
+          onClick={(e) => {
+            e.stopPropagation();
+            setIsExpanded(!isExpanded);
+          }}
           className={`p-1 rounded hover:bg-slate-200 transition-colors ${!hasChildren ? 'invisible' : ''}`}
         >
           {isExpanded ? (
@@ -34,7 +44,7 @@ const TreeNode: React.FC<{ node: any; depth?: number }> = ({ node, depth = 0 }) 
         <div className="flex-1 flex items-center justify-between">
           <div className="flex flex-col">
             <span className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
-              {node.is_leadership || node.isLeadership ? <Network className="w-3.5 h-3.5 text-purple-600" /> : <User className="w-3.5 h-3.5 text-blue-600" />}
+              {node.is_leadership ? <Network className="w-3.5 h-3.5 text-purple-600" /> : <User className="w-3.5 h-3.5 text-blue-600" />}
               {title}
             </span>
             <span className="text-[10px] text-slate-500">
@@ -44,7 +54,7 @@ const TreeNode: React.FC<{ node: any; depth?: number }> = ({ node, depth = 0 }) 
           
           <div className="flex gap-2">
             <span className="text-[10px] px-2 py-0.5 bg-slate-100 text-slate-600 rounded">
-              {node.department_name || node.departmentName}
+              {node.department_name}
             </span>
           </div>
         </div>
@@ -52,8 +62,8 @@ const TreeNode: React.FC<{ node: any; depth?: number }> = ({ node, depth = 0 }) 
       
       {isExpanded && hasChildren && (
         <div className="space-y-1">
-          {node.subordinates.map((child: any) => (
-            <TreeNode key={child.position_id || child.positionId || child.id} node={child} depth={depth + 1} />
+          {node.subordinates.map((child: CanonicalOrgNode) => (
+            <TreeNode key={child.position_id} node={child} depth={depth + 1} onSelect={onSelect} />
           ))}
         </div>
       )}
@@ -61,7 +71,7 @@ const TreeNode: React.FC<{ node: any; depth?: number }> = ({ node, depth = 0 }) 
   );
 };
 
-export const ScopedOrgTree: React.FC<ScopedOrgTreeProps> = ({ treeData, isLoading }) => {
+export const ScopedOrgTree: React.FC<ScopedOrgTreeProps> = ({ treeData, isLoading, onSelectNode }) => {
   if (isLoading) {
     return (
       <div className="bg-white border border-slate-200 rounded-3xl p-5 shadow-xs animate-pulse space-y-4">
@@ -88,8 +98,8 @@ export const ScopedOrgTree: React.FC<ScopedOrgTreeProps> = ({ treeData, isLoadin
       
       <div className="overflow-x-auto pb-2">
         <div className="min-w-[400px]">
-          {treeData.root_nodes.map((node: any) => (
-            <TreeNode key={node.position_id || node.positionId || node.id} node={node} />
+          {treeData.root_nodes.map((node: CanonicalOrgNode) => (
+            <TreeNode key={node.position_id} node={node} onSelect={onSelectNode} />
           ))}
         </div>
       </div>

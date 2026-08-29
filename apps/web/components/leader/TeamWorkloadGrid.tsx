@@ -1,13 +1,15 @@
 import React from 'react';
 import { Users, AlertTriangle } from 'lucide-react';
-import { OrgNode } from '../../types/organization';
+import { CanonicalOrgNode } from '../../types/organization';
+import { WorkItem } from '../../types/workItem';
 
 interface TeamWorkloadGridProps {
-  teamMembers: OrgNode[]; // Expected to be the direct subordinates or entire scoped tree nodes
+  teamMembers: CanonicalOrgNode[]; 
+  workItems?: WorkItem[];
   isLoading?: boolean;
 }
 
-export const TeamWorkloadGrid: React.FC<TeamWorkloadGridProps> = ({ teamMembers, isLoading }) => {
+export const TeamWorkloadGrid: React.FC<TeamWorkloadGridProps> = ({ teamMembers, workItems = [], isLoading }) => {
   if (isLoading) {
     return (
       <div className="bg-white border border-slate-200 rounded-3xl p-5 shadow-xs animate-pulse">
@@ -36,49 +38,59 @@ export const TeamWorkloadGrid: React.FC<TeamWorkloadGridProps> = ({ teamMembers,
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {teamMembers.map((member) => (
-          <div key={member.id || member.positionId} className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-3 hover:border-slate-300 transition-colors">
-            <div className="flex justify-between items-start">
-              <div>
-                <h4 className="text-xs font-bold text-slate-900">
-                  {member.userName || 'Vacant Position'}
-                </h4>
-                <p className="text-[10px] text-slate-500">{member.positionTitle}</p>
-              </div>
-              {!member.userId && (
-                <span className="text-[9px] font-bold px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded uppercase">
-                  Vacant
-                </span>
-              )}
-            </div>
+        {teamMembers.map((member) => {
+          const userId = member.current_occupant?.user_id;
+          const userTasks = userId ? workItems.filter(w => 
+            w.raci?.responsible_id === userId || w.raci?.accountable_id === userId
+          ) : [];
+          
+          const activeTasksCount = userTasks.filter(w => w.status !== 'completed').length;
+          const blockedTasksCount = userTasks.filter(w => w.status === 'blocked').length;
 
-            <div className="flex items-center justify-between text-xs pt-2 border-t border-slate-200/60">
-              <div className="flex flex-col">
-                <span className="text-[10px] text-slate-400 font-bold uppercase uppercase">Active</span>
-                <span className="font-bold text-slate-700">{member.activeTasksCount || 0} tasks</span>
+          return (
+            <div key={member.position_id} className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-3 hover:border-slate-300 transition-colors">
+              <div className="flex justify-between items-start">
+                <div>
+                  <h4 className="text-xs font-bold text-slate-900">
+                    {member.current_occupant ? member.current_occupant.full_name : 'Vacant Position'}
+                  </h4>
+                  <p className="text-[10px] text-slate-500">{member.title}</p>
+                </div>
+                {!member.current_occupant && (
+                  <span className="text-[9px] font-bold px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded uppercase">
+                    Vacant
+                  </span>
+                )}
               </div>
-              <div className="flex flex-col text-right">
-                <span className="text-[10px] text-red-400 font-bold uppercase uppercase">Blocked</span>
-                <span className={`font-bold ${member.blockedTasksCount ? 'text-red-600' : 'text-slate-400'}`}>
-                  {member.blockedTasksCount || 0} tasks
-                </span>
+
+              <div className="flex items-center justify-between text-xs pt-2 border-t border-slate-200/60">
+                <div className="flex flex-col">
+                  <span className="text-[10px] text-slate-400 font-bold uppercase uppercase">Active</span>
+                  <span className="font-bold text-slate-700">{activeTasksCount} tasks</span>
+                </div>
+                <div className="flex flex-col text-right">
+                  <span className="text-[10px] text-red-400 font-bold uppercase uppercase">Blocked</span>
+                  <span className={`font-bold ${blockedTasksCount ? 'text-red-600' : 'text-slate-400'}`}>
+                    {blockedTasksCount} tasks
+                  </span>
+                </div>
+              </div>
+              
+              {/* Simple Capacity Bar */}
+              <div className="space-y-1">
+                <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
+                  <div 
+                    className={`h-full rounded-full ${blockedTasksCount ? 'bg-red-500' : 'bg-blue-500'}`}
+                    style={{ width: `${Math.min((activeTasksCount / 10) * 100, 100)}%` }}
+                  />
+                </div>
+                <p className="text-[9px] text-slate-400 text-right">
+                  {(activeTasksCount / 10 * 100) > 80 ? 'High Capacity' : 'Available'}
+                </p>
               </div>
             </div>
-            
-            {/* Simple Capacity Bar */}
-            <div className="space-y-1">
-              <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
-                <div 
-                  className={`h-full rounded-full ${member.blockedTasksCount ? 'bg-red-500' : 'bg-blue-500'}`}
-                  style={{ width: `${Math.min(((member.activeTasksCount || 0) / 10) * 100, 100)}%` }}
-                />
-              </div>
-              <p className="text-[9px] text-slate-400 text-right">
-                {((member.activeTasksCount || 0) / 10 * 100) > 80 ? 'High Capacity' : 'Available'}
-              </p>
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
