@@ -21,10 +21,17 @@ import {
 import Link from 'next/link';
 import { WorkItem, WorkItemPriority } from '../../../types/workItem';
 import { QuarterlyPriority } from '../../../types/strategy';
-import { workItemStore } from '../../../lib/mocks/workItemMock';
+import { apiClient } from '../../../lib/api/client';
 import { strategyStore } from '../../../lib/mocks/strategyMock';
 import { TaskDetailDrawer } from '../../../components/work/TaskDetailDrawer';
 import { ZomatoDeliveryStepper } from '../../../components/strategy/ZomatoDeliveryStepper';
+import { SmartIntakeBox } from '../../../components/intake/SmartIntakeBox';
+import { AttentionRequiredCard } from '../../../components/leader/AttentionRequiredCard';
+import { TeamWorkloadGrid } from '../../../components/leader/TeamWorkloadGrid';
+import { ScopedOrgTree } from '../../../components/leader/ScopedOrgTree';
+import { OrgNode } from '../../../types/organization';
+import { EscalationDetailDrawer } from '../../../components/leader/EscalationDetailDrawer';
+import { WorkItemEscalationRecord } from '../../../types/workItem';
 
 export default function OverviewPage() {
   const { user } = useAuth();
@@ -35,59 +42,109 @@ export default function OverviewPage() {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [activePriority, setActivePriority] = useState<QuarterlyPriority | null>(null);
 
+  const [escalations, setEscalations] = useState<WorkItemEscalationRecord[]>([]);
+  const [selectedEscalation, setSelectedEscalation] = useState<WorkItemEscalationRecord | null>(null);
+  const [isEscalationDrawerOpen, setIsEscalationDrawerOpen] = useState(false);
+
+  // Data Fetching State
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
   // Quick Self-Task Intake Form
   const [newTitle, setNewTitle] = useState('');
   const [newPriority, setNewPriority] = useState<WorkItemPriority>('medium');
   const [showAddSuccess, setShowAddSuccess] = useState(false);
 
-  const refreshTasks = useCallback(() => {
-    const items = workItemStore.getWorkItems({ owner_id: user.id || 'usr-stav-101' });
-    setWorkItems(items);
-    const priorities = strategyStore.getQuarterlyPriorities();
-    if (priorities.length > 0) {
-      setActivePriority(priorities[0]);
-    }
-    if (selectedTask) {
-      const updated = workItemStore.getWorkItemById(selectedTask.id);
-      if (updated) setSelectedTask(updated);
+  // Leader Specific State
+  const [orgTree, setOrgTree] = useState<any>(null);
+  const [teamMembers, setTeamMembers] = useState<OrgNode[]>([]);
+  const isLeader = ['MD', 'MD_OFFICE', 'DEPARTMENT_HEAD', 'MANAGER', 'LEADER'].includes(user.role);
+
+  const refreshTasks = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const response = await apiClient.workItems.list({ owner_id: user.id || 'usr-stav-101' });
+      setWorkItems(response.items);
+      const priorities = strategyStore.getQuarterlyPriorities();
+      if (priorities.length > 0) {
+        setActivePriority(priorities[0]);
+      }
+      if (selectedTask) {
+        const updated = response.items.find((item) => item.id === selectedTask.id);
+        if (updated) setSelectedTask(updated);
+      }
+      
+      if (isLeader) {
+        // Fetch Escalations inbox
+        const escInbox = await apiClient.workItems.escalations.inbox();
+        setEscalations(escInbox);
+
+        // Fetch Org Tree Scope
+        const treeData = await apiClient.organization.treeScoped();
+        if (treeData) {
+          setOrgTree(treeData);
+          
+          // Flatten tree into teamMembers for workload grid (excluding root node if it's the leader themselves, or just using immediate subordinates)
+          const members: OrgNode[] = [];
+          if (treeData.root_nodes) {
+            treeData.root_nodes.forEach((node: any) => {
+              if (node.subordinates) {
+                members.push(...node.subordinates); // Immediate team members
+              }
+            });
+          }
+          // Fetch tasks for these members to get active/blocked counts (mock logic here based on frontend fetching)
+          setTeamMembers(members);
+        }
+      }
+    } catch (err: any) {
+      setError(err.message || 'Failed to load tasks');
+    } finally {
+      setIsLoading(false);
     }
   }, [user.id, selectedTask]);
 
   useEffect(() => {
     refreshTasks();
-    const unsubWork = workItemStore.subscribe(refreshTasks);
     const unsubStrat = strategyStore.subscribe(refreshTasks);
     return () => {
-      unsubWork();
       unsubStrat();
     };
   }, [refreshTasks]);
 
-  const handleCreateTask = (e: React.FormEvent) => {
+  const handleCreateTask = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTitle.trim()) return;
 
-    workItemStore.createWorkItem(
-      {
-        title: newTitle.trim(),
+    try {
+      await apiClient.workItems.approve({
+        items: [{
+          client_id: `plan-${Date.now()}`,
+          title: newTitle.trim(),
+          priority: newPriority,
+        }],
+        title: 'Self-Scheduled Work Item',
         priority: newPriority,
         owner_id: user.id || 'usr-stav-101',
-        owner_name: user.name,
-        due_at: new Date(Date.now() + 86400000).toISOString(),
-        source_type: 'MANUAL',
-        source_title: 'Self-Scheduled Work Item',
-      },
-      user.name
-    );
-
-    setNewTitle('');
-    setShowAddSuccess(true);
-    setTimeout(() => setShowAddSuccess(false), 2500);
+      });
+      setNewTitle('');
+      setShowAddSuccess(true);
+      setTimeout(() => setShowAddSuccess(false), 2500);
+      refreshTasks();
+    } catch (err) {
+      console.error('Failed to create task:', err);
+    }
   };
 
   const openTaskDetail = (item: WorkItem) => {
     setSelectedTask(item);
     setIsDrawerOpen(true);
+  };
+
+  const openEscalationDetail = (esc: WorkItemEscalationRecord) => {
+    setSelectedEscalation(esc);
+    setIsEscalationDrawerOpen(true);
   };
 
   // Categorize work items for "My Day"
@@ -130,6 +187,33 @@ export default function OverviewPage() {
         return 'bg-slate-50 text-slate-600 border-slate-200';
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="max-w-6xl mx-auto p-12 text-center text-slate-500">
+        <div className="animate-spin w-8 h-8 border-4 border-blue-200 border-t-blue-600 rounded-full mx-auto mb-4" />
+        <p className="text-sm font-semibold">Loading your workspace...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="max-w-6xl mx-auto p-12 text-center">
+        <div className="bg-red-50 text-red-600 border border-red-200 rounded-2xl p-6 inline-block">
+          <AlertTriangle className="w-8 h-8 mx-auto mb-2" />
+          <h3 className="text-base font-bold">Failed to load data</h3>
+          <p className="text-sm mt-1">{error}</p>
+          <button
+            onClick={() => refreshTasks()}
+            className="mt-4 px-4 py-2 bg-white border border-red-200 rounded-lg text-sm font-semibold text-red-700 hover:bg-red-50"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
@@ -281,60 +365,14 @@ export default function OverviewPage() {
         {/* LEFT 2 COLUMNS: NEEDS ATTENTION & DUE TODAY QUEUES */}
         <div className="lg:col-span-2 space-y-6">
           {/* Section: Needs Attention (Overdue & Blocked) */}
-          {(overdueTasks.length > 0 || blockedTasks.length > 0) && (
-            <div className="bg-red-50/40 border border-red-200/80 rounded-3xl p-5 space-y-3">
-              <div className="flex items-center gap-2 text-red-900">
-                <AlertCircle className="w-4 h-4 text-red-600" />
-                <h3 className="text-xs font-bold uppercase tracking-wider">
-                  Needs Immediate Attention ({overdueTasks.length + blockedTasks.length})
-                </h3>
-              </div>
-
-              <div className="space-y-2">
-                {blockedTasks.map(item => (
-                  <div
-                    key={item.id}
-                    onClick={() => openTaskDetail(item)}
-                    className="p-3.5 bg-white border border-red-200 rounded-2xl flex items-center justify-between gap-3 hover:border-red-300 transition-colors cursor-pointer shadow-2xs"
-                  >
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <span className="text-[9px] font-bold px-1.5 py-0.5 bg-red-100 text-red-700 rounded uppercase">
-                          BLOCKED
-                        </span>
-                        <span className="text-[11px] font-semibold text-red-600">
-                          {item.blocked_reason || 'Blocker reported'}
-                        </span>
-                      </div>
-                      <p className="text-xs font-bold text-slate-900">{item.title}</p>
-                    </div>
-                    <ChevronRight className="w-4 h-4 text-slate-400 shrink-0" />
-                  </div>
-                ))}
-
-                {overdueTasks.filter(item => item.status !== 'blocked').map(item => (
-                  <div
-                    key={item.id}
-                    onClick={() => openTaskDetail(item)}
-                    className="p-3.5 bg-white border border-amber-200 rounded-2xl flex items-center justify-between gap-3 hover:border-amber-300 transition-colors cursor-pointer shadow-2xs"
-                  >
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <span className="text-[9px] font-bold px-1.5 py-0.5 bg-amber-100 text-amber-800 rounded uppercase">
-                          OVERDUE
-                        </span>
-                        <span className="text-[11px] text-slate-500 font-mono">
-                          Target was: {item.due_at?.substring(0, 10)}
-                        </span>
-                      </div>
-                      <p className="text-xs font-bold text-slate-900">{item.title}</p>
-                    </div>
-                    <ChevronRight className="w-4 h-4 text-slate-400 shrink-0" />
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+          <AttentionRequiredCard 
+            blockedTasks={blockedTasks}
+            overdueTasks={overdueTasks}
+            escalations={escalations}
+            allTasks={workItems}
+            onOpenTask={openTaskDetail}
+            onOpenEscalation={openEscalationDetail}
+          />
 
           {/* Section: Due Today & In Progress */}
           <div className="bg-white border border-slate-200 rounded-3xl p-5 space-y-4 shadow-xs">
@@ -424,57 +462,80 @@ export default function OverviewPage() {
               </div>
             </div>
           )}
+          
+          {/* Section: Leader Team Workload & Scope Tree */}
+          {isLeader && (
+            <>
+              <TeamWorkloadGrid teamMembers={teamMembers} isLoading={isLoading} />
+              <ScopedOrgTree treeData={orgTree} isLoading={isLoading} />
+            </>
+          )}
         </div>
 
         {/* RIGHT 1 COLUMN: QUICK TASK CAPTURE & TODAY'S SCHEDULE */}
         <div className="space-y-6">
           {/* Quick Intake Form */}
-          <div className="bg-white border border-slate-200 rounded-3xl p-5 shadow-xs space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Plus className="w-4 h-4 text-slate-900" />
-                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-900">
-                  Quick Task Capture
-                </h3>
+          {isLeader ? (
+            <SmartIntakeBox 
+              onPlanGenerated={(plan) => {
+                // Submit the plan directly for now
+                apiClient.workItems.approve({
+                  items: plan.items,
+                  title: plan.title,
+                  priority: plan.priority,
+                  owner_id: user.id || 'usr-stav-101',
+                  due_at: plan.due_at,
+                }).then(() => refreshTasks());
+              }} 
+            />
+          ) : (
+            <div className="bg-white border border-slate-200 rounded-3xl p-5 shadow-xs space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Plus className="w-4 h-4 text-slate-900" />
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-slate-900">
+                    Quick Task Capture
+                  </h3>
+                </div>
+                {showAddSuccess && (
+                  <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded">
+                    Saved!
+                  </span>
+                )}
               </div>
-              {showAddSuccess && (
-                <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded">
-                  Saved!
-                </span>
-              )}
+
+              <form onSubmit={handleCreateTask} className="space-y-2.5">
+                <input
+                  type="text"
+                  value={newTitle}
+                  onChange={e => setNewTitle(e.target.value)}
+                  placeholder="What work do you need to do?"
+                  required
+                  className="w-full px-3.5 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none"
+                />
+
+                <div className="flex items-center gap-2">
+                  <select
+                    value={newPriority}
+                    onChange={e => setNewPriority(e.target.value as WorkItemPriority)}
+                    className="flex-1 px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl text-slate-700 focus:outline-none"
+                  >
+                    <option value="low">Low Priority</option>
+                    <option value="medium">Medium</option>
+                    <option value="high">High Priority</option>
+                    <option value="urgent">Urgent</option>
+                  </select>
+
+                  <button
+                    type="submit"
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-xs transition-colors cursor-pointer"
+                  >
+                    Add
+                  </button>
+                </div>
+              </form>
             </div>
-
-            <form onSubmit={handleCreateTask} className="space-y-2.5">
-              <input
-                type="text"
-                value={newTitle}
-                onChange={e => setNewTitle(e.target.value)}
-                placeholder="What work do you need to do?"
-                required
-                className="w-full px-3.5 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none"
-              />
-
-              <div className="flex items-center gap-2">
-                <select
-                  value={newPriority}
-                  onChange={e => setNewPriority(e.target.value as WorkItemPriority)}
-                  className="flex-1 px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl text-slate-700 focus:outline-none"
-                >
-                  <option value="low">Low Priority</option>
-                  <option value="medium">Medium</option>
-                  <option value="high">High Priority</option>
-                  <option value="urgent">Urgent</option>
-                </select>
-
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-xs transition-colors cursor-pointer"
-                >
-                  Add
-                </button>
-              </div>
-            </form>
-          </div>
+          )}
 
           {/* Personal Day Schedule */}
           <div className="bg-white border border-slate-200 rounded-3xl p-5 shadow-xs space-y-3">
@@ -553,6 +614,21 @@ export default function OverviewPage() {
           setSelectedTask(null);
         }}
         onUpdated={refreshTasks}
+      />
+
+      {/* 6. ESCALATION DETAIL DRAWER */}
+      <EscalationDetailDrawer
+        escalation={selectedEscalation}
+        isOpen={isEscalationDrawerOpen}
+        onClose={() => {
+          setIsEscalationDrawerOpen(false);
+          setSelectedEscalation(null);
+        }}
+        onResolved={() => {
+          setIsEscalationDrawerOpen(false);
+          setSelectedEscalation(null);
+          refreshTasks();
+        }}
       />
     </div>
   );

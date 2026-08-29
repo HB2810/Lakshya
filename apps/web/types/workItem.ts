@@ -62,13 +62,16 @@ export type EscalationLevel = 'DIRECT_LEADER' | 'DEPARTMENT_HEAD' | 'MANAGING_DI
 
 export interface WorkItemEscalationRecord {
   id: string;
+  organization_id?: string;
+  work_item_id: string;
   level: EscalationLevel;
   reason: string;
   escalated_by_id: string;
   escalated_by_name: string;
   escalated_to_id: string;
   escalated_to_name: string;
-  escalated_at: string;
+  escalated_at?: string;
+  created_at: string;
   status: 'PENDING' | 'ACKNOWLEDGED' | 'RESOLVED';
   resolution_note?: string;
   resolved_at?: string;

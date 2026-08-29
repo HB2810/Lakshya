@@ -253,84 +253,53 @@ export const apiClient = {
 
   workItems: {
     async intake(text: string): Promise<StructuredPlanRecommendation> {
-      try {
-        return await apiFetch<StructuredPlanRecommendation>('/work-items/intake', {
-          method: 'POST',
-          body: JSON.stringify({ text }),
-        });
-      } catch {
-        return {
-          plan: {
-            title: text.slice(0, 50),
-            priority: 'medium',
-            items: [
-              {
-                client_id: `plan-${Date.now()}`,
-                title: text,
-                priority: 'medium',
-              },
-            ],
-          },
-        };
-      }
+      return await apiFetch<StructuredPlanRecommendation>('/work-items/intake', {
+        method: 'POST',
+        body: JSON.stringify({ text }),
+      });
     },
 
     async approve(payload: ApprovePlanPayload): Promise<WorkItemListResponse> {
-      try {
-        return await apiFetch<WorkItemListResponse>('/work-items/approve', {
-          method: 'POST',
-          body: JSON.stringify(payload),
-        });
-      } catch {
-        const createdItems = payload.items.map(item =>
-          workItemStore.createWorkItem({
-            title: item.title,
-            description: item.description,
-            priority: item.priority,
-            owner_id: payload.owner_id || 'usr-stav-101',
-            due_at: payload.due_at || undefined,
-            source_type: (payload.source_type as any) || 'SMART_INTAKE',
-            source_title: payload.title,
-            origin_meeting_id: payload.origin_meeting_id,
-          })
-        );
-        return { items: createdItems, total: createdItems.length };
-      }
+      return await apiFetch<WorkItemListResponse>('/work-items/approve', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
     },
 
     async list(filters?: { owner_id?: string; status?: string; parent_id?: string }): Promise<WorkItemListResponse> {
-      try {
-        const queryParams = new URLSearchParams();
-        if (filters?.owner_id) queryParams.append('owner_id', filters.owner_id);
-        if (filters?.status) queryParams.append('status', filters.status);
-        if (filters?.parent_id) queryParams.append('parent_id', filters.parent_id);
-        const query = queryParams.toString() ? `?${queryParams.toString()}` : '';
-        return await apiFetch<WorkItemListResponse>(`/work-items${query}`, { method: 'GET' });
-      } catch {
-        const items = workItemStore.getWorkItems(filters);
-        return { items, total: items.length };
-      }
+      const queryParams = new URLSearchParams();
+      if (filters?.owner_id) queryParams.append('owner_id', filters.owner_id);
+      if (filters?.status) queryParams.append('status', filters.status);
+      if (filters?.parent_id) queryParams.append('parent_id', filters.parent_id);
+      const query = queryParams.toString() ? `?${queryParams.toString()}` : '';
+      return await apiFetch<WorkItemListResponse>(`/work-items${query}`, { method: 'GET' });
     },
 
     async patch(id: string, patch: WorkItemPatchPayload): Promise<WorkItem> {
-      try {
-        return await apiFetch<WorkItem>(`/work-items/${id}`, {
-          method: 'PATCH',
-          body: JSON.stringify(patch),
-        });
-      } catch {
-        if (patch.status) {
-          workItemStore.updateStatus(id, patch.status, 'Priyesh Shah', patch.update_note);
-        }
-        if (patch.progressPercent !== undefined) {
-          workItemStore.updateProgress(id, patch.progressPercent, patch.update_note);
-        }
-        if (patch.blocker_details) {
-          workItemStore.reportBlocker(id, patch.blocker_details);
-        }
-        return workItemStore.getWorkItemById(id)!;
-      }
+      return await apiFetch<WorkItem>(`/work-items/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(patch),
+      });
     },
+
+    async verify(id: string, note?: string): Promise<WorkItem> {
+      const query = note ? `?note=${encodeURIComponent(note)}` : '';
+      return await apiFetch<WorkItem>(`/work-items/${id}/verify${query}`, {
+        method: 'POST',
+      });
+    },
+
+    escalations: {
+      async inbox(): Promise<any[]> {
+        return await apiFetch<any[]>('/work-items/escalations/inbox', { method: 'GET' });
+      },
+      async resolve(id: string, payload: { resolution_note?: string }): Promise<any> {
+        return await apiFetch<any>(`/work-items/escalations/${id}/resolve`, {
+          method: 'POST',
+          body: JSON.stringify(payload),
+        });
+      }
+    }
   },
 
   dashboard: {
@@ -443,16 +412,29 @@ export const apiClient = {
 
   organization: {
     async getDepartments() {
-      return MOCK_DEPARTMENTS;
+      const data = await apiFetch<{items: any[]}>('/departments', { method: 'GET' });
+      return data.items;
     },
     async getUsers() {
-      return Object.values(DEMO_USERS);
+      const data = await apiFetch<{items: any[]}>('/users', { method: 'GET' });
+      return data.items;
+    },
+    async treeScoped() {
+      // For now, if the backend fails or doesn't have it, we return a mock fallback 
+      // or try to fetch from the actual endpoint.
+      try {
+        const response = await apiFetch<any>('/organizations/tree/scoped', { method: 'GET' });
+        return response;
+      } catch {
+        return null; // Handle fallback gracefully in component
+      }
     },
     async getRoles() {
-      return MOCK_ROLES;
+      const data = await apiFetch<{items: any[]}>('/roles', { method: 'GET' });
+      return data.items;
     },
     async getAuditEvents() {
-      return MOCK_AUDIT_EVENTS;
+      return MOCK_AUDIT_EVENTS; // Mock fallback kept as no v1 audit endpoint exists
     },
   },
 

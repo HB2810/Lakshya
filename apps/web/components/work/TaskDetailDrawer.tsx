@@ -19,8 +19,12 @@ import {
   RotateCcw,
 } from 'lucide-react';
 import { WorkItem, WorkItemStatus, WorkItemPriority } from '../../types/workItem';
-import { workItemStore } from '../../lib/mocks/workItemMock';
+import { apiClient } from '../../lib/api/client';
 import { useAuth } from '../../lib/auth/AuthContext';
+import { RaciSection } from './sections/RaciSection';
+import { EdcSection } from './sections/EdcSection';
+import { DependenciesSection } from './sections/DependenciesSection';
+import { EscalationSection } from './sections/EscalationSection';
 
 interface TaskDetailDrawerProps {
   workItem: WorkItem | null;
@@ -39,6 +43,9 @@ export const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({
 
   // Active action mode inside drawer: 'view' | 'progress' | 'blocker' | 'complete'
   const [actionMode, setActionMode] = useState<'view' | 'progress' | 'blocker' | 'complete'>('view');
+  
+  // Tab State
+  const [activeTab, setActiveTab] = useState<'overview' | 'execution' | 'dependencies' | 'activity'>('overview');
 
   // Progress Update Form State
   const [progressPercent, setProgressPercent] = useState<number>(workItem?.progressPercent || 0);
@@ -55,52 +62,83 @@ export const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({
 
   if (!isOpen || !workItem) return null;
 
-  const handleStartWork = () => {
-    workItemStore.updateStatus(workItem.id, 'in_progress', user.name, 'Started execution.');
-    onUpdated?.();
+  const handleStartWork = async () => {
+    try {
+      await apiClient.workItems.patch(workItem.id, {
+        status: 'in_progress',
+        update_note: 'Started execution.',
+      });
+      onUpdated?.();
+    } catch (err) {
+      console.error('Failed to start work:', err);
+    }
   };
 
-  const handleSaveProgress = (e: React.FormEvent) => {
+  const handleSaveProgress = async (e: React.FormEvent) => {
     e.preventDefault();
-    workItemStore.updateProgress(workItem.id, progressPercent, progressNote.trim() || undefined, user.name);
-    setActionMode('view');
-    setProgressNote('');
-    onUpdated?.();
+    try {
+      await apiClient.workItems.patch(workItem.id, {
+        progressPercent: progressPercent,
+        update_note: progressNote.trim() || undefined,
+      });
+      setActionMode('view');
+      setProgressNote('');
+      onUpdated?.();
+    } catch (err) {
+      console.error('Failed to save progress:', err);
+    }
   };
 
-  const handleReportBlocker = (e: React.FormEvent) => {
+  const handleReportBlocker = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!blockerReason.trim() || !blockerNeed.trim()) return;
 
-    workItemStore.reportBlocker(
-      workItem.id,
-      {
-        reason: blockerReason.trim(),
-        needDescription: blockerNeed.trim(),
-        helpedByPersonOrDept: blockerHelper.trim() || undefined,
-        urgency: blockerUrgency,
-      },
-      user.name
-    );
-
-    setActionMode('view');
-    setBlockerReason('');
-    setBlockerNeed('');
-    setBlockerHelper('');
-    onUpdated?.();
+    try {
+      await apiClient.workItems.patch(workItem.id, {
+        status: 'blocked',
+        blocker_details: {
+          reason: blockerReason.trim(),
+          needDescription: blockerNeed.trim(),
+          helpedByPersonOrDept: blockerHelper.trim() || undefined,
+          urgency: blockerUrgency,
+          reportedAt: new Date().toISOString(),
+        },
+      });
+      setActionMode('view');
+      setBlockerReason('');
+      setBlockerNeed('');
+      setBlockerHelper('');
+      onUpdated?.();
+    } catch (err) {
+      console.error('Failed to report blocker:', err);
+    }
   };
 
-  const handleCompleteWork = (e: React.FormEvent) => {
+  const handleCompleteWork = async (e: React.FormEvent) => {
     e.preventDefault();
-    workItemStore.updateStatus(workItem.id, 'completed', user.name, completeNote.trim() || 'Work completed successfully.');
-    setActionMode('view');
-    setCompleteNote('');
-    onUpdated?.();
+    try {
+      await apiClient.workItems.patch(workItem.id, {
+        status: 'completed',
+        update_note: completeNote.trim() || 'Work completed successfully.',
+      });
+      setActionMode('view');
+      setCompleteNote('');
+      onUpdated?.();
+    } catch (err) {
+      console.error('Failed to complete work:', err);
+    }
   };
 
-  const handleResolveBlocker = () => {
-    workItemStore.resolveBlocker(workItem.id, 'Blocker resolved. Resumed work.', user.name);
-    onUpdated?.();
+  const handleResolveBlocker = async () => {
+    try {
+      await apiClient.workItems.patch(workItem.id, {
+        status: 'in_progress', // Switch back to in_progress or previous state
+        update_note: 'Blocker resolved. Resumed work.',
+      });
+      onUpdated?.();
+    } catch (err) {
+      console.error('Failed to resolve blocker:', err);
+    }
   };
 
   const getPriorityBadge = (priority: WorkItemPriority) => {
@@ -180,83 +218,81 @@ export const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({
             </button>
           </div>
 
-          {/* 2. DRAWER BODY CONTENT */}
+          {/* 2. TAB NAVIGATION */}
+          <div className="flex border-b border-slate-100 px-6 gap-6 text-xs font-bold uppercase tracking-wider bg-slate-50/50">
+            {[
+              { id: 'overview', label: 'Overview' },
+              { id: 'execution', label: 'RACI & EDC' },
+              { id: 'dependencies', label: 'Dependencies' },
+              { id: 'activity', label: 'Activity' },
+            ].map(tab => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id as any)}
+                className={`py-3 border-b-2 transition-colors ${
+                  activeTab === tab.id
+                    ? 'border-blue-600 text-blue-700'
+                    : 'border-transparent text-slate-500 hover:text-slate-700'
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+
+          {/* 3. DRAWER BODY CONTENT */}
           <div className="flex-1 overflow-y-auto p-6 space-y-6">
-            {/* Description Box */}
-            {workItem.description && (
-              <div className="p-4 bg-slate-50 border border-slate-100 rounded-2xl space-y-1">
-                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                  Task Scope
-                </p>
-                <p className="text-xs text-slate-700 leading-relaxed font-medium">
-                  {workItem.description}
-                </p>
-              </div>
-            )}
-
-            {/* If Task is Blocked: Highlight Blocker Banner */}
-            {workItem.status === 'blocked' && workItem.blocker_details && (
-              <div className="p-4 bg-red-50/80 border border-red-200 rounded-2xl space-y-2">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1.5 text-red-800 font-bold text-xs">
-                    <AlertTriangle className="w-4 h-4 text-red-600" />
-                    <span>Active Blocker Reported</span>
+            
+            {/* OVERVIEW TAB */}
+            {activeTab === 'overview' && (
+              <div className="space-y-6 animate-in fade-in duration-200">
+                {/* Description Box */}
+                {workItem.description && (
+                  <div className="p-4 bg-slate-50 border border-slate-100 rounded-2xl space-y-1">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                      Task Scope
+                    </p>
+                    <p className="text-xs text-slate-700 leading-relaxed font-medium">
+                      {workItem.description}
+                    </p>
                   </div>
-                  <button
-                    type="button"
-                    onClick={handleResolveBlocker}
-                    className="text-[10px] font-bold text-emerald-700 bg-white border border-emerald-200 px-2.5 py-1 rounded-lg hover:bg-emerald-50 transition-colors cursor-pointer"
-                  >
-                    Mark Blocker Resolved
-                  </button>
-                </div>
-                <p className="text-xs text-slate-800 font-semibold">
-                  Reason: {workItem.blocker_details.reason}
-                </p>
-                <p className="text-xs text-slate-600">
-                  What is needed: {workItem.blocker_details.needDescription}
-                </p>
-                {workItem.blocker_details.helpedByPersonOrDept && (
-                  <p className="text-[11px] text-slate-500">
-                    Routing to: <strong className="text-slate-700">{workItem.blocker_details.helpedByPersonOrDept}</strong>
-                  </p>
                 )}
+
+                {/* Quick Metadata Info */}
+                <div className="grid grid-cols-2 gap-3 p-4 bg-slate-50/60 border border-slate-100 rounded-2xl text-xs">
+                  <div>
+                    <span className="text-[10px] text-slate-400 uppercase font-bold">Assigned To</span>
+                    <p className="font-bold text-slate-800 mt-0.5">{workItem.owner_name || 'Priyesh Shah'}</p>
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-slate-400 uppercase font-bold">Assigned By</span>
+                    <p className="font-bold text-slate-800 mt-0.5">{workItem.created_by}</p>
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-slate-400 uppercase font-bold">Target Due Date</span>
+                    <p className="font-mono text-slate-800 mt-0.5">
+                      {workItem.due_at ? workItem.due_at.substring(0, 10) : 'Today'}
+                    </p>
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-slate-400 uppercase font-bold">Current Progress</span>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <div className="flex-1 bg-slate-200 h-2 rounded-full overflow-hidden">
+                        <div
+                          className="bg-slate-900 h-full rounded-full transition-all"
+                          style={{ width: `${workItem.progressPercent || 0}%` }}
+                        />
+                      </div>
+                      <span className="font-black text-slate-900 text-xs">
+                        {workItem.progressPercent || 0}%
+                      </span>
+                    </div>
+                  </div>
+                </div>
               </div>
             )}
 
-            {/* Quick Metadata Info */}
-            <div className="grid grid-cols-2 gap-3 p-4 bg-slate-50/60 border border-slate-100 rounded-2xl text-xs">
-              <div>
-                <span className="text-[10px] text-slate-400 uppercase font-bold">Assigned To</span>
-                <p className="font-bold text-slate-800 mt-0.5">{workItem.owner_name || 'Priyesh Shah'}</p>
-              </div>
-              <div>
-                <span className="text-[10px] text-slate-400 uppercase font-bold">Assigned By</span>
-                <p className="font-bold text-slate-800 mt-0.5">{workItem.created_by}</p>
-              </div>
-              <div>
-                <span className="text-[10px] text-slate-400 uppercase font-bold">Target Due Date</span>
-                <p className="font-mono text-slate-800 mt-0.5">
-                  {workItem.due_at ? workItem.due_at.substring(0, 10) : 'Today'}
-                </p>
-              </div>
-              <div>
-                <span className="text-[10px] text-slate-400 uppercase font-bold">Current Progress</span>
-                <div className="flex items-center gap-2 mt-0.5">
-                  <div className="flex-1 bg-slate-200 h-2 rounded-full overflow-hidden">
-                    <div
-                      className="bg-slate-900 h-full rounded-full transition-all"
-                      style={{ width: `${workItem.progressPercent || 0}%` }}
-                    />
-                  </div>
-                  <span className="font-black text-slate-900 text-xs">
-                    {workItem.progressPercent || 0}%
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* ACTION FORMS (INTERACTIVE MODES) */}
+            {/* ACTION FORMS (INTERACTIVE MODES) - Rendered regardless of tab when active */}
             {actionMode === 'progress' && (
               <form
                 onSubmit={handleSaveProgress}
@@ -467,35 +503,81 @@ export const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({
               </form>
             )}
 
-            {/* Activity History Timeline */}
-            <div className="space-y-3">
-              <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-slate-600">
-                <Clock className="w-3.5 h-3.5 text-slate-400" />
-                <span>Execution Activity History</span>
+            {/* EXECUTION & RACI TAB */}
+            {activeTab === 'execution' && (
+              <div className="space-y-6 animate-in fade-in duration-200">
+                <RaciSection workItem={workItem} onUpdate={() => onUpdated?.()} />
+                <EdcSection workItem={workItem} onUpdate={() => onUpdated?.()} />
               </div>
+            )}
 
-              {(!workItem.activity_history || workItem.activity_history.length === 0) ? (
-                <p className="text-xs text-slate-400 italic">No activity recorded yet.</p>
-              ) : (
-                <div className="space-y-2 relative border-l border-slate-200 ml-2 pl-4">
-                  {workItem.activity_history.map((act) => (
-                    <div key={act.id} className="relative space-y-0.5">
-                      <div className="absolute -left-[21px] top-1 w-2.5 h-2.5 rounded-full bg-slate-400 ring-4 ring-white" />
-                      <div className="flex items-center justify-between text-[10px] text-slate-400">
-                        <span className="font-bold text-slate-700">{act.authorName}</span>
-                        <span>{new Date(act.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+            {/* DEPENDENCIES & BLOCKERS TAB */}
+            {activeTab === 'dependencies' && (
+              <div className="space-y-6 animate-in fade-in duration-200">
+                <EscalationSection workItem={workItem} onUpdate={() => onUpdated?.()} />
+                {workItem.status === 'blocked' && workItem.blocker_details && (
+                  <div className="p-4 bg-red-50/80 border border-red-200 rounded-2xl space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5 text-red-800 font-bold text-xs">
+                        <AlertTriangle className="w-4 h-4 text-red-600" />
+                        <span>Active Blocker Reported</span>
                       </div>
-                      <p className="text-xs text-slate-700 leading-snug font-medium">
-                        {act.note || act.type}
-                      </p>
+                      <button
+                        type="button"
+                        onClick={handleResolveBlocker}
+                        className="text-[10px] font-bold text-emerald-700 bg-white border border-emerald-200 px-2.5 py-1 rounded-lg hover:bg-emerald-50 transition-colors cursor-pointer"
+                      >
+                        Mark Blocker Resolved
+                      </button>
                     </div>
-                  ))}
+                    <p className="text-xs text-slate-800 font-semibold">
+                      Reason: {workItem.blocker_details.reason}
+                    </p>
+                    <p className="text-xs text-slate-600">
+                      What is needed: {workItem.blocker_details.needDescription}
+                    </p>
+                    {workItem.blocker_details.helpedByPersonOrDept && (
+                      <p className="text-[11px] text-slate-500">
+                        Routing to: <strong className="text-slate-700">{workItem.blocker_details.helpedByPersonOrDept}</strong>
+                      </p>
+                    )}
+                  </div>
+                )}
+                <DependenciesSection workItem={workItem} />
+              </div>
+            )}
+
+            {/* ACTIVITY TAB */}
+            {activeTab === 'activity' && (
+              <div className="space-y-3 animate-in fade-in duration-200">
+                <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-slate-600">
+                  <Clock className="w-3.5 h-3.5 text-slate-400" />
+                  <span>Execution Activity History</span>
                 </div>
-              )}
-            </div>
+
+                {(!workItem.activity_history || workItem.activity_history.length === 0) ? (
+                  <p className="text-xs text-slate-400 italic">No activity recorded yet.</p>
+                ) : (
+                  <div className="space-y-2 relative border-l border-slate-200 ml-2 pl-4">
+                    {workItem.activity_history.map((act) => (
+                      <div key={act.id} className="relative space-y-0.5">
+                        <div className="absolute -left-[21px] top-1 w-2.5 h-2.5 rounded-full bg-slate-400 ring-4 ring-white" />
+                        <div className="flex items-center justify-between text-[10px] text-slate-400">
+                          <span className="font-bold text-slate-700">{act.authorName}</span>
+                          <span>{new Date(act.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                        </div>
+                        <p className="text-xs text-slate-700 leading-snug font-medium">
+                          {act.note || act.type}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
-          {/* 3. DRAWER FOOTER PRIMARY ACTIONS */}
+          {/* 4. DRAWER FOOTER PRIMARY ACTIONS */}
           <div className="p-6 border-t border-slate-100 bg-slate-50/50 flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-2">
               {workItem.status === 'todo' && (
