@@ -9,7 +9,7 @@ import OrganizationPage from '../app/(app)/organization/page';
 import { AuthProvider } from '../lib/auth/AuthContext';
 
 describe('LAKSHYA Dynamic Org Chart & Hierarchy Suite', () => {
-  it('renders DynamicHospitalOrgChart with 211 staff header, governance, and departments', () => {
+  it('renders DynamicHospitalOrgChart with 211 staff header, governance, and expanded hierarchy', () => {
     render(
       <AuthProvider>
         <DynamicHospitalOrgChart workItems={INITIAL_WORK_ITEMS} />
@@ -20,8 +20,11 @@ describe('LAKSHYA Dynamic Org Chart & Hierarchy Suite', () => {
     expect(screen.getByText(/211 Verified Personnel/i)).toBeDefined();
     expect(screen.getAllByText('Dr. Bharat Rajendraprasad Dave').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Dr. Mirant Bharat Dave').length).toBeGreaterThan(0);
-    expect(screen.getByText('Spine Surgery')).toBeDefined();
-    expect(screen.getByText('Nursing Services')).toBeDefined();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Expand All' }));
+
+    expect(screen.getAllByText('Junior Consultants').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Nursing Leadership').length).toBeGreaterThan(0);
   });
 
   it('filters staff by search keyword in DynamicHospitalOrgChart', () => {
