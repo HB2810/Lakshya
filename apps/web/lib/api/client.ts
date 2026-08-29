@@ -586,6 +586,17 @@ export const apiClient = {
     },
   },
 
+  analytics: {
+    async getOperationalAnalytics(): Promise<any> {
+      try {
+        return await apiFetch<any>('/analytics/operational', { method: 'GET' });
+      } catch (err) {
+        console.warn('Analytics API unavailable, returning fallback metrics:', err);
+        return null;
+      }
+    },
+  },
+
   calendar: {
     async getEvents(params?: { start_time?: string; end_time?: string; event_type?: string }) {
       const query = new URLSearchParams(params as Record<string, string>).toString();
