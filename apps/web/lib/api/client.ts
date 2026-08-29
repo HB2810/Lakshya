@@ -1,5 +1,6 @@
 import { DEMO_USERS, MOCK_DEPARTMENTS, MOCK_ROLES, MOCK_AUDIT_EVENTS } from '../mocks/organizationMock';
-import { MOCK_QUARTERLY_DIRECTIONS, MOCK_MONTHLY_PRIORITIES, MOCK_WEEKLY_MILESTONES } from '../mocks/strategyMock';
+import { MOCK_QUARTERLY_DIRECTIONS, MOCK_MONTHLY_PRIORITIES, MOCK_WEEKLY_MILESTONES, strategyStore } from '../mocks/strategyMock';
+import { QuarterlyPriority } from '../../types/strategy';
 import { MOCK_COMMITMENTS, MOCK_TASKS, MOCK_STUCK_NEEDS, MOCK_ESCALATIONS } from '../mocks/executionMock';
 import { MOCK_MEETINGS, MOCK_DECISIONS, meetingStore } from '../mocks/meetingsMock';
 import { workItemStore } from '../mocks/workItemMock';
@@ -442,7 +443,7 @@ export const apiClient = {
         };
       } catch {
         strategyStore.updateMilestoneStatus(priorityId, stepNumber, payload.status as any, payload.verificationNotes);
-        return strategyStore.getQuarterlyPriorities().find(p => p.id === priorityId)!;
+        return strategyStore.getQuarterlyPriorities().find((p: QuarterlyPriority) => p.id === priorityId)!;
       }
     },
 

@@ -256,10 +256,12 @@ class StrategyService:
     ) -> QuarterlyPriorityResponse:
         """Create a new Quarterly Priority with initialized 10-milestone stepper."""
         auth_context = AuthorizationService(session).load_context(current_user)
-        # Check permissions: MD / Leader can create priorities
         effective_roles = auth_context.effective_roles
         is_authorized = any(r in ("md", "leader", "master", "department_head", "manager") for r in effective_roles)
-        if not is_authorized and not auth_context.has_organization_scope("priorities.create"):
+        if not is_authorized and not (
+            auth_context.has_organization_scope("priorities.propose")
+            or auth_context.has_organization_scope("priorities.approve")
+        ):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Not authorized to create quarterly priorities",

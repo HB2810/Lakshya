@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Calendar as CalendarIcon,
   Clock,
@@ -317,8 +317,9 @@ export default function CalendarPage() {
           </h1>
           <p className="text-xs text-slate-500 mt-0.5">
             Synchronized clinical operating theartes, MD governance reviews, and department milestones.
+          </p>
           {syncFeedback && (
-            <div className="text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-xl flex items-center gap-1.5 animate-in fade-in">
+            <div className="text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-xl flex items-center gap-1.5 animate-in fade-in mt-1.5">
               <Check className="w-3.5 h-3.5" />
               {syncFeedback}
             </div>

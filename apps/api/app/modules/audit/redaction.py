@@ -119,6 +119,46 @@ AUDIT_FIELD_ALLOWLIST: dict[str, frozenset[str]] = {
             "version",
         }
     ),
+    # Calendar events and integrations
+    "calendar_event": frozenset(
+        {
+            "title",
+            "description",
+            "start_time",
+            "end_time",
+            "event_type",
+            "status",
+            "sync_status",
+            "version",
+        }
+    ),
+    "user_calendar_integration": frozenset(
+        {
+            "user_id",
+            "provider",
+            "account_email",
+            "is_active",
+            "sync_enabled",
+            "sync_window_days",
+        }
+    ),
+
+    # Strategy and operational priorities
+    "quarterly_priority": frozenset(
+        {
+            "title",
+            "quarter",
+            "fy_start_year",
+            "owner_id",
+            "proposer_id",
+            "status",
+            "target_date",
+            "department",
+            "reporting_authority",
+            "step_number",
+            "verification_notes",
+        }
+    ),
 
     # Authentication events record the account and session identity plus
     # non-secret session metadata. No hash, no token, no password field is

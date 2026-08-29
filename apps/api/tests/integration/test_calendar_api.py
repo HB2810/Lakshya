@@ -130,7 +130,7 @@ def test_calendar_patch_valid_if_match_updates_and_returns_etag(client, factory)
 
 
 @pytest.mark.db
-def test_calendar_connect_integration_returns_501(client, factory):
+def test_calendar_connect_integration_success(client, factory):
     org = factory.organization()
     user = factory.user_with_permissions(org, ("calendar.manage_own_connections",))
     client.login_or_fail(user.email)
@@ -139,9 +139,11 @@ def test_calendar_connect_integration_returns_501(client, factory):
         "/api/v1/calendar/integrations/connect",
         json={
             "provider": "GOOGLE",
-            "auth_code": "mock_code",
+            "auth_code": "mock_code_12345",
             "redirect_uri": "http://localhost:3000/oauth",
         },
     )
-    assert res.status_code == 501
-    assert "Phase 5" in res.json()["detail"]
+    assert res.status_code == 200
+    data = res.json()
+    assert data["provider"] == "GOOGLE"
+    assert data["is_active"] is True

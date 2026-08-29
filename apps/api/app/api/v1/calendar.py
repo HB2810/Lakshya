@@ -95,14 +95,15 @@ def update_calendar_event(
     return CalendarEventResponse.model_validate(event)
 
 
-@router.delete("/events/{event_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/events/{event_id}", status_code=status.HTTP_204_NO_CONTENT, response_class=Response)
 def delete_calendar_event(
     event_id: uuid.UUID,
     db: Session = Depends(get_db),
     ctx: RequestContext = CurrentContext,
-) -> None:
+) -> Response:
     """Delete a calendar event with audit trail."""
     CalendarService.delete_event(db=db, user=ctx.authenticated.user, event_id=event_id)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @router.post("/events/{event_id}/cancel", response_model=CalendarEventResponse)
@@ -161,6 +162,7 @@ def get_google_auth_url(
     return GoogleAuthUrlResponse(**data)
 
 
+@router.post("/integrations/connect", response_model=UserCalendarIntegrationResponse)
 @router.post("/integrations/google/connect", response_model=UserCalendarIntegrationResponse)
 def connect_google_calendar_integration(
     payload: ConnectIntegrationRequest,
@@ -172,13 +174,14 @@ def connect_google_calendar_integration(
     return UserCalendarIntegrationResponse.model_validate(integration)
 
 
-@router.post("/integrations/disconnect", status_code=status.HTTP_204_NO_CONTENT)
+@router.post("/integrations/disconnect", status_code=status.HTTP_204_NO_CONTENT, response_class=Response)
 def disconnect_calendar_integration(
     db: Session = Depends(get_db),
     ctx: RequestContext = CurrentContext,
-) -> None:
+) -> Response:
     """Disconnect active external calendar integration."""
     CalendarService.disconnect_integration(db=db, user=ctx.authenticated.user)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @router.post("/sync", response_model=CalendarSyncTriggerResponse)
