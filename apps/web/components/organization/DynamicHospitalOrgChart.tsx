@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Network,
   Users,
@@ -31,14 +31,22 @@ import {
   ChevronUp,
   SlidersHorizontal,
   ExternalLink,
+  ZoomIn,
+  ZoomOut,
+  RotateCcw,
+  Edit3,
+  Trash2,
+  Lock,
+  UserPlus,
+  GitBranch,
 } from 'lucide-react';
 import {
-  STAVYA_STAFF_DATABASE,
   STAVYA_ORG_STRUCTURE,
   HospitalStaffMember,
   UnitGroup,
   UnitLeaf,
 } from '../../lib/data/stavyaHospitalOrgData';
+import { dynamicOrgStore } from '../../lib/data/dynamicOrgStore';
 import { WorkItem, WorkItemPriority } from '../../types/workItem';
 import { useAuth } from '../../lib/auth/AuthContext';
 import { apiClient } from '../../lib/api/client';
@@ -61,16 +69,29 @@ export const DynamicHospitalOrgChart: React.FC<DynamicHospitalOrgChartProps> = (
   onTransferPerson,
 }) => {
   const { user } = useAuth();
+  
+  // Strict MD vs Leader Gating: Only MD can modify org structure
   const isMD = ['MD', 'MD_OFFICE', 'MANAGING_DIRECTOR', 'MASTER', 'ADMIN'].includes(user.role);
   const isLeader = ['MD', 'MD_OFFICE', 'MANAGING_DIRECTOR', 'DEPARTMENT_HEAD', 'MANAGER', 'LEADER', 'LEADERS', 'MASTER', 'ADMIN'].includes(user.role);
 
-  // View Mode: 'grid' (Department & Unit Directory) or 'tree' (Interactive Top-Down Visual Org Tree)
+  // Live dynamic staff state from store
+  const [staffList, setStaffList] = useState<HospitalStaffMember[]>(() => dynamicOrgStore.getStaffList());
+
+  useEffect(() => {
+    const unsub = dynamicOrgStore.subscribe(() => {
+      setStaffList(dynamicOrgStore.getStaffList());
+    });
+    return () => unsub();
+  }, []);
+
+  // View Mode: 'tree' (Interactive Visual Org Tree) or 'grid' (Department & Unit Directory)
   const [viewMode, setViewMode] = useState<'grid' | 'tree'>('grid');
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTier, setActiveTier] = useState<'all' | 'gov' | 'clin' | 'nursing' | 'adm'>('all');
   const [filterWorkload, setFilterWorkload] = useState<'all' | 'active_tasks' | 'blocked' | 'probation' | 'wide_span'>('all');
   const [selectedStaff, setSelectedStaff] = useState<HospitalStaffMember | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [zoomLevel, setZoomLevel] = useState<number>(100);
 
   // Expanded nodes in tree view
   const [expandedNodes, setExpandedNodes] = useState<Record<string, boolean>>({
@@ -99,7 +120,7 @@ export const DynamicHospitalOrgChart: React.FC<DynamicHospitalOrgChartProps> = (
   const [isCreatingTask, setIsCreatingTask] = useState(false);
   const [taskSuccessMessage, setTaskSuccessMessage] = useState<string | null>(null);
 
-  // Inline Transfer Confirmation Modal State
+  // MD DYNAMIC ORG MODAL STATES (Strictly for MD)
   const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
   const [transferStaff, setTransferStaff] = useState<HospitalStaffMember | null>(null);
   const [targetUnit, setTargetUnit] = useState('');
@@ -107,9 +128,30 @@ export const DynamicHospitalOrgChart: React.FC<DynamicHospitalOrgChartProps> = (
   const [transferReason, setTransferReason] = useState('');
   const [transferSuccessMessage, setTransferSuccessMessage] = useState<string | null>(null);
 
-  const staffList = useMemo(() => Object.values(STAVYA_STAFF_DATABASE), []);
+  // MD Re-parenting / Change Supervisor Modal
+  const [isReparentModalOpen, setIsReparentModalOpen] = useState(false);
+  const [reparentStaff, setReparentStaff] = useState<HospitalStaffMember | null>(null);
+  const [newSupervisor, setNewSupervisor] = useState('');
 
-  // Compute direct reports per staff
+  // MD Add New Position Modal
+  const [isAddStaffModalOpen, setIsAddStaffModalOpen] = useState(false);
+  const [newStaffName, setNewStaffName] = useState('');
+  const [newStaffCode, setNewStaffCode] = useState('');
+  const [newStaffDesig, setNewStaffDesig] = useState('');
+  const [newStaffUnit, setNewStaffUnit] = useState('Spine Surgery');
+  const [newStaffReports, setNewStaffReports] = useState('Dr. Mirant Bharat Dave');
+  const [newStaffShift, setNewStaffShift] = useState('General Shift');
+  const [newStaffEmp, setNewStaffEmp] = useState('Confirm');
+
+  // MD Edit Details Modal
+  const [isEditStaffModalOpen, setIsEditStaffModalOpen] = useState(false);
+  const [editingStaff, setEditingStaff] = useState<HospitalStaffMember | null>(null);
+  const [editDesig, setEditDesig] = useState('');
+  const [editCode, setEditCode] = useState('');
+  const [editShift, setEditShift] = useState('');
+  const [editEmp, setEditEmp] = useState('');
+
+  // Compute direct reports per staff dynamically
   const subordinatesMap = useMemo(() => {
     const map: Record<string, HospitalStaffMember[]> = {};
     staffList.forEach((s) => {
@@ -129,6 +171,15 @@ export const DynamicHospitalOrgChart: React.FC<DynamicHospitalOrgChartProps> = (
     });
     return counts;
   }, [subordinatesMap]);
+
+  // Unique Units for Dropdowns
+  const uniqueUnits = useMemo(() => {
+    const units = new Set<string>();
+    staffList.forEach((s) => {
+      if (s.unit) units.add(s.unit);
+    });
+    return Array.from(units).sort();
+  }, [staffList]);
 
   // Map tasks to staff
   const staffTasksMap = useMemo(() => {
@@ -151,34 +202,29 @@ export const DynamicHospitalOrgChart: React.FC<DynamicHospitalOrgChartProps> = (
     return staffTasksMap[staffId] || [];
   };
 
-  // Filter matching
   const isStaffMatch = (staff: HospitalStaffMember): boolean => {
     if (searchTerm.trim()) {
-      const q = searchTerm.toLowerCase();
+      const q = searchTerm.toLowerCase().trim();
       const match =
         staff.name.toLowerCase().includes(q) ||
         staff.desig.toLowerCase().includes(q) ||
-        staff.unit.toLowerCase().includes(q) ||
         staff.code.toLowerCase().includes(q) ||
-        staff.dept_master.toLowerCase().includes(q) ||
-        (staff.reports && staff.reports.toLowerCase().includes(q));
+        staff.unit.toLowerCase().includes(q) ||
+        staff.reports.toLowerCase().includes(q);
       if (!match) return false;
     }
 
     if (filterWorkload === 'active_tasks') {
-      const tasks = getStaffTasks(staff.id);
-      return tasks.some((t) => t.status !== 'completed');
-    }
-    if (filterWorkload === 'blocked') {
-      const tasks = getStaffTasks(staff.id);
-      return tasks.some((t) => t.status === 'blocked' || t.status === 'stuck');
-    }
-    if (filterWorkload === 'probation') {
-      return staff.emp === 'Probation';
-    }
-    if (filterWorkload === 'wide_span') {
-      const rCount = reportCounts[staff.name.toLowerCase()] || 0;
-      return rCount > 12;
+      const active = getStaffTasks(staff.id).filter((t) => t.status !== 'completed');
+      if (active.length === 0) return false;
+    } else if (filterWorkload === 'blocked') {
+      const blocked = getStaffTasks(staff.id).some((t) => t.status === 'blocked' || t.status === 'stuck');
+      if (!blocked) return false;
+    } else if (filterWorkload === 'probation') {
+      if (staff.emp !== 'Probation') return false;
+    } else if (filterWorkload === 'wide_span') {
+      const dCount = reportCounts[staff.name.toLowerCase()] || 0;
+      if (dCount <= 12) return false;
     }
 
     return true;
@@ -189,13 +235,11 @@ export const DynamicHospitalOrgChart: React.FC<DynamicHospitalOrgChartProps> = (
   };
 
   const expandAll = () => {
-    const all: Record<string, boolean> = {};
+    const next: Record<string, boolean> = {};
     staffList.forEach((s) => {
-      if (subordinatesMap[s.name] && subordinatesMap[s.name].length > 0) {
-        all[s.name] = true;
-      }
+      next[s.name] = true;
     });
-    setExpandedNodes(all);
+    setExpandedNodes(next);
   };
 
   const collapseAll = () => {
@@ -207,14 +251,12 @@ export const DynamicHospitalOrgChart: React.FC<DynamicHospitalOrgChartProps> = (
     setIsDrawerOpen(true);
   };
 
+  // Inline Task Creation Handler
   const handleStartTaskModal = (staff: HospitalStaffMember) => {
-    if (onOpenTaskModal) {
-      onOpenTaskModal(staff.id, staff.name);
-      return;
-    }
     setTaskAssignee(staff);
     setTaskTitle('');
     setTaskDescription('');
+    setTaskPriority('medium');
     setTaskSuccessMessage(null);
     setIsTaskModalOpen(true);
   };
@@ -225,30 +267,37 @@ export const DynamicHospitalOrgChart: React.FC<DynamicHospitalOrgChartProps> = (
 
     setIsCreatingTask(true);
     try {
+      if (onOpenTaskModal) {
+        onOpenTaskModal(taskAssignee.id, taskAssignee.name);
+        setIsTaskModalOpen(false);
+        return;
+      }
+
       await apiClient.workItems.create({
         title: taskTitle.trim(),
-        description: taskDescription.trim() || `Delegated work commitment to ${taskAssignee.name} (${taskAssignee.desig}).`,
+        description: taskDescription.trim() || `Delegated from Org Chart to ${taskAssignee.name} (${taskAssignee.desig})`,
         priority: taskPriority,
         owner_id: taskAssignee.id,
         owner_name: taskAssignee.name,
-        department_name: taskAssignee.unit,
         due_at: new Date(taskDueDate).toISOString(),
-        source_type: 'MANUAL',
-        source_title: 'Assigned via Org Chart',
+        status: 'todo',
       });
-      setTaskSuccessMessage(`Task successfully assigned to ${taskAssignee.name}!`);
+
+      setTaskSuccessMessage(`Task successfully delegated to ${taskAssignee.name}.`);
       setTimeout(() => {
         setIsTaskModalOpen(false);
         setTaskSuccessMessage(null);
       }, 1200);
-    } catch (err) {
-      console.error('Failed to create task:', err);
+    } catch (err: any) {
+      console.error('Failed to create task from org chart:', err);
     } finally {
       setIsCreatingTask(false);
     }
   };
 
+  // MD DYNAMIC ACTIONS
   const handleStartTransfer = (staff: HospitalStaffMember) => {
+    if (!isMD) return;
     if (onTransferPerson) {
       onTransferPerson(staff);
       return;
@@ -261,14 +310,99 @@ export const DynamicHospitalOrgChart: React.FC<DynamicHospitalOrgChartProps> = (
     setIsTransferModalOpen(true);
   };
 
-  const handleTransferSubmit = async (e: React.FormEvent) => {
+  const handleTransferSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!transferStaff) return;
-    setTransferSuccessMessage(`Position reassignment confirmed for ${transferStaff.name}.`);
+    if (!isMD || !transferStaff) return;
+
+    dynamicOrgStore.updateStaffUnit(transferStaff.id, targetUnit, targetSupervisor, transferReason);
+    setTransferSuccessMessage(`Unit reassignment confirmed for ${transferStaff.name}. Org chart updated.`);
+    if (selectedStaff && selectedStaff.id === transferStaff.id) {
+      setSelectedStaff({ ...transferStaff, unit: targetUnit, reports: targetSupervisor });
+    }
     setTimeout(() => {
       setIsTransferModalOpen(false);
       setTransferSuccessMessage(null);
-    }, 1200);
+    }, 1000);
+  };
+
+  const handleStartReparent = (staff: HospitalStaffMember) => {
+    if (!isMD) return;
+    setReparentStaff(staff);
+    setNewSupervisor(staff.reports || '');
+    setIsReparentModalOpen(true);
+  };
+
+  const handleReparentSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!isMD || !reparentStaff || !newSupervisor.trim()) return;
+
+    dynamicOrgStore.updateStaffSupervisor(reparentStaff.id, newSupervisor);
+    if (selectedStaff && selectedStaff.id === reparentStaff.id) {
+      setSelectedStaff({ ...reparentStaff, reports: newSupervisor });
+    }
+    setIsReparentModalOpen(false);
+  };
+
+  const handleStartEditDetails = (staff: HospitalStaffMember) => {
+    if (!isMD) return;
+    setEditingStaff(staff);
+    setEditDesig(staff.desig);
+    setEditCode(staff.code);
+    setEditShift(staff.shift);
+    setEditEmp(staff.emp);
+    setIsEditStaffModalOpen(true);
+  };
+
+  const handleEditDetailsSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!isMD || !editingStaff) return;
+
+    dynamicOrgStore.updateStaffDetails(editingStaff.id, {
+      desig: editDesig,
+      code: editCode,
+      shift: editShift,
+      emp: editEmp,
+    });
+    if (selectedStaff && selectedStaff.id === editingStaff.id) {
+      setSelectedStaff({ ...editingStaff, desig: editDesig, code: editCode, shift: editShift, emp: editEmp });
+    }
+    setIsEditStaffModalOpen(false);
+  };
+
+  const handleAddStaffSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!isMD || !newStaffName.trim()) return;
+
+    const created = dynamicOrgStore.addStaffMember({
+      name: newStaffName.trim(),
+      code: newStaffCode.trim() || `${Math.floor(100 + Math.random() * 900)}`,
+      desig: newStaffDesig.trim() || 'Specialist',
+      unit: newStaffUnit,
+      reports: newStaffReports,
+      shift: newStaffShift,
+      emp: newStaffEmp,
+      dept_master: newStaffUnit.toUpperCase(),
+      email: `${newStaffName.toLowerCase().replace(/\s+/g, '.')}@stavya.local`,
+      mobile: '9825000000',
+      gender: 'other',
+      join: new Date().toISOString().substring(0, 10),
+      worker: 'Company Staff',
+      skill: 'SKILLED',
+      branch: 'Ahmedabad',
+    });
+
+    setExpandedNodes((prev) => ({ ...prev, [newStaffReports]: true }));
+    setIsAddStaffModalOpen(false);
+    openStaffDetail(created);
+  };
+
+  const handleRemoveStaff = (staff: HospitalStaffMember) => {
+    if (!isMD) return;
+    if (window.confirm(`Are you sure you want to remove ${staff.name} (#${staff.code}) from the hospital org chart?`)) {
+      dynamicOrgStore.removeStaffMember(staff.id);
+      setIsDrawerOpen(false);
+      setSelectedStaff(null);
+    }
   };
 
   // Build recursive tree node from staff member
@@ -289,7 +423,7 @@ export const DynamicHospitalOrgChart: React.FC<DynamicHospitalOrgChartProps> = (
   const probationCount = staffList.filter((s) => s.emp === 'Probation').length;
   const wideSpanCount = staffList.filter((s) => (reportCounts[s.name.toLowerCase()] || 0) > 12).length;
 
-  // Render a Tree Node Card
+  // Render a Structured Tree Node Card with Perfectly Aligned SVG / CSS Branch Arms
   const renderTreeNode = (node: TreeNode, level = 0) => {
     const { staff, subordinates } = node;
     const isExpanded = expandedNodes[staff.name] ?? false;
@@ -304,7 +438,7 @@ export const DynamicHospitalOrgChart: React.FC<DynamicHospitalOrgChartProps> = (
     const isExecutive = isMDNode || isFounderNode || staff.desig.includes('CNO') || staff.desig.includes('CFO') || staff.desig.includes('CAO') || staff.desig.includes('Head');
 
     return (
-      <div key={staff.id} className="flex flex-col items-center">
+      <div key={staff.id} className="flex flex-col items-center select-none">
         {/* Node Card */}
         <div
           className={`relative z-10 w-64 md:w-72 bg-white border transition-all rounded-2xl p-3.5 shadow-2xs hover:shadow-md cursor-pointer ${
@@ -338,11 +472,28 @@ export const DynamicHospitalOrgChart: React.FC<DynamicHospitalOrgChartProps> = (
                 : staff.unit}
             </span>
 
-            {staff.code && (
-              <span className="text-[9px] font-mono font-bold text-slate-500 bg-slate-50 px-1 py-0.5 rounded border border-slate-200/60">
-                #{staff.code}
-              </span>
-            )}
+            <div className="flex items-center gap-1">
+              {staff.code && (
+                <span className="text-[9px] font-mono font-bold text-slate-500 bg-slate-50 px-1 py-0.5 rounded border border-slate-200/60">
+                  #{staff.code}
+                </span>
+              )}
+
+              {/* MD Quick Inline Edit Actions */}
+              {isMD && !isFounderNode && (
+                <button
+                  type="button"
+                  title="Change Reporting Supervisor"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleStartReparent(staff);
+                  }}
+                  className="p-1 hover:bg-slate-100 rounded text-slate-400 hover:text-blue-600 transition-colors"
+                >
+                  <GitBranch className="w-3 h-3" />
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Person Info */}
@@ -392,31 +543,46 @@ export const DynamicHospitalOrgChart: React.FC<DynamicHospitalOrgChartProps> = (
           </div>
         </div>
 
-        {/* Child Tree Branches (Connected via SVG Lines) */}
+        {/* Structured Children Branches with Pure CSS Balanced Horizontal Connector Arms */}
         {hasSubs && isExpanded && (
-          <div className="flex flex-col items-center mt-3">
-            {/* Connecting Vertical Line from Parent */}
-            <div className="w-0.5 h-6 bg-blue-300" />
+          <div className="flex flex-col items-center">
+            {/* Vertical stem from parent */}
+            <div className="w-0.5 h-6 bg-slate-300" />
 
-            {/* Horizontal Branch Bar */}
-            {subordinates.length > 1 && (
-              <div
-                className="h-0.5 bg-blue-300 relative"
-                style={{
-                  width: `${Math.min(subordinates.length * 280, 1100)}px`,
-                  maxWidth: '92vw',
-                }}
-              />
-            )}
+            {/* Horizontal Split and Child Nodes */}
+            <div className="flex justify-center items-start">
+              {subordinates.map((sub, idx) => {
+                const isFirst = idx === 0;
+                const isLast = idx === subordinates.length - 1;
+                const isOnly = subordinates.length === 1;
 
-            {/* Subordinate Grid Container */}
-            <div className="flex flex-wrap justify-center gap-6 pt-3">
-              {subordinates.map((sub) => (
-                <div key={sub.staff.id} className="flex flex-col items-center">
-                  <div className="w-0.5 h-3 bg-blue-300 -mt-3 mb-1" />
-                  {renderTreeNode(sub, level + 1)}
-                </div>
-              ))}
+                return (
+                  <div key={sub.staff.id} className="flex flex-col items-center relative px-3">
+                    {/* Balanced horizontal connector arm */}
+                    {!isOnly && (
+                      <div className="absolute top-0 left-0 right-0 flex h-4 pointer-events-none">
+                        <div
+                          className={`flex-1 border-t-2 ${
+                            isFirst ? 'border-transparent' : 'border-slate-300'
+                          }`}
+                        />
+                        <div className="w-0.5 bg-slate-300 h-4" />
+                        <div
+                          className={`flex-1 border-t-2 ${
+                            isLast ? 'border-transparent' : 'border-slate-300'
+                          }`}
+                        />
+                      </div>
+                    )}
+                    {isOnly && <div className="w-0.5 h-4 bg-slate-300" />}
+
+                    {/* Subordinate tree container */}
+                    <div className="pt-4">
+                      {renderTreeNode(sub, level + 1)}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}
@@ -652,7 +818,57 @@ export const DynamicHospitalOrgChart: React.FC<DynamicHospitalOrgChartProps> = (
           </div>
         </div>
 
-        {/* 2. FILTER & TOOLBAR */}
+        {/* 2. MD EXECUTIVE GOVERNANCE CONTROLS BAR (STRICTLY MD ONLY) */}
+        {isMD ? (
+          <div className="bg-gradient-to-r from-blue-50/80 via-slate-50 to-white border border-blue-200/80 rounded-2xl p-3.5 flex flex-wrap items-center justify-between gap-3 shadow-2xs">
+            <div className="flex items-center gap-2">
+              <span className="p-1.5 bg-blue-600 text-white rounded-lg shadow-2xs">
+                <Crown className="w-3.5 h-3.5" />
+              </span>
+              <div>
+                <h4 className="text-xs font-black text-slate-900">MD Executive Org Controls</h4>
+                <p className="text-[10px] text-slate-500">Live restructuring, reporting reassignments, and personnel additions</p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 flex-wrap">
+              <button
+                type="button"
+                onClick={() => setIsAddStaffModalOpen(true)}
+                className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer"
+              >
+                <UserPlus className="w-3.5 h-3.5" />
+                <span>Add Staff / Position</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  if (window.confirm('Reset all dynamic org modifications back to baseline?')) {
+                    dynamicOrgStore.resetToDefault();
+                  }
+                }}
+                className="px-2.5 py-1.5 bg-white hover:bg-slate-100 border border-slate-200 text-slate-600 hover:text-slate-900 text-xs font-medium rounded-xl transition-colors flex items-center gap-1 cursor-pointer"
+                title="Reset modifications to baseline"
+              >
+                <RotateCcw className="w-3 h-3" />
+                <span>Reset</span>
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="bg-slate-50 border border-slate-200/60 rounded-xl px-3 py-2 flex items-center justify-between text-xs text-slate-500">
+            <div className="flex items-center gap-1.5">
+              <Lock className="w-3.5 h-3.5 text-slate-400" />
+              <span>Read-Only Org Structure · Structural modifications restricted to Managing Director</span>
+            </div>
+            <span className="text-[10px] font-bold uppercase text-slate-400 bg-slate-100 px-2 py-0.5 rounded">
+              Role: {user.role}
+            </span>
+          </div>
+        )}
+
+        {/* 3. FILTER & ZOOM TOOLBAR */}
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 pt-3 border-t border-slate-100">
           <div className="flex flex-wrap items-center gap-2">
             {viewMode === 'grid' ? (
@@ -675,13 +891,13 @@ export const DynamicHospitalOrgChart: React.FC<DynamicHospitalOrgChartProps> = (
                 </button>
               ))
             ) : (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <button
                   type="button"
                   onClick={expandAll}
                   className="px-3 py-1 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold rounded-xl transition-colors cursor-pointer"
                 >
-                  Expand All Branches
+                  Expand All
                 </button>
                 <button
                   type="button"
@@ -690,6 +906,35 @@ export const DynamicHospitalOrgChart: React.FC<DynamicHospitalOrgChartProps> = (
                 >
                   Collapse All
                 </button>
+
+                {/* Zoom Controls for Tree */}
+                <div className="flex items-center bg-slate-100 rounded-xl p-0.5 border border-slate-200/80">
+                  <button
+                    type="button"
+                    onClick={() => setZoomLevel((z) => Math.max(z - 10, 50))}
+                    className="p-1 text-slate-600 hover:text-slate-900 rounded-lg hover:bg-white transition-colors"
+                    title="Zoom Out"
+                  >
+                    <ZoomOut className="w-3.5 h-3.5" />
+                  </button>
+                  <span className="px-2 text-[10px] font-mono font-bold text-slate-700">{zoomLevel}%</span>
+                  <button
+                    type="button"
+                    onClick={() => setZoomLevel((z) => Math.min(z + 10, 150))}
+                    className="p-1 text-slate-600 hover:text-slate-900 rounded-lg hover:bg-white transition-colors"
+                    title="Zoom In"
+                  >
+                    <ZoomIn className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setZoomLevel(100)}
+                    className="px-1.5 py-0.5 text-[9px] font-bold text-slate-500 hover:text-slate-900 hover:bg-white rounded transition-colors"
+                    title="Reset Zoom"
+                  >
+                    100%
+                  </button>
+                </div>
               </div>
             )}
           </div>
@@ -723,13 +968,16 @@ export const DynamicHospitalOrgChart: React.FC<DynamicHospitalOrgChartProps> = (
         </div>
       </div>
 
-      {/* 3. VIEW MODE RENDER */}
+      {/* 4. VIEW MODE RENDER */}
       {viewMode === 'tree' ? (
-        /* HIERARCHICAL TOP-DOWN TREE VIEW */
-        <div className="bg-white border border-slate-200 rounded-3xl p-8 overflow-x-auto shadow-xs min-h-[500px]">
-          <div className="inline-block min-w-full text-center space-y-8">
+        /* HIERARCHICAL TOP-DOWN TREE VIEW WITH ZOOM & CLEAN CONNECTOR ARMS */
+        <div className="bg-white border border-slate-200 rounded-3xl p-8 overflow-auto shadow-xs min-h-[550px]">
+          <div
+            className="inline-block min-w-full text-center space-y-12 transition-transform duration-150 origin-top"
+            style={{ transform: `scale(${zoomLevel / 100})` }}
+          >
             {/* Executive Board Root Level */}
-            <div className="flex flex-wrap justify-center gap-6">
+            <div className="flex flex-wrap justify-center gap-12">
               {founderStaff && renderTreeNode(buildTree(founderStaff))}
               {mdStaff && renderTreeNode(buildTree(mdStaff))}
             </div>
@@ -782,80 +1030,71 @@ export const DynamicHospitalOrgChart: React.FC<DynamicHospitalOrgChartProps> = (
             </div>
           )}
 
-          {/* Clinical Services */}
+          {/* Clinical Divisions */}
           {(activeTier === 'all' || activeTier === 'clin') && (
             <div className="space-y-4">
               <div className="flex items-center gap-2 border-b border-slate-200 pb-2">
-                <Stethoscope className="w-4 h-4 text-blue-600" />
+                <Stethoscope className="w-4 h-4 text-blue-700" />
                 <h3 className="text-xs font-black uppercase tracking-wider text-slate-800">
-                  Clinical Specialty &amp; Surgical Divisions
+                  Clinical Specialty Divisions &amp; Medical Operations
                 </h3>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                {STAVYA_ORG_STRUCTURE.clinical.map((item) => renderGroup(item))}
+                {STAVYA_ORG_STRUCTURE.clinical.map((grp) => renderGroup(grp))}
               </div>
             </div>
           )}
 
-          {/* Administrative Services */}
-          {(activeTier === 'all' || activeTier === 'adm' || activeTier === 'nursing') && (
+          {/* Administrative Divisions */}
+          {(activeTier === 'all' || activeTier === 'adm') && (
             <div className="space-y-4">
               <div className="flex items-center gap-2 border-b border-slate-200 pb-2">
-                <Building className="w-4 h-4 text-slate-700" />
+                <Building className="w-4 h-4 text-blue-700" />
                 <h3 className="text-xs font-black uppercase tracking-wider text-slate-800">
-                  Administrative, Technical &amp; Operational Divisions
+                  Hospital Administration, Operations &amp; Finance
                 </h3>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                {STAVYA_ORG_STRUCTURE.admin.map((item) => renderGroup(item))}
+                {STAVYA_ORG_STRUCTURE.admin.map((grp) => renderGroup(grp))}
               </div>
             </div>
           )}
         </div>
       )}
 
-      {/* 4. EXECUTIVE STAFF DETAIL DRAWER */}
+      {/* 5. STAFF PROFILE & ACTION DRAWER */}
       {isDrawerOpen && selectedStaff && (
-        <>
-          <div
-            className="fixed inset-0 bg-slate-900/40 backdrop-blur-2xs z-40"
-            onClick={() => {
-              setIsDrawerOpen(false);
-              setSelectedStaff(null);
-            }}
-          />
-          <div className="fixed inset-y-0 right-0 w-full max-w-md bg-white shadow-2xl z-50 flex flex-col animate-in slide-in-from-right duration-200 border-l border-slate-200">
-            {/* Drawer Header */}
-            <div className="p-5 border-b border-slate-100 flex items-start justify-between gap-4 bg-slate-50/70">
+        <div className="fixed inset-0 z-50 flex justify-end bg-slate-900/40 backdrop-blur-xs animate-fadeIn">
+          <div className="w-full max-w-md bg-white h-full shadow-2xl flex flex-col border-l border-slate-200 animate-slideInRight">
+            {/* Header */}
+            <div className="p-5 border-b border-slate-100 flex items-start justify-between gap-3 bg-gradient-to-b from-slate-50 to-white">
               <div className="space-y-1">
                 <div className="flex items-center gap-1.5">
-                  <span className="px-2 py-0.5 text-[9px] font-black uppercase bg-blue-100 text-blue-800 rounded">
+                  <span className="px-2 py-0.5 bg-blue-50 text-blue-700 text-[10px] font-black rounded uppercase tracking-wider">
                     {selectedStaff.unit}
                   </span>
                   {selectedStaff.code && (
-                    <span className="text-[10px] font-mono text-slate-500 font-bold">
-                      EMP #{selectedStaff.code}
+                    <span className="text-[10px] font-mono font-bold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">
+                      #{selectedStaff.code}
                     </span>
                   )}
                 </div>
                 <h3 className="text-lg font-black text-slate-900 tracking-tight">{selectedStaff.name}</h3>
-                <p className="text-xs font-bold text-blue-700">{selectedStaff.desig}</p>
+                <p className="text-xs text-blue-700 font-semibold">{selectedStaff.desig}</p>
               </div>
+
               <button
                 type="button"
-                onClick={() => {
-                  setIsDrawerOpen(false);
-                  setSelectedStaff(null);
-                }}
-                className="p-1.5 rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-200/80 transition-colors cursor-pointer"
+                onClick={() => setIsDrawerOpen(false)}
+                className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            {/* Drawer Content */}
+            {/* Body */}
             <div className="flex-1 overflow-y-auto p-5 space-y-5 text-xs">
-              {/* Action Buttons: Assign Task & Transfer */}
+              {/* Action Buttons */}
               <div className="grid grid-cols-2 gap-2">
                 {isLeader && (
                   <button
@@ -883,6 +1122,40 @@ export const DynamicHospitalOrgChart: React.FC<DynamicHospitalOrgChartProps> = (
                   </div>
                 )}
               </div>
+
+              {/* MD Direct Controls inside Drawer */}
+              {isMD && (
+                <div className="p-3 bg-blue-50/60 rounded-2xl border border-blue-200/70 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-black uppercase text-blue-900 flex items-center gap-1">
+                      <Crown className="w-3 h-3 text-blue-700" /> MD Quick Controls
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveStaff(selectedStaff)}
+                      className="text-[10px] text-red-600 hover:underline flex items-center gap-1"
+                    >
+                      <Trash2 className="w-3 h-3" /> Remove
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => handleStartReparent(selectedStaff)}
+                      className="px-2.5 py-1.5 bg-white hover:bg-blue-50 border border-blue-200 text-blue-700 font-bold rounded-lg text-[10px] flex items-center justify-center gap-1 transition-colors"
+                    >
+                      <GitBranch className="w-3 h-3" /> Reassign Boss
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleStartEditDetails(selectedStaff)}
+                      className="px-2.5 py-1.5 bg-white hover:bg-blue-50 border border-blue-200 text-blue-700 font-bold rounded-lg text-[10px] flex items-center justify-center gap-1 transition-colors"
+                    >
+                      <Edit3 className="w-3 h-3" /> Edit Details
+                    </button>
+                  </div>
+                </div>
+              )}
 
               {/* Reporting & Organizational Role */}
               <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200/80 space-y-2.5">
@@ -936,184 +1209,162 @@ export const DynamicHospitalOrgChart: React.FC<DynamicHospitalOrgChartProps> = (
                           <span
                             className={`px-1.5 py-0.5 text-[9px] font-black rounded uppercase ${
                               task.priority === 'urgent'
-                                ? 'bg-red-50 text-red-700 border border-red-200'
-                                : 'bg-blue-50 text-blue-700 border border-blue-200'
+                                ? 'bg-red-100 text-red-700'
+                                : task.priority === 'high'
+                                ? 'bg-amber-100 text-amber-700'
+                                : 'bg-slate-100 text-slate-700'
                             }`}
                           >
                             {task.priority}
                           </span>
-                          <span className="text-[10px] font-mono text-slate-400">
-                            Due {task.due_at?.substring(0, 10) || 'Soon'}
+                          <span className="text-[10px] text-slate-500 font-medium">
+                            {task.status.toUpperCase()}
                           </span>
                         </div>
                         <p className="font-bold text-slate-900">{task.title}</p>
-                        {task.status === 'blocked' && (
-                          <p className="text-[11px] text-red-600 font-semibold flex items-center gap-1">
-                            ⚠ Blocked: {task.blocked_reason || 'Needs assistance'}
-                          </p>
-                        )}
-                        <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
-                          <div className="bg-blue-600 h-full rounded-full" style={{ width: `${task.progressPercent || 0}%` }} />
-                        </div>
                       </div>
                     ))}
                   </div>
                 )}
               </div>
 
-              {/* Direct Reports List */}
-              {(subordinatesMap[selectedStaff.name] || []).length > 0 && (
-                <div className="space-y-2">
-                  <h4 className="text-[11px] font-black uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+              {/* Subordinate Direct Reports List */}
+              {subordinatesMap[selectedStaff.name] && subordinatesMap[selectedStaff.name].length > 0 && (
+                <div className="space-y-2.5">
+                  <h4 className="text-xs font-black uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
                     <Users className="w-3.5 h-3.5 text-blue-600" />
-                    Direct Team Subordinates ({(subordinatesMap[selectedStaff.name] || []).length})
+                    Subordinate Team ({subordinatesMap[selectedStaff.name].length})
                   </h4>
-                  <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
-                    {(subordinatesMap[selectedStaff.name] || []).map((sub) => (
+                  <div className="space-y-1.5 max-h-48 overflow-y-auto">
+                    {subordinatesMap[selectedStaff.name].map((sub) => (
                       <div
                         key={sub.id}
-                        onClick={() => setSelectedStaff(sub)}
-                        className="p-2.5 bg-slate-50 hover:bg-blue-50/60 border border-slate-200/80 rounded-xl transition-colors cursor-pointer flex items-center justify-between gap-2"
+                        onClick={() => openStaffDetail(sub)}
+                        className="p-2.5 bg-slate-50 hover:bg-blue-50/60 border border-slate-200/60 rounded-xl flex items-center justify-between cursor-pointer transition-colors"
                       >
-                        <div className="min-w-0">
-                          <p className="font-bold text-slate-900 truncate">{sub.name}</p>
-                          <p className="text-[10px] text-slate-500 truncate">{sub.desig}</p>
+                        <div>
+                          <p className="font-bold text-slate-900">{sub.name}</p>
+                          <p className="text-[10px] text-slate-500">{sub.desig}</p>
                         </div>
-                        <ChevronRight className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                        <ChevronRight className="w-4 h-4 text-slate-400" />
                       </div>
                     ))}
                   </div>
                 </div>
               )}
 
-              {/* Contact Information */}
+              {/* Direct Contact Card */}
               <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200/80 space-y-2">
-                <h4 className="text-[11px] font-black uppercase tracking-wider text-slate-700">Contact Information</h4>
-                <div className="space-y-2 text-xs">
-                  <div className="flex items-center justify-between">
-                    <span className="text-slate-500 flex items-center gap-1.5">
-                      <Phone className="w-3.5 h-3.5 text-slate-400" />
-                      Mobile:
-                    </span>
-                    <a href={`tel:${selectedStaff.mobile}`} className="font-bold text-blue-600 hover:underline font-mono">
-                      {selectedStaff.mobile}
-                    </a>
-                  </div>
-                  {selectedStaff.email && (
-                    <div className="flex items-center justify-between">
-                      <span className="text-slate-500 flex items-center gap-1.5">
-                        <Mail className="w-3.5 h-3.5 text-slate-400" />
-                        Email:
-                      </span>
-                      <a
-                        href={`mailto:${selectedStaff.email}`}
-                        className="font-medium text-blue-600 hover:underline font-mono truncate max-w-[200px]"
-                      >
-                        {selectedStaff.email}
-                      </a>
-                    </div>
-                  )}
+                <h4 className="text-[11px] font-black uppercase tracking-wider text-slate-700">Contact Details</h4>
+                <div className="space-y-2">
+                  <a
+                    href={`tel:${selectedStaff.mobile}`}
+                    className="flex items-center gap-2 text-slate-700 hover:text-blue-700 font-medium"
+                  >
+                    <Phone className="w-3.5 h-3.5 text-slate-400" />
+                    <span>+91 {selectedStaff.mobile}</span>
+                  </a>
+                  <a
+                    href={`mailto:${selectedStaff.email}`}
+                    className="flex items-center gap-2 text-slate-700 hover:text-blue-700 font-medium truncate"
+                  >
+                    <Mail className="w-3.5 h-3.5 text-slate-400" />
+                    <span className="truncate">{selectedStaff.email}</span>
+                  </a>
                 </div>
               </div>
             </div>
           </div>
-        </>
+        </div>
       )}
 
-      {/* 5. INLINE TASK ASSIGNMENT MODAL */}
+      {/* 6. INLINE TASK DELEGATION MODAL */}
       {isTaskModalOpen && taskAssignee && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white border border-slate-200 rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4 animate-in zoom-in-95 duration-150">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs p-4">
+          <div className="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl border border-slate-200 space-y-5 animate-fadeIn">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div>
-                <h3 className="text-base font-bold text-slate-900">Assign Work Item</h3>
-                <p className="text-xs text-slate-500">
-                  Assignee: <strong className="text-blue-700">{taskAssignee.name}</strong> ({taskAssignee.desig})
-                </p>
+                <h3 className="text-base font-black text-slate-900">Delegate Execution Task</h3>
+                <p className="text-xs text-blue-700 font-semibold">Assigning to: {taskAssignee.name}</p>
               </div>
               <button
                 type="button"
                 onClick={() => setIsTaskModalOpen(false)}
-                className="text-slate-400 hover:text-slate-600 p-1 font-bold text-sm"
+                className="p-1.5 text-slate-400 hover:text-slate-600 rounded-xl"
               >
-                ✕
+                <X className="w-5 h-5" />
               </button>
             </div>
 
             {taskSuccessMessage ? (
-              <div className="p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-center font-bold text-xs">
+              <div className="p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-2xl text-xs font-bold text-center">
                 ✓ {taskSuccessMessage}
               </div>
             ) : (
-              <form onSubmit={handleCreateTaskSubmit} className="space-y-3.5">
+              <form onSubmit={handleCreateTaskSubmit} className="space-y-4 text-xs">
                 <div className="space-y-1">
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
-                    Task Commitment Title
-                  </label>
+                  <label className="font-bold text-slate-700">Task Title *</label>
                   <input
                     type="text"
+                    required
                     value={taskTitle}
                     onChange={(e) => setTaskTitle(e.target.value)}
-                    placeholder="e.g. Calibrate 2D barcode scanner in OT-2"
-                    required
-                    className="w-full px-3.5 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:bg-white focus:border-blue-600 focus:outline-none"
+                    placeholder="e.g. Conduct OT-2 sterilization protocol audit"
+                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-blue-500"
                   />
                 </div>
 
                 <div className="space-y-1">
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
-                    Scope / Execution Details
-                  </label>
+                  <label className="font-bold text-slate-700">Description &amp; Specifics</label>
                   <textarea
                     rows={3}
                     value={taskDescription}
                     onChange={(e) => setTaskDescription(e.target.value)}
-                    placeholder="Provide specific guidelines, criteria for done, or hospital protocol..."
-                    className="w-full px-3.5 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:bg-white focus:border-blue-600 focus:outline-none"
+                    placeholder="Detailed requirements, deliverables, or checklist..."
+                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-blue-500"
                   />
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
-                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">Priority</label>
+                    <label className="font-bold text-slate-700">Priority</label>
                     <select
                       value={taskPriority}
                       onChange={(e) => setTaskPriority(e.target.value as any)}
-                      className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:bg-white focus:border-blue-600"
+                      className="w-full p-2 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none"
                     >
-                      <option value="low">Low</option>
-                      <option value="medium">Medium</option>
-                      <option value="high">High</option>
-                      <option value="urgent">Urgent (Clinical Stat)</option>
+                      <option value="low">Low Priority</option>
+                      <option value="medium">Medium Priority</option>
+                      <option value="high">High Priority</option>
+                      <option value="urgent">Urgent Escalation</option>
                     </select>
                   </div>
 
                   <div className="space-y-1">
-                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">Target Due Date</label>
+                    <label className="font-bold text-slate-700">Due Date</label>
                     <input
                       type="date"
                       value={taskDueDate}
                       onChange={(e) => setTaskDueDate(e.target.value)}
-                      required
-                      className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:bg-white focus:border-blue-600"
+                      className="w-full p-2 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none"
                     />
                   </div>
                 </div>
 
-                <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+                <div className="pt-2 flex items-center justify-end gap-2">
                   <button
                     type="button"
                     onClick={() => setIsTaskModalOpen(false)}
-                    className="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
+                    className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-xl font-bold transition-colors"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    disabled={isCreatingTask}
-                    className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl transition-colors shadow-xs cursor-pointer disabled:opacity-50"
+                    disabled={isCreatingTask || !taskTitle.trim()}
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-xl font-bold shadow-xs transition-colors"
                   >
-                    {isCreatingTask ? 'Creating...' : 'Assign Work Item'}
+                    {isCreatingTask ? 'Assigning...' : 'Assign Commitment'}
                   </button>
                 </div>
               </form>
@@ -1122,93 +1373,408 @@ export const DynamicHospitalOrgChart: React.FC<DynamicHospitalOrgChartProps> = (
         </div>
       )}
 
-      {/* 6. INLINE DEPARTMENT TRANSFER MODAL (MD ONLY) */}
-      {isTransferModalOpen && transferStaff && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white border border-slate-200 rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4 animate-in zoom-in-95 duration-150">
+      {/* 7. MD DYNAMIC RE-PARENTING / CHANGE SUPERVISOR MODAL */}
+      {isReparentModalOpen && reparentStaff && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs p-4">
+          <div className="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl border border-slate-200 space-y-4 animate-fadeIn">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <div>
-                <h3 className="text-base font-bold text-slate-900">Personnel Position &amp; Unit Transfer</h3>
-                <p className="text-xs text-slate-500">
-                  Staff Member: <strong className="text-slate-900">{transferStaff.name}</strong> (#{transferStaff.code})
-                </p>
+              <div className="flex items-center gap-2">
+                <span className="p-1.5 bg-blue-600 text-white rounded-lg">
+                  <GitBranch className="w-4 h-4" />
+                </span>
+                <div>
+                  <h3 className="text-base font-black text-slate-900">Reassign Reporting Line</h3>
+                  <p className="text-xs text-slate-500">Re-parent node for {reparentStaff.name}</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsReparentModalOpen(false)}
+                className="p-1.5 text-slate-400 hover:text-slate-600 rounded-xl"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleReparentSubmit} className="space-y-4 text-xs">
+              <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-1">
+                <p className="text-slate-500">Current Reporting Supervisor:</p>
+                <p className="font-black text-slate-900">{reparentStaff.reports || 'None (Apex)'}</p>
+              </div>
+
+              <div className="space-y-1">
+                <label className="font-bold text-slate-700">New Reporting Supervisor *</label>
+                <select
+                  required
+                  value={newSupervisor}
+                  onChange={(e) => setNewSupervisor(e.target.value)}
+                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-blue-500"
+                >
+                  <option value="">Select Supervisor...</option>
+                  {staffList
+                    .filter((s) => s.id !== reparentStaff.id)
+                    .map((s) => (
+                      <option key={s.id} value={s.name}>
+                        {s.name} ({s.desig} · {s.unit})
+                      </option>
+                    ))}
+                </select>
+              </div>
+
+              <div className="pt-2 flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsReparentModalOpen(false)}
+                  className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-xl font-bold"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={!newSupervisor.trim()}
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-xl font-bold shadow-xs"
+                >
+                  Update Reporting Hierarchy
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* 8. MD DYNAMIC DEPARTMENT TRANSFER MODAL */}
+      {isTransferModalOpen && transferStaff && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs p-4">
+          <div className="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl border border-slate-200 space-y-4 animate-fadeIn">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2">
+                <span className="p-1.5 bg-blue-600 text-white rounded-lg">
+                  <ArrowRightLeft className="w-4 h-4" />
+                </span>
+                <div>
+                  <h3 className="text-base font-black text-slate-900">Hospital Unit Reassignment</h3>
+                  <p className="text-xs text-slate-500">{transferStaff.name} (#{transferStaff.code})</p>
+                </div>
               </div>
               <button
                 type="button"
                 onClick={() => setIsTransferModalOpen(false)}
-                className="text-slate-400 hover:text-slate-600 p-1 font-bold text-sm"
+                className="p-1.5 text-slate-400 hover:text-slate-600 rounded-xl"
               >
-                ✕
+                <X className="w-5 h-5" />
               </button>
             </div>
 
             {transferSuccessMessage ? (
-              <div className="p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-center font-bold text-xs">
+              <div className="p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-2xl text-xs font-bold text-center">
                 ✓ {transferSuccessMessage}
               </div>
             ) : (
-              <form onSubmit={handleTransferSubmit} className="space-y-3.5">
-                <div className="p-3 bg-blue-50 border border-blue-100 rounded-xl text-xs text-blue-800 space-y-1">
-                  <p className="font-bold">Current Assignment:</p>
-                  <p>Unit: {transferStaff.unit} · Reporting To: {transferStaff.reports || 'Governance'}</p>
+              <form onSubmit={handleTransferSubmit} className="space-y-4 text-xs">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl">
+                    <p className="text-[10px] text-slate-500">Current Unit</p>
+                    <p className="font-bold text-slate-900">{transferStaff.unit}</p>
+                  </div>
+                  <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl">
+                    <p className="text-[10px] text-slate-500">Current Supervisor</p>
+                    <p className="font-bold text-slate-900">{transferStaff.reports}</p>
+                  </div>
                 </div>
 
                 <div className="space-y-1">
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
-                    New Target Department / Unit
-                  </label>
-                  <input
-                    type="text"
+                  <label className="font-bold text-slate-700">Target Hospital Unit / Department *</label>
+                  <select
+                    required
                     value={targetUnit}
                     onChange={(e) => setTargetUnit(e.target.value)}
-                    required
-                    className="w-full px-3.5 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:bg-white focus:border-blue-600"
-                  />
+                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-blue-500"
+                  >
+                    {uniqueUnits.map((u) => (
+                      <option key={u} value={u}>
+                        {u}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 <div className="space-y-1">
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
-                    New Reporting Supervisor
-                  </label>
-                  <input
-                    type="text"
+                  <label className="font-bold text-slate-700">New Supervisor (Optional)</label>
+                  <select
                     value={targetSupervisor}
                     onChange={(e) => setTargetSupervisor(e.target.value)}
-                    required
-                    className="w-full px-3.5 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:bg-white focus:border-blue-600"
-                  />
+                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-blue-500"
+                  >
+                    <option value="">Keep Existing Supervisor</option>
+                    {staffList
+                      .filter((s) => s.id !== transferStaff.id)
+                      .map((s) => (
+                        <option key={s.id} value={s.name}>
+                          {s.name} ({s.desig} · {s.unit})
+                        </option>
+                      ))}
+                  </select>
                 </div>
 
                 <div className="space-y-1">
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
-                    Administrative Transfer Rationale
-                  </label>
-                  <textarea
-                    rows={2}
+                  <label className="font-bold text-slate-700">MD Transfer Authorization Note</label>
+                  <input
+                    type="text"
                     value={transferReason}
                     onChange={(e) => setTransferReason(e.target.value)}
-                    placeholder="e.g. Clinical OT staffing rotation for Q3..."
-                    className="w-full px-3.5 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:bg-white focus:border-blue-600"
+                    placeholder="Operational rotation / Clinical requirement"
+                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none"
                   />
                 </div>
 
-                <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+                <div className="pt-2 flex items-center justify-end gap-2">
                   <button
                     type="button"
                     onClick={() => setIsTransferModalOpen(false)}
-                    className="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
+                    className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-xl font-bold"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl transition-colors shadow-xs cursor-pointer"
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold shadow-xs"
                   >
-                    Confirm Reassignment
+                    Authorize &amp; Transfer
                   </button>
                 </div>
               </form>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* 9. MD ADD NEW STAFF / POSITION MODAL */}
+      {isAddStaffModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs p-4">
+          <div className="bg-white rounded-3xl p-6 max-w-lg w-full shadow-2xl border border-slate-200 space-y-4 animate-fadeIn">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2">
+                <span className="p-1.5 bg-blue-600 text-white rounded-lg">
+                  <UserPlus className="w-4 h-4" />
+                </span>
+                <div>
+                  <h3 className="text-base font-black text-slate-900">Add Hospital Staff Position</h3>
+                  <p className="text-xs text-slate-500">Create and integrate into the live organizational chart</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsAddStaffModalOpen(false)}
+                className="p-1.5 text-slate-400 hover:text-slate-600 rounded-xl"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleAddStaffSubmit} className="space-y-3.5 text-xs">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="font-bold text-slate-700">Full Name *</label>
+                  <input
+                    type="text"
+                    required
+                    value={newStaffName}
+                    onChange={(e) => setNewStaffName(e.target.value)}
+                    placeholder="e.g. Dr. Ananya Sharma"
+                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-blue-500"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="font-bold text-slate-700">Employee Code</label>
+                  <input
+                    type="text"
+                    value={newStaffCode}
+                    onChange={(e) => setNewStaffCode(e.target.value)}
+                    placeholder="e.g. 212"
+                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-blue-500"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="font-bold text-slate-700">Designation *</label>
+                  <input
+                    type="text"
+                    required
+                    value={newStaffDesig}
+                    onChange={(e) => setNewStaffDesig(e.target.value)}
+                    placeholder="e.g. Spine Fellow / Staff Nurse"
+                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-blue-500"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="font-bold text-slate-700">Department Unit *</label>
+                  <select
+                    value={newStaffUnit}
+                    onChange={(e) => setNewStaffUnit(e.target.value)}
+                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-blue-500"
+                  >
+                    {uniqueUnits.map((u) => (
+                      <option key={u} value={u}>
+                        {u}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="font-bold text-slate-700">Reports Directly To (Supervisor) *</label>
+                <select
+                  value={newStaffReports}
+                  onChange={(e) => setNewStaffReports(e.target.value)}
+                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-blue-500"
+                >
+                  {staffList.map((s) => (
+                    <option key={s.id} value={s.name}>
+                      {s.name} ({s.desig} · {s.unit})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="font-bold text-slate-700">Shift</label>
+                  <select
+                    value={newStaffShift}
+                    onChange={(e) => setNewStaffShift(e.target.value)}
+                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl"
+                  >
+                    <option value="General Shift">General Shift</option>
+                    <option value="Morning Shift">Morning Shift</option>
+                    <option value="Evening Shift">Evening Shift</option>
+                    <option value="Night Shift">Night Shift</option>
+                  </select>
+                </div>
+                <div className="space-y-1">
+                  <label className="font-bold text-slate-700">Status</label>
+                  <select
+                    value={newStaffEmp}
+                    onChange={(e) => setNewStaffEmp(e.target.value)}
+                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl"
+                  >
+                    <option value="Confirm">Confirm</option>
+                    <option value="Probation">Probation</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="pt-3 flex items-center justify-end gap-2 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setIsAddStaffModalOpen(false)}
+                  className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-xl font-bold"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={!newStaffName.trim()}
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold shadow-xs"
+                >
+                  Add to Org Chart
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* 10. MD EDIT DETAILS MODAL */}
+      {isEditStaffModalOpen && editingStaff && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs p-4">
+          <div className="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl border border-slate-200 space-y-4 animate-fadeIn">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2">
+                <span className="p-1.5 bg-blue-600 text-white rounded-lg">
+                  <Edit3 className="w-4 h-4" />
+                </span>
+                <div>
+                  <h3 className="text-base font-black text-slate-900">Edit Position Details</h3>
+                  <p className="text-xs text-slate-500">{editingStaff.name}</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsEditStaffModalOpen(false)}
+                className="p-1.5 text-slate-400 hover:text-slate-600 rounded-xl"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleEditDetailsSubmit} className="space-y-3.5 text-xs">
+              <div className="space-y-1">
+                <label className="font-bold text-slate-700">Designation *</label>
+                <input
+                  type="text"
+                  required
+                  value={editDesig}
+                  onChange={(e) => setEditDesig(e.target.value)}
+                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="font-bold text-slate-700">Employee Code</label>
+                <input
+                  type="text"
+                  value={editCode}
+                  onChange={(e) => setEditCode(e.target.value)}
+                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="font-bold text-slate-700">Shift</label>
+                  <select
+                    value={editShift}
+                    onChange={(e) => setEditShift(e.target.value)}
+                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl"
+                  >
+                    <option value="General Shift">General Shift</option>
+                    <option value="Morning Shift">Morning Shift</option>
+                    <option value="Evening Shift">Evening Shift</option>
+                    <option value="Night Shift">Night Shift</option>
+                  </select>
+                </div>
+                <div className="space-y-1">
+                  <label className="font-bold text-slate-700">Status</label>
+                  <select
+                    value={editEmp}
+                    onChange={(e) => setEditEmp(e.target.value)}
+                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl"
+                  >
+                    <option value="Confirm">Confirm</option>
+                    <option value="Probation">Probation</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="pt-3 flex items-center justify-end gap-2 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setIsEditStaffModalOpen(false)}
+                  className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-xl font-bold"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold shadow-xs"
+                >
+                  Save Modifications
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
