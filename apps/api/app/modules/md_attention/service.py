@@ -971,7 +971,10 @@ class MDAttentionService:
                 author_id=current_user.id,
                 author_name=current_user.full_name,
                 activity_type="STATUS_CHANGE",
-                note=f"Executive Blocker Override by {current_user.full_name}: {payload.override_reason.strip()}",
+                note=(
+                    f"Executive Blocker Override by {current_user.full_name}: "
+                    f"{payload.override_reason.strip()}"
+                ),
                 previous_status=prev_status,
                 new_status=item.status,
                 progress_percent=item.progress_percent,
@@ -1032,7 +1035,8 @@ class MDAttentionService:
 
             if payload.expected_version is not None and item.version != payload.expected_version:
                 raise ConflictError(
-                    f"Optimistic concurrency conflict: WorkItem version is {item.version}, expected {payload.expected_version}."
+                    f"Optimistic concurrency conflict: WorkItem version is {item.version}, "
+                    f"expected {payload.expected_version}."
                 )
 
             prev_due = item.due_at.isoformat() if item.due_at else "None"
@@ -1045,7 +1049,11 @@ class MDAttentionService:
                 author_id=current_user.id,
                 author_name=current_user.full_name,
                 activity_type="DEADLINE_EXTENSION",
-                note=f"MD Authorized Extension: New due date {payload.new_due_at.strftime('%Y-%m-%d')}. Rationale: {payload.justification.strip()}",
+                note=(
+                    f"MD Authorized Extension: New due date "
+                    f"{payload.new_due_at.strftime('%Y-%m-%d')}. "
+                    f"Rationale: {payload.justification.strip()}"
+                ),
                 previous_status=item.status,
                 new_status=item.status,
                 progress_percent=item.progress_percent,
@@ -1091,8 +1099,8 @@ class MDAttentionService:
         cls._verify_md_authority(effective_roles)
         if not payload.rationale or not payload.rationale.strip():
             raise ValidationFailedError("Rationale is mandatory for RACI reassignment.")
-        if not payload.responsible_name.strip() and not payload.accountable_name.strip():
-            raise ValidationFailedError("At least one RACI assignee name is required.")
+        if payload.responsible_id == payload.accountable_id:
+            raise ValidationFailedError("Responsible and Accountable must be different people.")
 
         now = utcnow()
 
@@ -1108,19 +1116,77 @@ class MDAttentionService:
 
             if payload.expected_version is not None and item.version != payload.expected_version:
                 raise ConflictError(
-                    f"Optimistic concurrency conflict: WorkItem version is {item.version}, expected {payload.expected_version}."
+                    f"Optimistic concurrency conflict: WorkItem version is {item.version}, "
+                    f"expected {payload.expected_version}."
                 )
 
+            assignee_ids = [payload.responsible_id, payload.accountable_id]
+            users = list(
+                session.scalars(
+                    select(User).where(
+                        User.id.in_(assignee_ids),
+                        User.organization_id == current_user.organization_id,
+                        User.is_active.is_(True),
+                    )
+                ).all()
+            )
+            users_map = {u.id: u for u in users}
+            if payload.responsible_id not in users_map:
+                raise ValidationFailedError(
+                    f"Responsible assignee {payload.responsible_id} is not "
+                    "an active user in this organization."
+                )
+            if payload.accountable_id not in users_map:
+                raise ValidationFailedError(
+                    f"Accountable assignee {payload.accountable_id} is not "
+                    "an active user in this organization."
+                )
+
+            resp_user = users_map[payload.responsible_id]
+            acc_user = users_map[payload.accountable_id]
+            resp_name = resp_user.full_name or resp_user.email
+            acc_name = acc_user.full_name or acc_user.email
+
+            prev_raci = dict(item.raci or {})
+            prev_owner_id = item.owner_id
+            prev_owner_name = item.owner_name
+
             raci = dict(item.raci or {})
-            raci["responsible_id"] = str(payload.responsible_id) if payload.responsible_id else raci.get("responsible_id")
-            raci["responsible_name"] = payload.responsible_name.strip()
-            raci["accountable_id"] = str(payload.accountable_id) if payload.accountable_id else raci.get("accountable_id")
-            raci["accountable_name"] = payload.accountable_name.strip()
+            # Reconcile overlap: remove newly assigned R and A from consulted and informed
+            new_r_id_str = str(payload.responsible_id)
+            new_a_id_str = str(payload.accountable_id)
+            reassigned_ids = {new_r_id_str, new_a_id_str}
+
+            c_ids_raw = raci.get("consulted_ids") or []
+            c_names_raw = raci.get("consulted_names") or []
+            c_pairs = [
+                (cid, cname)
+                for cid, cname in zip(c_ids_raw, c_names_raw, strict=False)
+                if str(cid) not in reassigned_ids
+            ]
+            raci["consulted_ids"] = [p[0] for p in c_pairs]
+            raci["consulted_names"] = [p[1] for p in c_pairs]
+
+            i_ids_raw = raci.get("informed_ids") or []
+            i_names_raw = raci.get("informed_names") or []
+            i_pairs = [
+                (iid, iname)
+                for iid, iname in zip(i_ids_raw, i_names_raw, strict=False)
+                if str(iid) not in reassigned_ids
+            ]
+            raci["informed_ids"] = [p[0] for p in i_pairs]
+            raci["informed_names"] = [p[1] for p in i_pairs]
+
+            raci["responsible_id"] = str(payload.responsible_id)
+            raci["responsible_name"] = resp_name
+            raci["accountable_id"] = str(payload.accountable_id)
+            raci["accountable_name"] = acc_name
+            raci["updated_at"] = now.isoformat()
+            raci["updated_by_name"] = current_user.full_name
             item.raci = raci
 
-            if payload.responsible_id:
-                item.owner_id = payload.responsible_id
-            item.owner_name = payload.responsible_name.strip()
+            item.owner_id = payload.responsible_id
+            item.owner_name = resp_name
             item.updated_at = now
             item.version += 1
 
@@ -1129,7 +1195,10 @@ class MDAttentionService:
                 author_id=current_user.id,
                 author_name=current_user.full_name,
                 activity_type="RACI_CHANGE",
-                note=f"MD RACI Reassignment: Responsible={payload.responsible_name.strip()}, Accountable={payload.accountable_name.strip()}. Rationale: {payload.rationale.strip()}",
+                note=(
+                    f"MD RACI Reassignment: Responsible={resp_name}, "
+                    f"Accountable={acc_name}. Rationale: {payload.rationale.strip()}"
+                ),
                 previous_status=item.status,
                 new_status=item.status,
                 progress_percent=item.progress_percent,
@@ -1144,8 +1213,16 @@ class MDAttentionService:
                 entity_id=item.id,
                 actor=AuditActor.user(current_user.id),
                 organization_id=current_user.organization_id,
-                before={},
-                after={"responsible_name": payload.responsible_name.strip(), "accountable_name": payload.accountable_name.strip()},
+                before={
+                    "raci": prev_raci,
+                    "owner_id": str(prev_owner_id) if prev_owner_id else None,
+                    "owner_name": prev_owner_name,
+                },
+                after={
+                    "raci": item.raci,
+                    "owner_id": str(item.owner_id) if item.owner_id else None,
+                    "owner_name": item.owner_name,
+                },
                 reason=payload.rationale.strip(),
             )
             session.commit()

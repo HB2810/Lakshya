@@ -248,12 +248,18 @@ def test_cockpit_actions_live_execution() -> None:
         assert extension_res.json()["action_type"] == "GRANT_EXTENSION"
 
         # 3. Test RACI Reassignment
+        users_res = client.get("/api/v1/users", headers=headers)
+        assert users_res.status_code == 200
+        users_list = users_res.json()["items"] if isinstance(users_res.json(), dict) and "items" in users_res.json() else users_res.json()
+        emp_user = next((u for u in users_list if "employee" in u.get("email", "").lower() or "sunita" in u.get("full_name", "").lower()), users_list[0])
+        md_user = next((u for u in users_list if ("md" in u.get("email", "").lower() or "rohan" in u.get("full_name", "").lower()) and u["id"] != emp_user["id"]), users_list[1])
+
         raci_res = client.post(
             "/api/v1/md-attention/reassign-raci",
             json={
                 "work_item_id": work_item_id,
-                "responsible_name": "Sister Sunita Rao",
-                "accountable_name": "Dr. Mirant Dave (MD)",
+                "responsible_id": emp_user["id"],
+                "accountable_id": md_user["id"],
                 "rationale": "Appointed Senior Sister as responsible clinical coordinator.",
             },
             headers=headers,

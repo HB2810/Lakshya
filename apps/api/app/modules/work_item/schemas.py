@@ -6,7 +6,7 @@ import uuid
 from datetime import datetime
 from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 
 class BlockerDetailsSchema(BaseModel):
@@ -18,14 +18,42 @@ class BlockerDetailsSchema(BaseModel):
 
 
 class RACISchema(BaseModel):
-    responsible_id: str | None = None
+    responsible_id: uuid.UUID
     responsible_name: str | None = None
-    accountable_id: str
-    accountable_name: str
-    consulted_ids: list[str] = Field(default_factory=list)
+    accountable_id: uuid.UUID
+    accountable_name: str | None = None
+    consulted_ids: list[uuid.UUID] = Field(default_factory=list)
     consulted_names: list[str] = Field(default_factory=list)
-    informed_ids: list[str] = Field(default_factory=list)
+    informed_ids: list[uuid.UUID] = Field(default_factory=list)
     informed_names: list[str] = Field(default_factory=list)
+    consultation_expectation: str | None = Field(default=None, max_length=1000)
+    information_cadence: str | None = Field(default=None, max_length=1000)
+    updated_at: datetime | None = None
+    updated_by_name: str | None = None
+
+    @model_validator(mode="after")
+    def validate_role_separation(self) -> RACISchema:
+        """Fail closed until Stavya approves any R/A overlap exception."""
+        if self.responsible_id == self.accountable_id:
+            raise ValueError("Responsible and Accountable must be different people")
+
+        memberships = [
+            self.responsible_id,
+            self.accountable_id,
+            *self.consulted_ids,
+            *self.informed_ids,
+        ]
+        if len(memberships) != len(set(memberships)):
+            raise ValueError("One person cannot hold multiple RACI roles or be assigned twice")
+        if self.consulted_ids and not (self.consultation_expectation or "").strip():
+            raise ValueError("Consulted participants require a consultation expectation")
+        if self.informed_ids and not (self.information_cadence or "").strip():
+            raise ValueError("Informed participants require an information cadence")
+        return self
+
+
+class RACIReplaceRequest(RACISchema):
+    reason: str = Field(min_length=5, max_length=500)
 
 
 class EDCSchema(BaseModel):

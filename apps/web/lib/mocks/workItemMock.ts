@@ -47,6 +47,8 @@ export const workItemStore = {
       progressPercent: item.progressPercent || 0,
       source_type: item.source_type || 'MANUAL',
       source_title: item.source_title || 'Self-Created Task',
+      raci: item.raci || null,
+      edc: item.edc || null,
       activity_history: [
         {
           id: `act-${Date.now()}`,
@@ -65,6 +67,35 @@ export const workItemStore = {
     canonicalWorkItems = [newItem, ...canonicalWorkItems];
     notify();
     return newItem;
+  },
+
+  patchWorkItem(id: string, patch: WorkItemPatchPayload, authorName = 'Lakshya User'): WorkItem {
+    const item = canonicalWorkItems.find(w => w.id === id);
+    if (!item) throw new Error('WorkItem not found');
+
+    const nowIso = new Date().toISOString();
+    const activity: WorkItemActivity = {
+      id: `act-${Date.now()}`,
+      timestamp: nowIso,
+      authorId: item.owner_id || 'usr-stav-101',
+      authorName,
+      type: patch.raci ? 'RACI_CHANGE' : 'PROGRESS_UPDATE',
+      note: patch.update_note || 'Work item updated.',
+    };
+    const nextOwnerId = patch.raci?.responsible_id || patch.owner_id || item.owner_id;
+    const nextOwnerName = patch.raci?.responsible_name || patch.owner_name || item.owner_name;
+
+    canonicalWorkItems = canonicalWorkItems.map(w => w.id === id ? {
+      ...w,
+      ...patch,
+      owner_id: nextOwnerId,
+      owner_name: nextOwnerName,
+      updated_at: nowIso,
+      version: w.version + 1,
+      activity_history: [activity, ...(w.activity_history || [])],
+    } : w);
+    notify();
+    return canonicalWorkItems.find(w => w.id === id)!;
   },
 
   updateStatus(id: string, newStatus: WorkItemStatus, authorName = 'Priyesh Shah', note?: string): WorkItem {

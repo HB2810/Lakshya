@@ -90,10 +90,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const checkPermission = useCallback((capability: Capability) => {
-    if (user.permissions && Array.isArray(user.permissions)) {
-      if (user.permissions.includes(capability)) {
-        return true;
-      }
+    if (Array.isArray(user.permissions)) {
+      return user.permissions.includes(capability);
     }
     return canHelper(capability, user);
   }, [user]);

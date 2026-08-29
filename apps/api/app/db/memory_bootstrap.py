@@ -28,7 +28,7 @@ from app.core.clock import utcnow
 from app.core.config import Settings
 from app.core.security import PASSWORD_ALGORITHM, PasswordHasherService
 from app.db.base import Base
-from app.modules.access.catalog import PERMISSION_CATALOG, ScopeType
+from app.modules.access.catalog import PERMISSION_CATALOG, RACI_MANAGE, ScopeType
 from app.modules.access.models import Permission, Role, RoleAssignment, RolePermission
 from app.modules.audit.models import AuditEvent
 from app.modules.identity.models import CREDENTIAL_KIND_PASSWORD, Credential, User
@@ -132,6 +132,8 @@ def bootstrap_seed_data(session: Session, settings: Settings) -> None:
         session.add(r)
 
     for perm in permissions_by_key.values():
+        if perm.key == RACI_MANAGE:
+            continue
         for r in roles:
             role_perm = RolePermission(
                 id=uuid.uuid4(),

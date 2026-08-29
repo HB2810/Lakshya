@@ -15,6 +15,7 @@ export interface WorkItemActivity {
     | 'ESCALATION_TRIGGERED'
     | 'ESCALATION_RESOLVED'
     | 'REASSIGNED'
+    | 'RACI_CHANGE'
     | 'COMPLETED';
   note?: string;
   previousStatus?: WorkItemStatus;
@@ -42,6 +43,10 @@ export interface WorkItemRACI {
   consulted_names?: string[];
   informed_ids?: string[];
   informed_names?: string[];
+  consultation_expectation?: string | null;
+  information_cadence?: string | null;
+  updated_at?: string | null;
+  updated_by_name?: string | null;
 }
 
 export interface WorkItemEDC {

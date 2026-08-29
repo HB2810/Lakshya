@@ -17,9 +17,19 @@ from fastapi import HTTPException, status
 from sqlalchemy import desc, or_, select
 from sqlalchemy.orm import Session
 
+from app.core.clock import utcnow
+from app.modules.access.authorization import AuthorizationContext
+from app.modules.access.catalog import RACI_MANAGE
+from app.modules.audit.models import AuditSource
+from app.modules.audit.service import AuditActor, AuditRecorder
+from app.modules.identity.models import User
+from app.modules.organization.models import DepartmentMembership
+from app.modules.organization.service import PositionService
 from app.modules.work_item.models import WorkItem, WorkItemActivity, WorkItemEscalation
 from app.modules.work_item.schemas import (
     EscalateRequest,
+    RACIReplaceRequest,
+    RACISchema,
     WorkItemCreate,
     WorkItemUpdate,
 )
@@ -34,7 +44,7 @@ def _check_work_item_access(
     is_write: bool = False,
 ) -> None:
     """Validate server-side whether current_user is authorized to access work_item.
-    
+
     Raises HTTPException(403) on unauthorized cross-user access.
     """
     user_id = current_user.id
@@ -52,7 +62,7 @@ def _check_work_item_access(
     upper_roles = [r.upper() for r in effective_roles]
     is_md = any(r in upper_roles for r in ("MD", "MANAGING_DIRECTOR", "MD_OFFICE"))
     is_leader = any(r in upper_roles for r in ("LEADER", "LEADERS", "DEPARTMENT_HEAD", "MANAGER"))
-    is_master = any(r in upper_roles for r in ("MASTER", "ADMIN"))
+    is_master = any(r in upper_roles for r in ("MASTER", "ADMIN", "LOCAL_BOOTSTRAP_ADMIN"))
 
     # MD has organization-wide operational authority
     if is_md:
@@ -80,6 +90,144 @@ def _check_work_item_access(
     )
 
 
+def _validate_and_canonicalize_raci(
+    session: Session,
+    org_id: uuid.UUID,
+    raci_input: RACISchema | dict[str, Any],
+    current_user: Any,
+    auth_ctx: AuthorizationContext | None = None,
+    work_item: WorkItem | None = None,
+) -> dict[str, Any]:
+    """Validates RACI invariants, active same-org users, scoping, and canonicalizes names."""
+    if isinstance(raci_input, dict):
+        raci_obj = RACISchema.model_validate(raci_input)
+    else:
+        raci_obj = raci_input
+
+    # 1. Separation of duty (R != A)
+    if raci_obj.responsible_id == raci_obj.accountable_id:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Responsible (R) and Accountable (A) must be different people.",
+        )
+
+    all_ids = [
+        raci_obj.responsible_id,
+        raci_obj.accountable_id,
+        *raci_obj.consulted_ids,
+        *raci_obj.informed_ids,
+    ]
+    # 2. Mutual exclusivity
+    if len(all_ids) != len(set(all_ids)):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="One person cannot hold multiple RACI roles or be assigned twice.",
+        )
+
+    # 3. Active same-organization users check
+    users = list(
+        session.scalars(
+            select(User).where(
+                User.id.in_(all_ids),
+                User.organization_id == org_id,
+                User.is_active.is_(True),
+            )
+        ).all()
+    )
+    users_by_id = {u.id: u for u in users}
+    missing = [str(uid) for uid in all_ids if uid not in users_by_id]
+    if missing:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=(
+                "One or more RACI assignees are not active users in your organization: "
+                f"{', '.join(missing)}"
+            ),
+        )
+
+    resp_user = users_by_id[raci_obj.responsible_id]
+    acc_user = users_by_id[raci_obj.accountable_id]
+    resp_name = resp_user.full_name or resp_user.email
+    acc_name = acc_user.full_name or acc_user.email
+    consulted_names = [
+        users_by_id[uid].full_name or users_by_id[uid].email for uid in raci_obj.consulted_ids
+    ]
+    informed_names = [
+        users_by_id[uid].full_name or users_by_id[uid].email for uid in raci_obj.informed_ids
+    ]
+
+    # 4. Scoped raci.manage authorization enforcement
+    if auth_ctx is not None:
+        if not auth_ctx.has_permission(RACI_MANAGE):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Permission 'raci.manage' is required to manage RACI.",
+            )
+
+        if not auth_ctx.has_organization_scope(RACI_MANAGE):
+            # Scoped R: self, subordinate, or member of same department
+            dept_member_ids: set[uuid.UUID] = set()
+            if auth_ctx.member_department_ids:
+                dept_member_ids = set(
+                    session.scalars(
+                        select(DepartmentMembership.user_id).where(
+                            DepartmentMembership.organization_id == org_id,
+                            DepartmentMembership.department_id.in_(auth_ctx.member_department_ids),
+                            DepartmentMembership.ended_on.is_(None),
+                        )
+                    ).all()
+                )
+
+            allowed_r_ids = (
+                {auth_ctx.user_id} | set(auth_ctx.subordinate_user_ids) | dept_member_ids
+            )
+            if raci_obj.responsible_id not in allowed_r_ids:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail=(
+                        "Scoped RACI authorization violation: Responsible (R) must be "
+                        "yourself, a direct reportee, or a member of your department."
+                    ),
+                )
+
+            # Scoped A: self or an active reporting supervisor in chain
+            supervisor_ids: set[uuid.UUID] = set()
+            try:
+                pos_service = PositionService(session, None)  # type: ignore[arg-type]
+                chain = pos_service.get_user_reporting_chain(auth_ctx, auth_ctx.user_id)
+                for link in chain[1:]:
+                    if link.get("occupant_id"):
+                        supervisor_ids.add(uuid.UUID(link["occupant_id"]))
+            except Exception:
+                supervisor_ids = set()
+
+            allowed_a_ids = {auth_ctx.user_id} | supervisor_ids
+            if raci_obj.accountable_id not in allowed_a_ids:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail=(
+                        "Scoped RACI authorization violation: Accountable (A) must be "
+                        "yourself or an active reporting supervisor."
+                    ),
+                )
+
+    now = utcnow()
+    return {
+        "responsible_id": str(raci_obj.responsible_id),
+        "responsible_name": resp_name,
+        "accountable_id": str(raci_obj.accountable_id),
+        "accountable_name": acc_name,
+        "consulted_ids": [str(uid) for uid in raci_obj.consulted_ids],
+        "consulted_names": consulted_names,
+        "informed_ids": [str(uid) for uid in raci_obj.informed_ids],
+        "informed_names": informed_names,
+        "consultation_expectation": raci_obj.consultation_expectation,
+        "information_cadence": raci_obj.information_cadence,
+        "updated_at": now.isoformat(),
+        "updated_by_name": getattr(current_user, "full_name", "User"),
+    }
+
+
 class WorkItemService:
     @staticmethod
     def list_work_items(
@@ -94,21 +242,21 @@ class WorkItemService:
     ) -> list[WorkItem]:
         upper_roles = [r.upper() for r in effective_roles]
         is_md = any(r in upper_roles for r in ("MD", "MANAGING_DIRECTOR", "MD_OFFICE"))
-        is_leader = any(r in upper_roles for r in ("LEADER", "LEADERS", "DEPARTMENT_HEAD", "MANAGER"))
-        is_master = any(r in upper_roles for r in ("MASTER", "ADMIN"))
+        is_leader = any(
+            r in upper_roles for r in ("LEADER", "LEADERS", "DEPARTMENT_HEAD", "MANAGER")
+        )
+        is_master = any(r in upper_roles for r in ("MASTER", "ADMIN", "LOCAL_BOOTSTRAP_ADMIN"))
         subordinates = subordinate_user_ids or set()
 
         query = select(WorkItem).where(WorkItem.organization_id == current_user.organization_id)
 
         # Apply role-based scoping filter
         if is_md or is_master:
-            # MD sees all organization work items, optional specific owner filter
             if owner_id:
                 query = query.where(WorkItem.owner_id == owner_id)
             if department_id:
                 query = query.where(WorkItem.department_id == department_id)
         elif is_leader:
-            # Leader sees own tasks + subordinate team reportees' tasks + department tasks
             if owner_id:
                 # If querying a specific stavyan, ensure it's themselves, a subordinate, or in their dept
                 query = query.where(WorkItem.owner_id == owner_id)
@@ -125,7 +273,6 @@ class WorkItemService:
         else:
             # STAVYAN: STRICT ISOLATION -> only own tasks
             query = query.where(
-
                 (WorkItem.owner_id == current_user.id) | (WorkItem.created_by == current_user.id)
             )
 
@@ -134,7 +281,6 @@ class WorkItemService:
 
         query = query.order_by(desc(WorkItem.created_at))
         return list(session.scalars(query).all())
-
 
     @staticmethod
     def get_work_item(
@@ -167,16 +313,33 @@ class WorkItemService:
         session: Session,
         payload: WorkItemCreate,
         current_user: Any,
+        auth_ctx: AuthorizationContext | None = None,
     ) -> WorkItem:
-        now = datetime.now(timezone.utc)
+        now = utcnow()
+        owner_id = payload.owner_id or current_user.id
+        owner_name = payload.owner_name or getattr(current_user, "full_name", "Stavyan")
+        raci_data = payload.raci
+
+        if raci_data:
+            canonical_raci = _validate_and_canonicalize_raci(
+                session=session,
+                org_id=current_user.organization_id,
+                raci_input=raci_data,
+                current_user=current_user,
+                auth_ctx=auth_ctx,
+            )
+            raci_data = canonical_raci
+            owner_id = uuid.UUID(canonical_raci["responsible_id"])
+            owner_name = canonical_raci["responsible_name"]
+
         item = WorkItem(
             organization_id=current_user.organization_id,
             title=payload.title,
             description=payload.description,
             priority=payload.priority,
             status="todo",
-            owner_id=payload.owner_id or current_user.id,
-            owner_name=payload.owner_name or getattr(current_user, "full_name", "Stavyan"),
+            owner_id=owner_id,
+            owner_name=owner_name,
             department_id=payload.department_id,
             department_name=payload.department_name,
             created_by=current_user.id,
@@ -185,7 +348,7 @@ class WorkItemService:
             origin_meeting_id=payload.origin_meeting_id,
             source_type=payload.source_type,
             source_title=payload.source_title,
-            raci=payload.raci,
+            raci=raci_data,
             edc=payload.edc,
             created_at=now,
             updated_at=now,
@@ -210,6 +373,84 @@ class WorkItemService:
         return item
 
     @staticmethod
+    def replace_raci(
+        session: Session,
+        work_item_id: uuid.UUID,
+        payload: RACIReplaceRequest,
+        current_user: Any,
+        auth_ctx: AuthorizationContext,
+    ) -> WorkItem:
+        effective_roles = list(auth_ctx.effective_roles)
+        subordinates = set(auth_ctx.subordinate_user_ids)
+        item = WorkItemService.get_work_item(
+            session=session,
+            work_item_id=work_item_id,
+            current_user=current_user,
+            effective_roles=effective_roles,
+            user_department_ids=auth_ctx.department_ids,
+            subordinate_user_ids=subordinates,
+        )
+
+        now = utcnow()
+        prev_raci = dict(item.raci or {})
+        prev_owner_id = item.owner_id
+        prev_owner_name = item.owner_name
+
+        canonical_raci = _validate_and_canonicalize_raci(
+            session=session,
+            org_id=current_user.organization_id,
+            raci_input=payload,
+            current_user=current_user,
+            auth_ctx=auth_ctx,
+            work_item=item,
+        )
+
+        item.raci = canonical_raci
+        item.owner_id = payload.responsible_id
+        item.owner_name = canonical_raci["responsible_name"]
+        item.updated_at = now
+        item.version += 1
+
+        activity = WorkItemActivity(
+            work_item_id=item.id,
+            author_id=current_user.id,
+            author_name=getattr(current_user, "full_name", "User"),
+            activity_type="RACI_CHANGE",
+            note=(
+                f"RACI updated: R={canonical_raci['responsible_name']}, "
+                f"A={canonical_raci['accountable_name']}. Reason: {payload.reason.strip()}"
+            ),
+            previous_status=item.status,
+            new_status=item.status,
+            progress_percent=item.progress_percent,
+            created_at=now,
+        )
+        session.add(activity)
+
+        recorder = AuditRecorder(session, source=AuditSource.API)
+        recorder.record(
+            action="work_item.raci.update",
+            entity_type="work_item",
+            entity_id=item.id,
+            actor=AuditActor.user(current_user.id),
+            organization_id=current_user.organization_id,
+            before={
+                "raci": prev_raci,
+                "owner_id": str(prev_owner_id) if prev_owner_id else None,
+                "owner_name": prev_owner_name,
+            },
+            after={
+                "raci": item.raci,
+                "owner_id": str(item.owner_id) if item.owner_id else None,
+                "owner_name": item.owner_name,
+            },
+            reason=payload.reason.strip(),
+        )
+        session.commit()
+        session.refresh(item)
+        return item
+
+    @staticmethod
     def update_work_item(
         session: Session,
         work_item_id: uuid.UUID,
@@ -219,6 +460,19 @@ class WorkItemService:
         user_department_ids: list[uuid.UUID],
         subordinate_user_ids: set[uuid.UUID] | None = None,
     ) -> WorkItem:
+        if (
+            payload.raci is not None
+            or payload.owner_id is not None
+            or payload.owner_name is not None
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=(
+                    "RACI and owner assignments cannot be changed via generic PATCH; "
+                    "use PUT /work_items/{id}/raci"
+                ),
+            )
+
         item = WorkItemService.get_work_item(
             session=session,
             work_item_id=work_item_id,
@@ -228,7 +482,7 @@ class WorkItemService:
             subordinate_user_ids=subordinate_user_ids,
         )
 
-        now = datetime.now(timezone.utc)
+        now = utcnow()
         prev_status = item.status
         prev_progress = item.progress_percent
 
@@ -238,18 +492,12 @@ class WorkItemService:
             item.description = payload.description
         if payload.priority is not None:
             item.priority = payload.priority
-        if payload.owner_id is not None:
-            item.owner_id = payload.owner_id
-        if payload.owner_name is not None:
-            item.owner_name = payload.owner_name
         if payload.department_id is not None:
             item.department_id = payload.department_id
         if payload.due_at is not None:
             item.due_at = payload.due_at
         if payload.progress_percent is not None:
             item.progress_percent = payload.progress_percent
-        if payload.raci is not None:
-            item.raci = payload.raci
         if payload.edc is not None:
             item.edc = payload.edc
 
@@ -275,7 +523,11 @@ class WorkItemService:
             work_item_id=item.id,
             author_id=current_user.id,
             author_name=getattr(current_user, "full_name", "User"),
-            activity_type="PROGRESS_UPDATE" if payload.progress_percent != prev_progress else "STATUS_CHANGE",
+            activity_type=(
+                "PROGRESS_UPDATE"
+                if payload.progress_percent != prev_progress
+                else "STATUS_CHANGE"
+            ),
             note=payload.update_note or f"Updated status to {item.status}",
             previous_status=prev_status,
             new_status=item.status,
@@ -399,7 +651,9 @@ class WorkItemService:
         """Resolve an escalation assigned to the current user and unblock the associated task."""
         escalation = session.get(WorkItemEscalation, escalation_id)
         if not escalation or escalation.organization_id != current_user.organization_id:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Escalation not found")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Escalation not found"
+            )
 
         if escalation.escalated_to_id != current_user.id:
             raise HTTPException(

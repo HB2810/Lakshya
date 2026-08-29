@@ -119,10 +119,10 @@ class GrantExtensionRequest(BaseModel):
 
 class ReassignRaciRequest(BaseModel):
     work_item_id: uuid.UUID
-    responsible_id: uuid.UUID | None = None
-    responsible_name: str
-    accountable_id: uuid.UUID | None = None
-    accountable_name: str
+    responsible_id: uuid.UUID
+    responsible_name: str | None = None
+    accountable_id: uuid.UUID
+    accountable_name: str | None = None
     rationale: str = Field(..., min_length=3)
     expected_version: int | None = None
 

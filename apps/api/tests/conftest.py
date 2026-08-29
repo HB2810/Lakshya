@@ -312,6 +312,19 @@ class ApiClient:
             extra["If-Match"] = etag
         return self.raw.patch(url, headers=self._unsafe_headers(extra), **kwargs)
 
+    def put(
+        self,
+        url: str,
+        *,
+        etag: str | None = None,
+        headers: dict[str, str] | None = None,
+        **kwargs: Any,
+    ) -> Any:
+        extra = dict(headers or {})
+        if etag is not None:
+            extra["If-Match"] = etag
+        return self.raw.put(url, headers=self._unsafe_headers(extra), **kwargs)
+
     def delete(self, url: str, *, headers: dict[str, str] | None = None, **kwargs: Any) -> Any:
         return self.raw.request("DELETE", url, headers=self._unsafe_headers(headers), **kwargs)
 

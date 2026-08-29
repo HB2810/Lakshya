@@ -108,6 +108,9 @@ ROLE_ASSIGN = "role.assign"
 AUDIT_READ = "audit.read"
 AUDIT_EXPORT = "audit.export"
 
+RACI_READ = "raci.read"
+RACI_MANAGE = "raci.manage"
+
 
 PERMISSION_CATALOG: tuple[PermissionDefinition, ...] = (
     PermissionDefinition(
@@ -214,6 +217,18 @@ PERMISSION_CATALOG: tuple[PermissionDefinition, ...] = (
             "Export audit events. Catalog entry only in Phase 2: export approval, "
             "delivery and retention are REQUIRES BUSINESS DECISION."
         ),
+    ),
+    PermissionDefinition(
+        key=RACI_READ,
+        resource="raci",
+        action="read",
+        description="Read the RACI assignments on a work item already visible to the user.",
+    ),
+    PermissionDefinition(
+        key=RACI_MANAGE,
+        resource="raci",
+        action="manage",
+        description="Atomically replace RACI assignments within the granted organization or department scope.",
     ),
     PermissionDefinition(
         key="meetings.view",

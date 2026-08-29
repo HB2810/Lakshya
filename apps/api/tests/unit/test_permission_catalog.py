@@ -77,14 +77,17 @@ class TestPermissionKeys:
         """
         documented_catalog_only = {
             "audit.read", "audit.export",
-            "meetings.view", "meetings.create", "meetings.update", "meetings.start", "meetings.complete",
-            "meetings.cancel", "meetings.manage_participants", "meetings.manage_agenda", "meetings.facilitate",
+            "raci.read",
+            "meetings.view", "meetings.create", "meetings.update", "meetings.start",
+            "meetings.complete", "meetings.cancel", "meetings.manage_participants",
+            "meetings.manage_agenda", "meetings.facilitate",
             "goals.view", "goals.propose", "goals.create", "goals.approve",
             "priorities.view", "priorities.propose", "priorities.approve",
             "milestones.view", "milestones.update_assigned",
             "kpis.view", "kpis.create", "kpis.record_assigned_value",
             "oo.view", "oo.create", "oo.update_assigned",
-            "calendar.view", "calendar.manage_own_connections", "calendar.manage_organization_integrations",
+            "calendar.view", "calendar.manage_own_connections",
+            "calendar.manage_organization_integrations",
         }
         sources = "\n".join(
             path.read_text(encoding="utf-8")
@@ -103,7 +106,6 @@ class TestPermissionKeys:
             "commitment.",
             "decision.",
             "objective.",
-            "raci.",
             "dependency.",
             "stuck.",
             "escalation.",

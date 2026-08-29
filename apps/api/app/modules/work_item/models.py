@@ -11,7 +11,6 @@ import uuid
 from datetime import datetime
 from typing import Any
 
-
 from sqlalchemy import (
     CheckConstraint,
     ForeignKey,
@@ -55,7 +54,9 @@ class WorkItem(Base, TimestampMixin, VersionMixin):
         CheckConstraint(f"status IN ({_STATUSES_SQL})", name="status_allowed"),
         CheckConstraint(f"priority IN ({_PRIORITIES_SQL})", name="priority_allowed"),
         CheckConstraint("length(btrim(title)) > 0", name="title_not_blank"),
-        CheckConstraint("progress_percent >= 0 AND progress_percent <= 100", name="progress_range"),
+        CheckConstraint(
+            "progress_percent >= 0 AND progress_percent <= 100", name="progress_range"
+        ),
         Index("ix_work_items_organization_id_owner_id", "organization_id", "owner_id"),
         Index("ix_work_items_organization_id_status", "organization_id", "status"),
         Index("ix_work_items_organization_id_due_at", "organization_id", "due_at"),
@@ -86,19 +87,22 @@ class WorkItem(Base, TimestampMixin, VersionMixin):
 
     due_at: Mapped[datetime | None] = mapped_column(UTC_TIMESTAMP, nullable=True)
     completed_at: Mapped[datetime | None] = mapped_column(UTC_TIMESTAMP, nullable=True)
-    progress_percent: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text("0"))
+    progress_percent: Mapped[int] = mapped_column(
+        Integer, nullable=False, server_default=text("0")
+    )
 
     blocked_at: Mapped[datetime | None] = mapped_column(UTC_TIMESTAMP, nullable=True)
     blocked_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
     blocker_details: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
-
 
     # RACI, EDC, Dependencies, Escalations stored as structured metadata
     raci: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
     edc: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
 
     origin_meeting_id: Mapped[uuid.UUID | None] = mapped_column(UUID_PK, nullable=True)
-    source_type: Mapped[str] = mapped_column(String(64), nullable=False, server_default=text("'MANUAL'"))
+    source_type: Mapped[str] = mapped_column(
+        String(64), nullable=False, server_default=text("'MANUAL'")
+    )
     source_title: Mapped[str | None] = mapped_column(String(300), nullable=True)
 
 
@@ -140,12 +144,14 @@ class WorkItemEscalation(Base, TimestampMixin):
     work_item_id: Mapped[uuid.UUID] = mapped_column(
         UUID_PK, ForeignKey("work_items.id", ondelete="CASCADE"), nullable=False
     )
-    level: Mapped[str] = mapped_column(String(64), nullable=False)  # DIRECT_LEADER, DEPARTMENT_HEAD, MANAGING_DIRECTOR
+    level: Mapped[str] = mapped_column(String(64), nullable=False)
     reason: Mapped[str] = mapped_column(Text, nullable=False)
     escalated_by_id: Mapped[uuid.UUID] = mapped_column(UUID_PK, nullable=False)
     escalated_by_name: Mapped[str] = mapped_column(String(200), nullable=False)
     escalated_to_id: Mapped[uuid.UUID] = mapped_column(UUID_PK, nullable=False)
     escalated_to_name: Mapped[str] = mapped_column(String(200), nullable=False)
-    status: Mapped[str] = mapped_column(String(32), nullable=False, server_default=text("'PENDING'"))
+    status: Mapped[str] = mapped_column(
+        String(32), nullable=False, server_default=text("'PENDING'")
+    )
     resolution_note: Mapped[str | None] = mapped_column(Text, nullable=True)
     resolved_at: Mapped[datetime | None] = mapped_column(UTC_TIMESTAMP, nullable=True)

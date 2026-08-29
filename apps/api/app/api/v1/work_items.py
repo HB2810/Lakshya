@@ -8,14 +8,16 @@ from __future__ import annotations
 import uuid
 
 from fastapi import APIRouter, Depends, Query, status
+from sqlalchemy import desc, select
 from sqlalchemy.orm import Session
 
 from app.api.deps import CurrentContext, RequestContext, get_db
-from app.modules.work_item.models import WorkItem
+from app.modules.work_item.models import WorkItem, WorkItemActivity
 from app.modules.work_item.schemas import (
     EscalateRequest,
     EscalationResolveRequest,
     EscalationResponse,
+    RACIReplaceRequest,
     WorkItemActivityResponse,
     WorkItemCreate,
     WorkItemResponse,
@@ -26,9 +28,32 @@ from app.modules.work_item.service import WorkItemService
 router = APIRouter(prefix="/work_items", tags=["work_items"])
 
 
-def _to_response(item: WorkItem) -> WorkItemResponse:
+def _to_response(item: WorkItem, session: Session | None = None) -> WorkItemResponse:
     activities: list[WorkItemActivityResponse] = []
-    # If activities are loaded/queried
+    if session is not None:
+        act_rows = list(
+            session.scalars(
+                select(WorkItemActivity)
+                .where(WorkItemActivity.work_item_id == item.id)
+                .order_by(desc(WorkItemActivity.created_at))
+            ).all()
+        )
+        activities = [
+            WorkItemActivityResponse(
+                id=a.id,
+                work_item_id=a.work_item_id,
+                author_id=a.author_id,
+                author_name=a.author_name,
+                activity_type=a.activity_type,
+                note=a.note,
+                previous_status=a.previous_status,
+                new_status=a.new_status,
+                progress_percent=a.progress_percent,
+                created_at=a.created_at,
+            )
+            for a in act_rows
+        ]
+
     return WorkItemResponse(
         id=item.id,
         organization_id=item.organization_id,
@@ -81,7 +106,7 @@ def list_work_items(
         owner_id=owner_id,
         department_id=department_id,
     )
-    return [_to_response(item) for item in items]
+    return [_to_response(item, session=db) for item in items]
 
 
 @router.post("", response_model=WorkItemResponse, status_code=status.HTTP_201_CREATED)
@@ -95,8 +120,9 @@ def create_work_item(
         session=db,
         payload=payload,
         current_user=ctx.authenticated.user,
+        auth_ctx=ctx.authorization,
     )
-    return _to_response(item)
+    return _to_response(item, session=db)
 
 
 @router.get("/{work_item_id}", response_model=WorkItemResponse)
@@ -116,7 +142,25 @@ def get_work_item(
         user_department_ids=ctx.authorization.department_ids,
         subordinate_user_ids=subordinates,
     )
-    return _to_response(item)
+    return _to_response(item, session=db)
+
+
+@router.put("/{work_item_id}/raci", response_model=WorkItemResponse)
+def replace_raci(
+    work_item_id: uuid.UUID,
+    payload: RACIReplaceRequest,
+    db: Session = Depends(get_db),
+    ctx: RequestContext = CurrentContext,
+) -> WorkItemResponse:
+    """Atomically replace RACI assignments and synchronize Responsible with WorkItem owner."""
+    item = WorkItemService.replace_raci(
+        session=db,
+        work_item_id=work_item_id,
+        payload=payload,
+        current_user=ctx.authenticated.user,
+        auth_ctx=ctx.authorization,
+    )
+    return _to_response(item, session=db)
 
 
 @router.patch("/{work_item_id}", response_model=WorkItemResponse)
@@ -126,7 +170,7 @@ def update_work_item(
     db: Session = Depends(get_db),
     ctx: RequestContext = CurrentContext,
 ) -> WorkItemResponse:
-    """Update work item status, progress, blockers, or metadata with server-side authorization check."""
+    """Update work item status, progress, blockers, or metadata with server auth check."""
     effective_roles = list(ctx.authorization.effective_roles)
     subordinates = set(ctx.authorization.subordinate_user_ids)
     item = WorkItemService.update_work_item(
@@ -138,7 +182,7 @@ def update_work_item(
         user_department_ids=ctx.authorization.department_ids,
         subordinate_user_ids=subordinates,
     )
-    return _to_response(item)
+    return _to_response(item, session=db)
 
 
 @router.post("/{work_item_id}/escalate", status_code=status.HTTP_200_OK)
@@ -248,6 +292,6 @@ def verify_work_item(
         subordinate_user_ids=subordinates,
         verification_note=note,
     )
-    return _to_response(item)
+    return _to_response(item, session=db)
 
 

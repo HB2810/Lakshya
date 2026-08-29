@@ -8,7 +8,7 @@ from app.core.security import PASSWORD_ALGORITHM, PasswordHasherService
 from app.db.session import build_engine, build_session_factory
 from app.modules.identity.models import CREDENTIAL_KIND_PASSWORD, Credential, User
 from app.modules.access.models import Role, RoleAssignment, Permission, RolePermission
-from app.modules.access.catalog import PERMISSION_CATALOG
+from app.modules.access.catalog import PERMISSION_CATALOG, RACI_MANAGE
 from app.modules.organization.models import Organization, Department, DepartmentMembership
 from app.modules.work_item.models import WorkItem
 from app.modules.strategy.models import QuarterlyPriority
@@ -90,7 +90,8 @@ def seed_database() -> None:
         # Grant permissions to roles
         all_perms = list(permissions_in_db.values())
         for perm in all_perms:
-            for rkey in ("master", "md", "local_bootstrap_admin"):
+            role_keys = ("local_bootstrap_admin",) if perm.key == RACI_MANAGE else ("master", "md", "local_bootstrap_admin")
+            for rkey in role_keys:
                 role_obj = roles_map[rkey]
                 existing_rp = session.scalar(
                     select(RolePermission).where(RolePermission.role_id == role_obj.id, RolePermission.permission_id == perm.id)

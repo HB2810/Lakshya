@@ -13,6 +13,7 @@ import {
   WorkItem,
   WorkItemListResponse,
   WorkItemPatchPayload,
+  WorkItemRACI,
 } from '../../types/workItem';
 
 /**
@@ -69,6 +70,34 @@ export function isBackendOffline(): boolean {
 
 export function markBackendOffline(seconds = 30): void {
   backendOfflineUntil = Date.now() + seconds * 1000;
+}
+
+function shouldUseLocalFallback(error: unknown): boolean {
+  const status = (error as { status?: number } | null)?.status;
+  return status === undefined || status >= 500;
+}
+
+function mapBackendWorkItem(item: any): WorkItem {
+  return {
+    ...item,
+    progressPercent: item.progressPercent ?? item.progress_percent ?? 0,
+    blocker_details: item.blocker_details ? {
+      ...item.blocker_details,
+      needDescription: item.blocker_details.needDescription ?? item.blocker_details.need_description,
+      helpedByPersonOrDept: item.blocker_details.helpedByPersonOrDept ?? item.blocker_details.helped_by_person_or_dept,
+      reportedAt: item.blocker_details.reportedAt ?? item.blocker_details.reported_at,
+    } : item.blocker_details,
+    activity_history: (item.activity_history || []).map((activity: any) => ({
+      ...activity,
+      timestamp: activity.timestamp ?? activity.created_at,
+      authorId: activity.authorId ?? activity.author_id,
+      authorName: activity.authorName ?? activity.author_name,
+      type: activity.type ?? activity.activity_type,
+      previousStatus: activity.previousStatus ?? activity.previous_status,
+      newStatus: activity.newStatus ?? activity.new_status,
+      progressPercent: activity.progressPercent ?? activity.progress_percent,
+    })),
+  } as WorkItem;
 }
 
 const API_BASE_URL = typeof window !== 'undefined' ? '/api/v1' : (process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000') + '/api/v1';
@@ -363,20 +392,41 @@ export const apiClient = {
 
     async approve(payload: ApprovePlanPayload): Promise<WorkItemListResponse> {
       try {
-        return await apiFetch<WorkItemListResponse>('/work-items/approve', {
-          method: 'POST',
-          body: JSON.stringify(payload),
-        });
+        const created: WorkItem[] = [];
+        for (const item of payload.items || []) {
+          const result = await apiFetch<any>('/work_items', {
+            method: 'POST',
+            body: JSON.stringify({
+              title: item.title,
+              description: item.description || payload.description || payload.title,
+              priority: item.priority || payload.priority || 'medium',
+              owner_id: item.owner_id || item.suggested_owner_id || payload.owner_id,
+              owner_name: item.owner_name,
+              due_at: item.due_at || payload.due_at,
+              origin_meeting_id: payload.origin_meeting_id,
+              source_type: payload.source_type || 'MANUAL',
+              source_title: payload.title,
+              raci: item.raci,
+            }),
+          });
+          created.push(mapBackendWorkItem(result));
+        }
+        return { items: created, total: created.length };
       } catch (err) {
+        if (!shouldUseLocalFallback(err)) throw err;
         console.warn('Backend work-items approve endpoint unavailable, saving to local store:', err);
         const created: WorkItem[] = [];
         (payload.items || []).forEach(item => {
           const newItem = workItemStore.createWorkItem({
             title: item.title,
-            description: payload.title || item.title,
+            description: item.description || payload.description || payload.title || item.title,
             priority: item.priority || payload.priority || 'medium',
-            owner_id: payload.owner_id || 'usr-stav-101',
-            due_at: payload.due_at,
+            owner_id: item.owner_id || item.suggested_owner_id || payload.owner_id || 'usr-stav-101',
+            owner_name: item.owner_name,
+            due_at: item.due_at || payload.due_at,
+            source_type: payload.source_type || 'MANUAL',
+            source_title: payload.title,
+            raci: item.raci,
           });
           created.push(newItem);
         });
@@ -391,8 +441,11 @@ export const apiClient = {
         if (filters?.status) queryParams.append('status', filters.status);
         if (filters?.parent_id) queryParams.append('parent_id', filters.parent_id);
         const query = queryParams.toString() ? `?${queryParams.toString()}` : '';
-        return await apiFetch<WorkItemListResponse>(`/work-items${query}`, { method: 'GET' });
+        const items = await apiFetch<any[]>(`/work_items${query}`, { method: 'GET' });
+        const mapped = items.map(mapBackendWorkItem);
+        return { items: mapped, total: mapped.length };
       } catch (err) {
+        if (!shouldUseLocalFallback(err)) throw err;
         console.warn('Backend work-items list unavailable, returning local store work items:', err);
         const items = workItemStore.getWorkItems(filters);
         return { items, total: items.length };
@@ -401,11 +454,13 @@ export const apiClient = {
 
     async create(item: Partial<WorkItem>): Promise<WorkItem> {
       try {
-        return await apiFetch<WorkItem>('/work-items', {
+        const result = await apiFetch<any>('/work_items', {
           method: 'POST',
           body: JSON.stringify(item),
         });
+        return mapBackendWorkItem(result);
       } catch (err) {
+        if (!shouldUseLocalFallback(err)) throw err;
         console.warn('Backend work-items create endpoint unavailable, creating in local store:', err);
         return workItemStore.createWorkItem(item, item.owner_name || 'Assigned Staff');
       }
@@ -413,11 +468,13 @@ export const apiClient = {
 
     async patch(id: string, patch: WorkItemPatchPayload): Promise<WorkItem> {
       try {
-        return await apiFetch<WorkItem>(`/work-items/${id}`, {
+        const result = await apiFetch<any>(`/work_items/${id}`, {
           method: 'PATCH',
           body: JSON.stringify(patch),
         });
+        return mapBackendWorkItem(result);
       } catch (err) {
+        if (!shouldUseLocalFallback(err)) throw err;
         console.warn('Backend work-items patch unavailable, updating local store:', err);
         if (patch.status) {
           return workItemStore.updateStatus(id, patch.status);
@@ -425,19 +482,36 @@ export const apiClient = {
         if (patch.progressPercent !== undefined) {
           return workItemStore.updateProgress(id, patch.progressPercent);
         }
-        const item = workItemStore.getWorkItemById(id);
-        if (!item) throw new Error('Work item not found');
-        return item;
+        return workItemStore.patchWorkItem(id, patch);
+      }
+    },
+
+    async replaceRaci(id: string, raci: WorkItemRACI, reason: string): Promise<WorkItem> {
+      try {
+        const result = await apiFetch<any>(`/work_items/${id}/raci`, {
+          method: 'PUT',
+          body: JSON.stringify({ ...raci, reason }),
+        });
+        return mapBackendWorkItem(result);
+      } catch (err) {
+        if (!shouldUseLocalFallback(err)) throw err;
+        console.warn('Backend RACI endpoint unavailable, updating local work item:', err);
+        return workItemStore.patchWorkItem(id, {
+          raci,
+          update_note: `RACI changed. Reason: ${reason}`,
+        });
       }
     },
 
     async verify(id: string, note?: string): Promise<WorkItem> {
       try {
         const query = note ? `?note=${encodeURIComponent(note)}` : '';
-        return await apiFetch<WorkItem>(`/work-items/${id}/verify${query}`, {
+        const result = await apiFetch<any>(`/work_items/${id}/verify${query}`, {
           method: 'POST',
         });
+        return mapBackendWorkItem(result);
       } catch (err) {
+        if (!shouldUseLocalFallback(err)) throw err;
         console.warn('Backend verify endpoint unavailable, updating locally:', err);
         return workItemStore.updateStatus(id, 'completed', 'Leader', note);
       }
@@ -446,7 +520,7 @@ export const apiClient = {
     escalations: {
       async inbox(): Promise<any[]> {
         try {
-          return await apiFetch<any[]>('/work-items/escalations/inbox', { method: 'GET' });
+          return await apiFetch<any[]>('/work_items/escalations/inbox', { method: 'GET' });
         } catch (err) {
           console.warn('Backend escalations inbox unavailable, returning empty inbox:', err);
           return [];
@@ -454,7 +528,7 @@ export const apiClient = {
       },
       async resolve(id: string, payload: { resolution_note?: string }): Promise<any> {
         try {
-          return await apiFetch<any>(`/work-items/escalations/${id}/resolve`, {
+          return await apiFetch<any>(`/work_items/escalations/${id}/resolve`, {
             method: 'POST',
             body: JSON.stringify(payload),
           });
@@ -741,7 +815,16 @@ export const apiClient = {
     async getUsers() {
       try {
         const data = await apiFetch<{items: any[]}>('/users', { method: 'GET' });
-        return data.items;
+        return data.items.map((item) => ({
+          id: item.id,
+          name: item.name || item.full_name || item.email,
+          email: item.email,
+          role: item.role || 'EMPLOYEE',
+          roleTitle: item.roleTitle || item.position_title || 'Stavya team member',
+          departmentId: item.departmentId || item.department_id || '',
+          departmentName: item.departmentName || 'Stavya Spine Hospital',
+          organizationId: item.organizationId || item.organization_id,
+        }));
       } catch (err) {
         console.warn('Users API offline, using verified Stavya hospital personnel directory:', err);
         return getAllVerifiedHospitalUsers();

@@ -17,19 +17,22 @@ import {
   ShieldAlert,
 } from 'lucide-react';
 import { WorkItem, WorkItemPriority, WorkItemStatus } from '../../../types/workItem';
+import { User } from '../../../types/auth';
 import { apiClient } from '../../../lib/api/client';
 import { useAuth } from '../../../lib/auth/AuthContext';
 import { TaskDetailDrawer } from '../../../components/work/TaskDetailDrawer';
-import { STAVYA_STAFF_DATABASE } from '../../../lib/data/stavyaHospitalOrgData';
+import { evaluateRaciGovernance } from '../../../lib/raci/governance';
+
+type WorkFilter = 'all' | 'today' | 'upcoming' | 'overdue' | 'blocked' | 'raci_attention' | 'completed';
 
 export default function ExecutionPage() {
-  const { user, can } = useAuth();
+  const { user } = useAuth();
   const [workItems, setWorkItems] = useState<WorkItem[]>([]);
   const [selectedTask, setSelectedTask] = useState<WorkItem | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
   // Filter & Search State
-  const [activeFilter, setActiveFilter] = useState<'all' | 'today' | 'upcoming' | 'overdue' | 'blocked' | 'completed'>('all');
+  const [activeFilter, setActiveFilter] = useState<WorkFilter>('all');
   const [searchQuery, setSearchQuery] = useState('');
 
   // Quick Task Modal/Drawer or Inline State
@@ -39,8 +42,8 @@ export default function ExecutionPage() {
   const [quickDue, setQuickDue] = useState('Today');
   const [quickResponsibleId, setQuickResponsibleId] = useState<string>('');
   const [quickAccountableId, setQuickAccountableId] = useState<string>('');
-
-  const staffList = Object.values(STAVYA_STAFF_DATABASE);
+  const [quickError, setQuickError] = useState<string | null>(null);
+  const [staffList, setStaffList] = useState<User[]>([]);
 
   // Data Fetching State
   const [isLoading, setIsLoading] = useState(true);
@@ -67,16 +70,46 @@ export default function ExecutionPage() {
     refreshWork();
   }, [refreshWork]);
 
+  useEffect(() => {
+    let active = true;
+    apiClient.organization.getUsers()
+      .then((users) => {
+        if (active) setStaffList(users as User[]);
+      })
+      .catch((err) => {
+        if (active) setQuickError(err instanceof Error ? err.message : 'Team directory could not be loaded.');
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
   const handleQuickAdd = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!quickTitle.trim()) return;
+    setQuickError(null);
 
-    let dueIso = new Date(Date.now() + 86400000).toISOString();
-    if (quickDue === 'Today') dueIso = '2026-08-28T18:00:00Z';
-    if (quickDue === 'Tomorrow') dueIso = '2026-08-29T18:00:00Z';
-    if (quickDue === 'Next Week') dueIso = '2026-09-04T18:00:00Z';
+    const responsibleId = quickResponsibleId || user.id;
+    if (!responsibleId) {
+      setQuickError('Select the person responsible for executing this work.');
+      return;
+    }
+    if (!quickAccountableId) {
+      setQuickError('Select exactly one accountable authority before creating the work item.');
+      return;
+    }
+    if (responsibleId === quickAccountableId) {
+      setQuickError('Responsible and Accountable must be different people.');
+      return;
+    }
 
-    const respStaff = staffList.find(s => s.id === quickResponsibleId);
+    const dueDate = new Date();
+    const dueOffset = quickDue === 'Today' ? 0 : quickDue === 'Tomorrow' ? 1 : 7;
+    dueDate.setDate(dueDate.getDate() + dueOffset);
+    dueDate.setHours(18, 0, 0, 0);
+    const dueIso = dueDate.toISOString();
+
+    const respStaff = staffList.find(s => s.id === responsibleId);
     const acctStaff = staffList.find(s => s.id === quickAccountableId);
 
     try {
@@ -85,22 +118,24 @@ export default function ExecutionPage() {
           client_id: `plan-${Date.now()}`,
           title: quickTitle.trim(),
           priority: quickPriority,
-          owner_id: quickResponsibleId || user.id || 'usr-stav-101',
+          owner_id: responsibleId,
           owner_name: respStaff?.name || user.name,
           raci: {
-            responsible_id: quickResponsibleId || user.id || 'usr-stav-101',
+            responsible_id: responsibleId,
             responsible_name: respStaff?.name || user.name,
-            accountable_id: quickAccountableId || '',
+            accountable_id: quickAccountableId,
             accountable_name: acctStaff?.name || '',
             consulted_ids: [],
             consulted_names: [],
             informed_ids: [],
             informed_names: [],
+            consultation_expectation: null,
+            information_cadence: null,
           },
         }],
         title: 'Institutional Work Item',
         priority: quickPriority,
-        owner_id: quickResponsibleId || user.id || 'usr-stav-101',
+        owner_id: responsibleId,
         due_at: dueIso,
       });
 
@@ -110,7 +145,7 @@ export default function ExecutionPage() {
       setIsQuickAddOpen(false);
       refreshWork();
     } catch (err) {
-      console.error('Failed to create task:', err);
+      setQuickError(err instanceof Error ? err.message : 'The work item could not be created.');
     }
   };
 
@@ -120,7 +155,7 @@ export default function ExecutionPage() {
   };
 
   // Filter definitions
-  const todayStr = '2026-08-28';
+  const todayStr = new Date().toISOString().substring(0, 10);
 
   const filterCounts = {
     all: workItems.length,
@@ -128,6 +163,7 @@ export default function ExecutionPage() {
     upcoming: workItems.filter(w => w.status !== 'completed' && w.due_at && w.due_at.substring(0, 10) > todayStr).length,
     overdue: workItems.filter(w => w.status !== 'completed' && w.due_at && w.due_at.substring(0, 10) < todayStr).length,
     blocked: workItems.filter(w => w.status === 'blocked' || w.status === 'stuck').length,
+    raci_attention: workItems.filter(w => evaluateRaciGovernance(w.raci, w).needsAttention).length,
     completed: workItems.filter(w => w.status === 'completed').length,
   };
 
@@ -153,6 +189,9 @@ export default function ExecutionPage() {
     }
     if (activeFilter === 'blocked') {
       return item.status === 'blocked' || item.status === 'stuck';
+    }
+    if (activeFilter === 'raci_attention') {
+      return evaluateRaciGovernance(item.raci, item).needsAttention;
     }
     if (activeFilter === 'completed') {
       return item.status === 'completed';
@@ -303,12 +342,13 @@ export default function ExecutionPage() {
               <select
                 value={quickResponsibleId}
                 onChange={e => setQuickResponsibleId(e.target.value)}
-                className="flex-1 w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl text-slate-700 focus:outline-none"
+                aria-label="Responsible executor"
+                className="flex-1 w-full min-h-[44px] px-3 py-2 text-base sm:text-xs bg-slate-50 border border-slate-200 rounded-xl text-slate-700 focus:outline-none"
               >
                 <option value="">Responsible (R): Default (You)</option>
-                {staffList.map(s => (
+                {staffList.filter(s => s.id !== quickAccountableId).map(s => (
                   <option key={s.id} value={s.id}>
-                    R: {s.name} ({s.unit})
+                    R: {s.name} ({s.positionTitle || s.departmentName || s.roleTitle})
                   </option>
                 ))}
               </select>
@@ -316,12 +356,13 @@ export default function ExecutionPage() {
               <select
                 value={quickAccountableId}
                 onChange={e => setQuickAccountableId(e.target.value)}
-                className="flex-1 w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl text-slate-700 focus:outline-none"
+                aria-label="Accountable authority"
+                className="flex-1 w-full min-h-[44px] px-3 py-2 text-base sm:text-xs bg-slate-50 border border-slate-200 rounded-xl text-slate-700 focus:outline-none"
               >
                 <option value="">Accountable (A): Select Authority</option>
-                {staffList.map(s => (
+                {staffList.filter(s => s.id !== (quickResponsibleId || user.id)).map(s => (
                   <option key={s.id} value={s.id}>
-                    A: {s.name} ({s.unit})
+                    A: {s.name} ({s.positionTitle || s.departmentName || s.roleTitle})
                   </option>
                 ))}
               </select>
@@ -329,11 +370,19 @@ export default function ExecutionPage() {
 
             <button
               type="submit"
-              className="w-full sm:w-auto px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-xs transition-colors cursor-pointer"
+              className="w-full sm:w-auto min-h-[44px] px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-xs transition-colors cursor-pointer"
             >
               Create Item
             </button>
           </div>
+          <p className="text-[11px] font-medium leading-5 text-slate-500">
+            Add Consulted and Informed participants from the work-item drawer. Their consultation requirement and update cadence must be recorded there.
+          </p>
+          {quickError && (
+            <p className="rounded-xl border border-red-200 bg-red-50 p-3 text-xs font-semibold text-red-700" role="alert">
+              {quickError}
+            </p>
+          )}
         </form>
       )}
 
@@ -348,6 +397,7 @@ export default function ExecutionPage() {
               { id: 'upcoming', label: 'Upcoming', count: filterCounts.upcoming },
               { id: 'overdue', label: 'Overdue', count: filterCounts.overdue },
               { id: 'blocked', label: 'Blocked', count: filterCounts.blocked },
+              { id: 'raci_attention', label: 'RACI attention', count: filterCounts.raci_attention },
               { id: 'completed', label: 'Completed', count: filterCounts.completed },
             ] as const
           ).map(tab => (
@@ -398,7 +448,9 @@ export default function ExecutionPage() {
         </div>
       ) : (
         <div className="space-y-3">
-          {displayedItems.map(item => (
+          {displayedItems.map(item => {
+            const raciHealth = evaluateRaciGovernance(item.raci, item);
+            return (
             <div
               key={item.id}
               onClick={() => openTask(item)}
@@ -420,6 +472,9 @@ export default function ExecutionPage() {
                     )}`}
                   >
                     {item.priority}
+                  </span>
+                  <span className={`text-[9px] font-bold px-2 py-0.5 rounded uppercase tracking-wider border ${raciHealth.ready ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-amber-50 text-amber-800 border-amber-200'}`}>
+                    {raciHealth.ready ? 'RACI ready' : 'RACI gap'}
                   </span>
                   {item.source_title && (
                     <span className="text-[10px] text-slate-500 font-medium bg-slate-50 px-2 py-0.5 rounded border border-slate-200 flex items-center gap-1 truncate max-w-xs">
@@ -482,7 +537,8 @@ export default function ExecutionPage() {
                 </button>
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
