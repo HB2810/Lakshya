@@ -618,9 +618,9 @@ export const DynamicHospitalOrgChart: React.FC<DynamicHospitalOrgChartProps> = (
         className="bg-white border border-slate-200/90 rounded-2xl p-4.5 shadow-2xs hover:shadow-sm hover:border-slate-300 transition-all flex flex-col justify-between"
       >
         <div>
-          <div className="flex items-center justify-between gap-2 pb-3 border-b border-slate-100">
-            <div className="min-w-0">
-              <h4 className="text-xs font-black text-slate-900 truncate tracking-tight">{unitName}</h4>
+          <div className="flex items-start justify-between gap-2 pb-3 border-b border-slate-100 min-h-[52px]">
+            <div className="min-w-0 flex-1">
+              <h4 className="text-xs font-black text-slate-900 leading-snug break-words tracking-tight">{unitName}</h4>
               {headName && (
                 <button
                   type="button"
@@ -628,13 +628,13 @@ export const DynamicHospitalOrgChart: React.FC<DynamicHospitalOrgChartProps> = (
                     const headStaff = staffList.find((s) => s.name === headName);
                     if (headStaff) openStaffDetail(headStaff);
                   }}
-                  className="text-[11px] text-blue-600 font-semibold truncate flex items-center gap-1 mt-0.5 hover:underline cursor-pointer text-left"
+                  className="text-[11px] text-blue-600 font-semibold leading-snug hover:underline cursor-pointer text-left block mt-1"
                 >
-                  <span>Lead: {headName}</span>
+                  <span className="block break-words">Lead: {headName}</span>
                 </button>
               )}
             </div>
-            <div className="flex items-center gap-1.5 shrink-0">
+            <div className="flex items-center gap-1.5 shrink-0 pt-0.5">
               {activeUnitTasks > 0 && (
                 <span className="text-[10px] font-bold px-2 py-0.5 bg-blue-50 text-blue-700 border border-blue-100 rounded-lg">
                   {activeUnitTasks} Active
@@ -1029,18 +1029,18 @@ export const DynamicHospitalOrgChart: React.FC<DynamicHospitalOrgChartProps> = (
                       onClick={() => matched && openStaffDetail(matched)}
                       className={`bg-white border ${
                         isMD ? 'border-blue-500 ring-2 ring-blue-100' : 'border-slate-200'
-                      } rounded-2xl p-5 shadow-2xs hover:shadow-md transition-all cursor-pointer flex flex-col justify-between space-y-3 min-h-[145px]`}
+                      } rounded-2xl p-5 shadow-2xs hover:shadow-md transition-all cursor-pointer flex flex-col justify-between space-y-4 min-h-[175px]`}
                     >
-                      <div className="space-y-2">
-                        <span className={`inline-block px-2.5 py-0.5 text-[9px] font-black rounded-md uppercase tracking-wider ${badgeStyle}`}>
+                      <div className="space-y-2.5">
+                        <span className={`inline-block px-2.5 py-1 text-[9px] font-black rounded-lg uppercase tracking-wider ${badgeStyle}`}>
                           {badgeText}
                         </span>
                         <div>
                           <h4 className="text-sm font-black text-slate-900 tracking-tight leading-snug">{gov.name}</h4>
-                          <p className="text-xs text-blue-700 font-bold mt-0.5">{gov.title}</p>
+                          <p className="text-xs text-blue-700 font-bold mt-1 leading-normal">{gov.title}</p>
                         </div>
                       </div>
-                      <p className="text-[11px] text-slate-500 font-medium border-t border-slate-100 pt-2">{gov.role}</p>
+                      <p className="text-[11px] text-slate-500 font-medium border-t border-slate-100 pt-2.5 leading-relaxed">{gov.role}</p>
                     </div>
                   );
                 })}
