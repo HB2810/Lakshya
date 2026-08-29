@@ -18,7 +18,8 @@ from sqlalchemy.orm import Session
 from app.core.clock import utcnow
 from app.core.errors import ResourceNotFoundError
 from app.modules.access.authorization import AuthorizationService
-from app.modules.audit.service import AuditActor, AuditRecorder, AuditSource
+from app.modules.audit.models import AuditSource
+from app.modules.audit.service import AuditActor, AuditRecorder
 from app.modules.identity.models import User
 from app.modules.strategy.models import AnnualGoal, QuarterlyPriority
 from app.modules.strategy.schemas import (

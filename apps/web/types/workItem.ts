@@ -28,6 +28,9 @@ export interface BlockerDetails {
   helpedByPersonOrDept?: string;
   urgency: 'URGENT' | 'HIGH' | 'MEDIUM';
   reportedAt: string;
+  requiredByDate?: string;
+  businessImpact?: string;
+  category?: 'VENDOR_DELAY' | 'DEPENDENCY' | 'APPROVAL_REQUIRED' | 'TECHNICAL' | 'RESOURCE_SHORTAGE' | 'OTHER';
 }
 
 export interface WorkItemRACI {

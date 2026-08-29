@@ -36,6 +36,7 @@ import { CanonicalOrgNode, OrgTreeResponse } from '../../../types/organization';
 import { WorkItemEscalationRecord } from '../../../types/workItem';
 import { DynamicHospitalOrgChart } from '../../../components/organization/DynamicHospitalOrgChart';
 import { ExecutiveStaffTracker } from '../../../components/leader/ExecutiveStaffTracker';
+import { NeedsMDAttentionView } from '../../../components/leader/NeedsMDAttentionView';
 
 export default function OverviewPage() {
   const { user } = useAuth();
@@ -317,6 +318,20 @@ export default function OverviewPage() {
           </Link>
         </div>
       </div>
+
+      {/* NEEDS MD ATTENTION COMMAND CENTER (FOR MD & LEADERSHIP) */}
+      {isLeader && (
+        <div className="space-y-4">
+          <NeedsMDAttentionView
+            onSelectItem={(item) => {
+              const matchedTask = workItems.find(w => w.id === item.entity_id);
+              if (matchedTask) {
+                openTaskDetail(matchedTask);
+              }
+            }}
+          />
+        </div>
+      )}
 
       {/* STRATEGIC 10-MILESTONE DELIVERY TRACKER (FOR MD & LEADERSHIP) */}
       {isLeader && activePriority && (

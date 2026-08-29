@@ -15,13 +15,13 @@ from app.modules.strategy.models import QuarterlyPriority
 from app.modules.strategy.service import DEFAULT_10_MILESTONE_TEMPLATES, StrategyService
 from app.modules.strategy.schemas import MilestoneStepSchema
 
-def seed_database():
+def seed_database() -> None:
     settings = get_settings()
     engine = build_engine(settings)
     SessionFactory = build_session_factory(engine)
     now = datetime.now(timezone.utc)
     hasher = PasswordHasherService(settings)
-    password_hash = hasher.hash_password("password123")
+    password_hash = hasher.hash("password123")
 
     with SessionFactory() as session:
         # 1. Organization
@@ -93,10 +93,10 @@ def seed_database():
             for rkey in ("master", "md", "local_bootstrap_admin"):
                 role_obj = roles_map[rkey]
                 existing_rp = session.scalar(
-                    select(RolePermission).where(RolePermission.role_id == role_obj.id, RolePermission.permission_key == perm.key)
+                    select(RolePermission).where(RolePermission.role_id == role_obj.id, RolePermission.permission_id == perm.id)
                 )
                 if not existing_rp:
-                    session.add(RolePermission(role_id=role_obj.id, permission_key=perm.key))
+                    session.add(RolePermission(role_id=role_obj.id, permission_id=perm.id))
         session.flush()
 
         # 4. Users to seed
@@ -180,6 +180,7 @@ def seed_database():
                     user_id=user.id,
                     department_id=dept.id,
                     is_primary=True,
+                    started_on=date(2026, 1, 1),
                 ))
             created_users[email] = user
 

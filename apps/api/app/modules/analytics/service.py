@@ -9,7 +9,7 @@ from __future__ import annotations
 import json
 import uuid
 from datetime import datetime, timezone
-from typing import Sequence
+from typing import Any, Sequence
 
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session

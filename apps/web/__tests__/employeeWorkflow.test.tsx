@@ -1,4 +1,10 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+Start evolving LAKSHYA now.Preserve.the six existing backend edits and thincoming commit state; do not pull, reset, rebase, commit, push, or accept / reject changes blindly.Read AGENTS.md and relevant docs first.
+
+Implement the first best -in -class increment: a real API - backed, role - gated “Needs MD Attention” cockpit for MD / MD Office.It must derive critical overdue work, unresolved high - impact blockers / stuck needs, decisions awaiting MD authority, evidence awaiting independent verification, at - risk milestones, and repeatedly deferred items.Show source, owner / accountable person, due date / age, impact, requested decision, evidence state, audit provenance, and a clear “why this is here”.
+
+Use explicit workflow states: reported complete or RAG status never equals VERIFIED / CLOSED.AI may suggest only and must not silently change ownership, deadline, priority, RACI, escalation, verification or closure.Enforce authorization server - side and client - side; ordinary employees must not see it.Use live services, visibly label synthetic / demo data, add loading / empty / error / unauthorized / partial states, preserve organization isolation, and add deterministic backend / frontend tests.No patient data, new PII, real credentials or external transmission.
+
+Run canonical backend tests / mypy and frontend tests / typecheck / lint / build; visually inspect desktop and mobile.Do not claim completion if anything is skipped or mock - only.Do not commit or push.Finish with exact files changed, gates / results, rendered evidence, remaining unverified items, preservation of pre - existing edits, restart needs and the recommended next increment.Begin inspection and implementation immediately; do not reply with a plan only.import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import React from 'react';
 import { AuthProvider } from '../lib/auth/AuthContext';

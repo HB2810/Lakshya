@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import uuid
 from dataclasses import dataclass
+from datetime import datetime
 from typing import Any
 
 from sqlalchemy.orm import Session
@@ -260,7 +261,7 @@ class AuditQueryService:
 
         results = []
         for item in items:
-            actor_name = users_map.get(item.actor_user_id, item.actor_label or "System")
+            actor_name = users_map.get(item.actor_user_id, item.actor_label or "System") if item.actor_user_id else (item.actor_label or "System")
             results.append({
                 "id": item.id,
                 "organization_id": item.organization_id,
