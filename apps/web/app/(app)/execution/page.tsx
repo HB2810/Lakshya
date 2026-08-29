@@ -20,6 +20,7 @@ import { WorkItem, WorkItemPriority, WorkItemStatus } from '../../../types/workI
 import { apiClient } from '../../../lib/api/client';
 import { useAuth } from '../../../lib/auth/AuthContext';
 import { TaskDetailDrawer } from '../../../components/work/TaskDetailDrawer';
+import { STAVYA_STAFF_DATABASE } from '../../../lib/data/stavyaHospitalOrgData';
 
 export default function ExecutionPage() {
   const { user, can } = useAuth();
@@ -36,6 +37,10 @@ export default function ExecutionPage() {
   const [quickTitle, setQuickTitle] = useState('');
   const [quickPriority, setQuickPriority] = useState<WorkItemPriority>('medium');
   const [quickDue, setQuickDue] = useState('Today');
+  const [quickResponsibleId, setQuickResponsibleId] = useState<string>('');
+  const [quickAccountableId, setQuickAccountableId] = useState<string>('');
+
+  const staffList = Object.values(STAVYA_STAFF_DATABASE);
 
   // Data Fetching State
   const [isLoading, setIsLoading] = useState(true);
@@ -71,20 +76,37 @@ export default function ExecutionPage() {
     if (quickDue === 'Tomorrow') dueIso = '2026-08-29T18:00:00Z';
     if (quickDue === 'Next Week') dueIso = '2026-09-04T18:00:00Z';
 
+    const respStaff = staffList.find(s => s.id === quickResponsibleId);
+    const acctStaff = staffList.find(s => s.id === quickAccountableId);
+
     try {
       await apiClient.workItems.approve({
         items: [{
           client_id: `plan-${Date.now()}`,
           title: quickTitle.trim(),
           priority: quickPriority,
+          owner_id: quickResponsibleId || user.id || 'usr-stav-101',
+          owner_name: respStaff?.name || user.name,
+          raci: {
+            responsible_id: quickResponsibleId || user.id || 'usr-stav-101',
+            responsible_name: respStaff?.name || user.name,
+            accountable_id: quickAccountableId || '',
+            accountable_name: acctStaff?.name || '',
+            consulted_ids: [],
+            consulted_names: [],
+            informed_ids: [],
+            informed_names: [],
+          },
         }],
-        title: 'Self-Scheduled Work Item',
+        title: 'Institutional Work Item',
         priority: quickPriority,
-        owner_id: user.id || 'usr-stav-101',
+        owner_id: quickResponsibleId || user.id || 'usr-stav-101',
         due_at: dueIso,
       });
 
       setQuickTitle('');
+      setQuickResponsibleId('');
+      setQuickAccountableId('');
       setIsQuickAddOpen(false);
       refreshWork();
     } catch (err) {
@@ -249,7 +271,7 @@ export default function ExecutionPage() {
               type="text"
               value={quickTitle}
               onChange={e => setQuickTitle(e.target.value)}
-              placeholder="What work do you need to do?"
+              placeholder="What work or clinical action needs to be executed?"
               required
               className="flex-1 w-full px-3.5 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none"
             />
@@ -274,12 +296,42 @@ export default function ExecutionPage() {
               <option value="Tomorrow">Tomorrow</option>
               <option value="Next Week">Next Week</option>
             </select>
+          </div>
+
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-2.5 pt-1">
+            <div className="flex-1 w-full flex flex-col sm:flex-row items-center gap-2">
+              <select
+                value={quickResponsibleId}
+                onChange={e => setQuickResponsibleId(e.target.value)}
+                className="flex-1 w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl text-slate-700 focus:outline-none"
+              >
+                <option value="">Responsible (R): Default (You)</option>
+                {staffList.map(s => (
+                  <option key={s.id} value={s.id}>
+                    R: {s.name} ({s.unit})
+                  </option>
+                ))}
+              </select>
+
+              <select
+                value={quickAccountableId}
+                onChange={e => setQuickAccountableId(e.target.value)}
+                className="flex-1 w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl text-slate-700 focus:outline-none"
+              >
+                <option value="">Accountable (A): Select Authority</option>
+                {staffList.map(s => (
+                  <option key={s.id} value={s.id}>
+                    A: {s.name} ({s.unit})
+                  </option>
+                ))}
+              </select>
+            </div>
 
             <button
               type="submit"
-              className="w-full sm:w-auto px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-xs transition-colors cursor-pointer"
+              className="w-full sm:w-auto px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-xs transition-colors cursor-pointer"
             >
-              Create
+              Create Item
             </button>
           </div>
         </form>

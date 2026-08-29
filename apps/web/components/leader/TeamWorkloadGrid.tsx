@@ -65,11 +65,11 @@ export const TeamWorkloadGrid: React.FC<TeamWorkloadGridProps> = ({ teamMembers,
 
               <div className="flex items-center justify-between text-xs pt-2 border-t border-slate-200/60">
                 <div className="flex flex-col">
-                  <span className="text-[10px] text-slate-400 font-bold uppercase uppercase">Active</span>
+                  <span className="text-[10px] text-slate-400 font-bold uppercase">Active</span>
                   <span className="font-bold text-slate-700">{activeTasksCount} tasks</span>
                 </div>
                 <div className="flex flex-col text-right">
-                  <span className="text-[10px] text-red-400 font-bold uppercase uppercase">Blocked</span>
+                  <span className="text-[10px] text-red-400 font-bold uppercase">Blocked</span>
                   <span className={`font-bold ${blockedTasksCount ? 'text-red-600' : 'text-slate-400'}`}>
                     {blockedTasksCount} tasks
                   </span>

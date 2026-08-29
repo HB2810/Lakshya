@@ -93,7 +93,7 @@ describe('LAKSHYA Frontend Hardening & Security Audit Suite', () => {
           <Header />
         </AuthProvider>
       );
-      expect(screen.getByText(/STAVYANS/i)).toBeDefined();
+      expect(screen.getByText(/EMPLOYEE|STAVYANS/i)).toBeDefined();
     });
   });
 

@@ -1,40 +1,102 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { Plus } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Plus, Network, ShieldAlert } from 'lucide-react';
+import Link from 'next/link';
 import { Tabs } from '../../../components/ui/Tabs';
 import { Card } from '../../../components/ui/Card';
 import { Badge } from '../../../components/ui/Badge';
 import { Button } from '../../../components/ui/Button';
 import { DataTable, Column } from '../../../components/ui/DataTable';
+import { ScopedOrgTree } from '../../../components/leader/ScopedOrgTree';
+import { PositionDetailDrawer } from '../../../components/leader/PositionDetailDrawer';
+import { DynamicHospitalOrgChart } from '../../../components/organization/DynamicHospitalOrgChart';
+import { UserCredentialModal } from '../../../components/organization/UserCredentialModal';
 import { apiClient } from '../../../lib/api/client';
-import { Department, RoleDefinition } from '../../../types/organization';
-import { User } from '../../../types/auth';
+import { Department, RoleDefinition, OrgTreeResponse, CanonicalOrgNode } from '../../../types/organization';
+import { User, Persona } from '../../../types/auth';
+import { WorkItem } from '../../../types/workItem';
 import { useAuth } from '../../../lib/auth/AuthContext';
 
 export default function OrganizationPage() {
-  const { can } = useAuth();
-  const [activeTab, setActiveTab] = useState('departments');
+  const { user, can } = useAuth();
+  
+  const isLeaderOrMD = ['MD', 'MD_OFFICE', 'MANAGING_DIRECTOR', 'DEPARTMENT_HEAD', 'MANAGER', 'LEADER', 'LEADERS', 'MASTER', 'ADMIN'].includes(user.role) || can('dashboard.md.read');
+  const isMD = ['MD', 'MD_OFFICE', 'MANAGING_DIRECTOR', 'MASTER', 'ADMIN'].includes(user.role);
+  const isAdminOrMaster = user.role === 'ADMIN' || user.role === 'MASTER';
+
+  const [activeTab, setActiveTab] = useState(isLeaderOrMD ? 'org_chart' : 'departments');
   const [departments, setDepartments] = useState<Department[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [roles, setRoles] = useState<RoleDefinition[]>([]);
+  const [workItems, setWorkItems] = useState<WorkItem[]>([]);
+  const [orgTree, setOrgTree] = useState<OrgTreeResponse | null>(null);
+  const [isLoadingTree, setIsLoadingTree] = useState(true);
+  const [selectedNode, setSelectedNode] = useState<CanonicalOrgNode | null>(null);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [isCredentialModalOpen, setIsCredentialModalOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
+
+  const loadData = useCallback(async () => {
+    if (!isLeaderOrMD) {
+      setIsLoadingTree(false);
+      return;
+    }
+    setIsLoadingTree(true);
+    try {
+      const [dRes, uRes, rRes, wRes, treeRes] = await Promise.all([
+        apiClient.organization.getDepartments(),
+        apiClient.organization.getUsers(),
+        apiClient.organization.getRoles(),
+        apiClient.workItems.list(),
+        isMD ? apiClient.organization.tree() : apiClient.organization.treeScoped(),
+      ]);
+      setDepartments(dRes || []);
+      setUsers(uRes || []);
+      setRoles(rRes || []);
+      setWorkItems(wRes?.items || []);
+      setOrgTree(treeRes || null);
+    } catch (err) {
+      console.error('Failed to load organization data:', err);
+    } finally {
+      setIsLoadingTree(false);
+    }
+  }, [isMD, isLeaderOrMD]);
 
   useEffect(() => {
-    Promise.all([
-      apiClient.organization.getDepartments(),
-      apiClient.organization.getUsers(),
-      apiClient.organization.getRoles(),
-    ]).then(([dRes, uRes, rRes]) => {
-      setDepartments(dRes);
-      setUsers(uRes);
-      setRoles(rRes);
-    });
-  }, []);
+    loadData();
+  }, [loadData]);
 
+  if (!isLeaderOrMD) {
+    return (
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-8 text-center max-w-xl mx-auto space-y-4 shadow-sm my-12">
+        <div className="w-12 h-12 bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-400 rounded-2xl flex items-center justify-center mx-auto">
+          <ShieldAlert className="w-6 h-6" />
+        </div>
+        <div className="space-y-1">
+          <h3 className="text-lg font-black text-slate-900 dark:text-white">Organization Access Restricted</h3>
+          <p className="text-xs text-slate-500 max-w-md mx-auto">
+            Hospital organizational hierarchy, staffing directory, and RBAC matrix are accessible only to MD and Leadership roles.
+          </p>
+        </div>
+        <div className="pt-2">
+          <Link
+            href="/overview"
+            className="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-xs transition-colors"
+          >
+            Return to My Day
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  // Tab definitions - Org Chart ONLY visible to MD & Leader
   const tabs = [
+    ...(isLeaderOrMD ? [{ id: 'org_chart', label: 'Hospital Org Chart (211 Staff)' }] : []),
     { id: 'departments', label: 'Departments', count: departments.length },
     { id: 'users', label: 'User Directory', count: users.length },
-    { id: 'rbac', label: 'RBAC & Roles Matrix', count: roles.length },
+    ...(isLeaderOrMD ? [{ id: 'rbac', label: 'RBAC & Roles Matrix', count: roles.length }] : []),
   ];
 
   const deptColumns: Column<Department>[] = [
@@ -93,27 +155,82 @@ export default function OrganizationPage() {
       header: 'Department',
       render: row => <span className="font-medium text-slate-900 dark:text-white">{row.departmentName}</span>,
     },
+    ...(isAdminOrMaster ? [{
+      key: 'actions',
+      header: 'Credentials & Access',
+      render: (row: User) => (
+        <button
+          type="button"
+          onClick={() => {
+            setEditingUser(row);
+            setIsCredentialModalOpen(true);
+          }}
+          className="px-2.5 py-1 bg-slate-100 hover:bg-blue-50 hover:text-blue-700 text-slate-700 text-[11px] font-bold rounded-lg transition-colors border border-slate-200 cursor-pointer"
+        >
+          Edit Credentials
+        </button>
+      ),
+    }] : []),
   ];
+
+  const handleSelectNode = (node: CanonicalOrgNode) => {
+    setSelectedNode(node);
+    setIsDrawerOpen(true);
+  };
+
+  const handleSaveCredential = (userData: any) => {
+    if (editingUser) {
+      setUsers(prev => prev.map(u => u.id === editingUser.id ? { ...u, ...userData, roleTitle: userData.role } : u));
+    } else {
+      const newUser: User = {
+        id: `usr-${Date.now()}`,
+        name: userData.name,
+        email: userData.email,
+        role: userData.role,
+        roleTitle: userData.role,
+        departmentId: userData.departmentId,
+        departmentName: userData.departmentName,
+        roles: [userData.role],
+        permissions: ['*'],
+        organizationId: 'org-stavya-01',
+      };
+      setUsers(prev => [newUser, ...prev]);
+    }
+    setEditingUser(null);
+  };
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6 shadow-sm">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-xs">
         <div>
-          <h2 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">Organization & RBAC Directory</h2>
+          <h2 className="text-xl font-black text-slate-900 dark:text-white tracking-tight">Organization & RBAC Directory</h2>
           <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
-            Stavya Spine Hospital organizational structure, departments, users, and role permissions.
+            Stavya Spine Hospital organizational structure, leadership hierarchy, departments, users, and role permissions.
           </p>
         </div>
-        {can('user.create') && (
-          <Button size="sm" leftIcon={<Plus className="w-4 h-4" />}>
-            Add Personnel
+        {isAdminOrMaster && (
+          <Button
+            size="sm"
+            leftIcon={<Plus className="w-4 h-4" />}
+            onClick={() => {
+              setEditingUser(null);
+              setIsCredentialModalOpen(true);
+            }}
+          >
+            Add Personnel &amp; Credentials
           </Button>
         )}
       </div>
 
       {/* Tabs */}
       <Tabs tabs={tabs} activeTab={activeTab} onChange={setActiveTab} />
+
+      {activeTab === 'org_chart' && isLeaderOrMD && (
+        <DynamicHospitalOrgChart
+          workItems={workItems}
+        />
+      )}
 
       {activeTab === 'departments' && (
         <DataTable columns={deptColumns} data={departments} searchPlaceholder="Filter departments..." />
@@ -146,6 +263,33 @@ export default function OrganizationPage() {
           ))}
         </div>
       )}
+
+      {/* Position Detail Drawer */}
+      <PositionDetailDrawer
+        node={selectedNode}
+        treeData={orgTree}
+        isOpen={isDrawerOpen}
+        onClose={() => {
+          setIsDrawerOpen(false);
+          setSelectedNode(null);
+        }}
+        onUpdated={() => {
+          loadData();
+        }}
+      />
+
+      {/* User Credential Management Modal */}
+      <UserCredentialModal
+        isOpen={isCredentialModalOpen}
+        onClose={() => {
+          setIsCredentialModalOpen(false);
+          setEditingUser(null);
+        }}
+        departments={departments}
+        editUser={editingUser}
+        onSaveUser={handleSaveCredential}
+      />
     </div>
   );
 }
+

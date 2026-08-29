@@ -543,7 +543,7 @@ export const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({
                     )}
                   </div>
                 )}
-                <DependenciesSection workItem={workItem} />
+                <DependenciesSection workItem={workItem} onUpdate={() => onUpdated?.()} />
               </div>
             )}
 

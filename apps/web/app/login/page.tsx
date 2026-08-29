@@ -137,13 +137,16 @@ export default function LoginPage() {
             </div>
 
             {/* Development Active Credential Pill */}
-            <div className="p-3 bg-slate-50 border border-slate-200/80 rounded-xl flex items-start gap-2.5 text-xs text-slate-600">
-              <Info className="w-4 h-4 shrink-0 text-slate-500 mt-0.5" />
-              <div>
-                <p className="font-semibold text-slate-800">Development Credentials</p>
-                <p className="text-[11px] text-slate-500 font-mono mt-0.5">
-                  ID: <span className="font-bold text-slate-900">STAVYANS-101</span> &bull; Pass: <span className="font-bold text-slate-900">1234</span>
-                </p>
+            <div className="p-3 bg-slate-50 border border-slate-200/80 rounded-xl space-y-1.5 text-xs text-slate-600">
+              <div className="flex items-center gap-2 font-semibold text-slate-800">
+                <Info className="w-4 h-4 shrink-0 text-slate-500" />
+                <span>Development Credentials (Password: 1234)</span>
+              </div>
+              <div className="grid grid-cols-2 gap-1.5 text-[11px] font-mono text-slate-600 pl-6">
+                <div>MD: <span className="font-bold text-slate-900">STAVYANS-001</span></div>
+                <div>Leader: <span className="font-bold text-slate-900">STAVYANS-002</span></div>
+                <div>Staff: <span className="font-bold text-slate-900">STAVYANS-101</span></div>
+                <div>Admin: <span className="font-bold text-slate-900">STAVYANS-000</span></div>
               </div>
             </div>
 
@@ -172,11 +175,11 @@ export default function LoginPage() {
                 <button
                   type="button"
                   onClick={async () => {
-                    setStaffId('md@stavya.local');
+                    setStaffId('STAVYANS-001');
                     setPassword('1234');
                     setIsSubmitting(true);
                     try {
-                      await login('md@stavya.local', '1234');
+                      await login('STAVYANS-001', '1234');
                       router.push('/overview');
                     } catch (e: any) {
                       setError(e.message);
@@ -186,18 +189,18 @@ export default function LoginPage() {
                   }}
                   className="p-2.5 bg-blue-50 hover:bg-blue-100 border border-blue-200 text-blue-900 font-bold rounded-xl text-left transition-colors cursor-pointer"
                 >
-                  <span className="block text-[10px] text-blue-600 uppercase font-black">MD Office</span>
+                  <span className="block text-[10px] text-blue-600 uppercase font-black">MD Office (STAVYANS-001)</span>
                   <span className="truncate block">Managing Director</span>
                 </button>
 
                 <button
                   type="button"
                   onClick={async () => {
-                    setStaffId('leader@stavya.local');
+                    setStaffId('STAVYANS-002');
                     setPassword('1234');
                     setIsSubmitting(true);
                     try {
-                      await login('leader@stavya.local', '1234');
+                      await login('STAVYANS-002', '1234');
                       router.push('/overview');
                     } catch (e: any) {
                       setError(e.message);
@@ -207,18 +210,18 @@ export default function LoginPage() {
                   }}
                   className="p-2.5 bg-purple-50 hover:bg-purple-100 border border-purple-200 text-purple-900 font-bold rounded-xl text-left transition-colors cursor-pointer"
                 >
-                  <span className="block text-[10px] text-purple-600 uppercase font-black">IT / Ops Lead</span>
+                  <span className="block text-[10px] text-purple-600 uppercase font-black">IT / Ops Lead (STAVYANS-002)</span>
                   <span className="truncate block">Priyesh Shah</span>
                 </button>
 
                 <button
                   type="button"
                   onClick={async () => {
-                    setStaffId('employee@stavya.local');
+                    setStaffId('STAVYANS-101');
                     setPassword('1234');
                     setIsSubmitting(true);
                     try {
-                      await login('employee@stavya.local', '1234');
+                      await login('STAVYANS-101', '1234');
                       router.push('/overview');
                     } catch (e: any) {
                       setError(e.message);
@@ -228,18 +231,18 @@ export default function LoginPage() {
                   }}
                   className="p-2.5 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-900 font-bold rounded-xl text-left transition-colors cursor-pointer"
                 >
-                  <span className="block text-[10px] text-emerald-600 uppercase font-black">Clinical Staff</span>
+                  <span className="block text-[10px] text-emerald-600 uppercase font-black">Clinical Staff (STAVYANS-101)</span>
                   <span className="truncate block">Sister Sunita Rao</span>
                 </button>
 
                 <button
                   type="button"
                   onClick={async () => {
-                    setStaffId('master@stavya.local');
+                    setStaffId('STAVYANS-000');
                     setPassword('1234');
                     setIsSubmitting(true);
                     try {
-                      await login('master@stavya.local', '1234');
+                      await login('STAVYANS-000', '1234');
                       router.push('/settings');
                     } catch (e: any) {
                       setError(e.message);
@@ -249,7 +252,7 @@ export default function LoginPage() {
                   }}
                   className="p-2.5 bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-900 font-bold rounded-xl text-left transition-colors cursor-pointer"
                 >
-                  <span className="block text-[10px] text-slate-600 uppercase font-black">System Admin</span>
+                  <span className="block text-[10px] text-slate-600 uppercase font-black">System Admin (STAVYANS-000)</span>
                   <span className="truncate block">Master Admin</span>
                 </button>
               </div>

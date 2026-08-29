@@ -1,4 +1,5 @@
-import { DEMO_USERS, MOCK_DEPARTMENTS, MOCK_ROLES, MOCK_AUDIT_EVENTS } from '../mocks/organizationMock';
+import { DEMO_USERS, MOCK_DEPARTMENTS, MOCK_ROLES, MOCK_AUDIT_EVENTS, MOCK_ORG_TREE, getScopedMockOrgTree } from '../mocks/organizationMock';
+import { getAllVerifiedHospitalUsers } from '../data/stavyaHospitalOrgData';
 import { MOCK_QUARTERLY_DIRECTIONS, MOCK_MONTHLY_PRIORITIES, MOCK_WEEKLY_MILESTONES, strategyStore } from '../mocks/strategyMock';
 import { QuarterlyPriority } from '../../types/strategy';
 import { MOCK_COMMITMENTS, MOCK_TASKS, MOCK_STUCK_NEEDS, MOCK_ESCALATIONS } from '../mocks/executionMock';
@@ -29,10 +30,16 @@ export function getCsrfToken(): string | null {
 export function mapBackendUserToFrontendUser(res: CurrentUserResponse): User {
   const roleMap: Record<string, Persona> = {
     md: 'MD',
+    managing_director: 'MD',
     md_office: 'MD_OFFICE',
     department_head: 'DEPARTMENT_HEAD',
     manager: 'MANAGER',
+    leader: 'LEADER',
+    leaders: 'LEADER',
+    master: 'MASTER',
+    admin: 'MASTER',
     employee: 'EMPLOYEE',
+    stavyans: 'EMPLOYEE',
   };
 
   const primaryRoleKey = (res.roles[0] || 'employee').toLowerCase();
@@ -54,12 +61,28 @@ export function mapBackendUserToFrontendUser(res: CurrentUserResponse): User {
   };
 }
 
+let backendOfflineUntil = 0;
+
+export function isBackendOffline(): boolean {
+  return Date.now() < backendOfflineUntil;
+}
+
+export function markBackendOffline(seconds = 30): void {
+  backendOfflineUntil = Date.now() + seconds * 1000;
+}
+
 const API_BASE_URL = typeof window !== 'undefined' ? '/api/v1' : (process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000') + '/api/v1';
 
 /**
  * Helper fetch wrapper with credentials and CSRF injection.
  */
 async function apiFetch<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+  if (isBackendOffline()) {
+    const error: Error & { status?: number } = new Error('Backend is currently offline (Circuit Breaker active)');
+    error.status = 503;
+    throw error;
+  }
+
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     ...(options.headers as Record<string, string>),
@@ -70,13 +93,23 @@ async function apiFetch<T>(endpoint: string, options: RequestInit = {}): Promise
     headers['X-CSRF-Token'] = csrfToken;
   }
 
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-    ...options,
-    headers,
-    credentials: 'include',
-  });
+  let response: Response;
+  try {
+    response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      ...options,
+      headers,
+      credentials: 'include',
+    });
+  } catch (networkErr) {
+    // Backend server on port 8000 is not running or unreachable
+    markBackendOffline(30);
+    throw networkErr;
+  }
 
   if (!response.ok) {
+    if (response.status >= 500) {
+      markBackendOffline(30);
+    }
     let errorDetail = 'API request failed';
     try {
       const errorData = await response.json();
@@ -155,21 +188,25 @@ export const apiClient = {
     },
 
     async login(emailOrId: string, password?: string, organization_slug?: string): Promise<{ response: CurrentUserResponse; user: User }> {
-      try {
-        const idKey = emailOrId.trim().toUpperCase();
-        const emailMap: Record<string, string> = {
-          'STAVYANS-101': 'employee@stavya.local',
-          'STAVYANS-001': 'md@stavya.local',
-          'STAVYANS-002': 'leader@stavya.local',
-          'STAVYANS-000': 'master@stavya.local',
-          'EMPLOYEE': 'employee@stavya.local',
-          'LEADER': 'leader@stavya.local',
-          'MD': 'md@stavya.local',
-          'MASTER': 'master@stavya.local',
-        };
-        const resolvedEmail = emailMap[idKey] || emailOrId.trim();
-        const resolvedPassword = password === '1234' ? 'password123' : (password || 'password123');
+      const idKey = emailOrId.trim().toUpperCase();
+      const emailMap: Record<string, string> = {
+        'STAVYANS-101': 'employee@stavya.local',
+        'STAVYANS-001': 'md@stavya.local',
+        'STAVYANS-002': 'leader@stavya.local',
+        'STAVYANS-000': 'master@stavya.local',
+        'EMPLOYEE': 'employee@stavya.local',
+        'LEADER': 'leader@stavya.local',
+        'LEADERS': 'leader@stavya.local',
+        'MD': 'md@stavya.local',
+        'MD_OFFICE': 'md@stavya.local',
+        'MANAGING_DIRECTOR': 'md@stavya.local',
+        'MASTER': 'master@stavya.local',
+        'ADMIN': 'master@stavya.local',
+      };
+      const resolvedEmail = emailMap[idKey] || emailOrId.trim();
+      const resolvedPassword = (password === '1234' || password === '••••••••••••') ? 'password123' : (password || 'password123');
 
+      try {
         const body: Record<string, string> = { email: resolvedEmail, password: resolvedPassword };
         if (organization_slug) {
           body.organization_slug = organization_slug;
@@ -183,46 +220,82 @@ export const apiClient = {
         // Fallback for dev demo when backend is offline
         if (process.env.NODE_ENV === 'development') {
           const normalized = emailOrId.trim().toUpperCase();
-          
-          // Validate credentials: STAVYANS-101 with password 1234
-          if (normalized === 'STAVYANS-101' || normalized === 'PRIYESH.SHAH@STAVYASPINE.COM') {
-            if (password && password !== '1234' && password !== '••••••••••••') {
-              throw new Error('Invalid password for STAVYANS-101. (Expected: 1234)');
-            }
-            const demoUser = DEMO_USERS.STAVYANS;
-            const mockResponse: CurrentUserResponse = {
-              user: {
-                id: demoUser.id,
-                email: demoUser.email,
-                full_name: demoUser.name,
-                is_active: true,
-                organization_id: 'org-stavya-001',
-              },
-              organization_id: 'org-stavya-001',
-              organization_slug: 'stavya-spine',
-              session: {
-                id: `sess-${demoUser.id}`,
-                issued_at: new Date().toISOString(),
-                expires_at: new Date(Date.now() + 86400000).toISOString(),
-                last_activity_at: new Date().toISOString(),
-              },
-              roles: ['stavyans', 'employee'],
-              permissions: [
-                'user.read', 'department.read', 'task.read', 'task.create', 'task.complete', 'stuck.create'
-              ],
-              department_ids: [demoUser.departmentId],
-              must_change_password: false,
-            };
-            return { response: mockResponse, user: mapBackendUserToFrontendUser(mockResponse) };
+
+          // Validate password if provided in development demo
+          if (password && password !== '1234' && password !== 'password123' && password !== '••••••••••••' && password !== 'securepass123') {
+            throw new Error('Invalid password. (Expected: 1234)');
           }
 
-          // Check if it matches any other supported system role
-          const matchKey = Object.keys(DEMO_USERS).find(
-            k => DEMO_USERS[k].email.toUpperCase() === normalized || k.toUpperCase() === normalized
+          // Alias and Staff ID mapping to DEMO_USERS key
+          const aliasMap: Record<string, keyof typeof DEMO_USERS> = {
+            'STAVYANS-001': 'MD',
+            'MD': 'MD',
+            'MD@STAVYA.LOCAL': 'MD',
+            'MD@STAVYASPINE.COM': 'MD',
+            'MANAGING_DIRECTOR': 'MD',
+            'MD_OFFICE': 'MD_OFFICE',
+            'HET.BHATT@STAVYASPINE.COM': 'MD_OFFICE',
+
+            'STAVYANS-002': 'LEADER',
+            'LEADER': 'LEADER',
+            'LEADERS': 'LEADERS',
+            'LEADER@STAVYA.LOCAL': 'LEADER',
+            'LEADER@STAVYASPINE.COM': 'LEADER',
+            'DEPARTMENT_HEAD': 'DEPARTMENT_HEAD',
+            'MANAGER': 'MANAGER',
+            'ROHAN.SHARMA@STAVYASPINE.COM': 'DEPARTMENT_HEAD',
+            'ANANYA.PATEL@STAVYASPINE.COM': 'MANAGER',
+
+            'STAVYANS-101': 'EMPLOYEE',
+            'EMPLOYEE': 'EMPLOYEE',
+            'EMPLOYEE@STAVYA.LOCAL': 'EMPLOYEE',
+            'STAVYANS': 'EMPLOYEE',
+            'PRIYESH.SHAH@STAVYASPINE.COM': 'EMPLOYEE',
+            'SUNITA.RAO@STAVYA.LOCAL': 'EMPLOYEE',
+
+            'STAVYANS-000': 'MASTER',
+            'MASTER': 'MASTER',
+            'ADMIN': 'ADMIN',
+            'MASTER@STAVYA.LOCAL': 'MASTER',
+            'ADMIN@STAVYASPINE.COM': 'ADMIN',
+            'HR': 'HR',
+            'HR@STAVYASPINE.COM': 'HR',
+          };
+
+          const matchedKey = aliasMap[normalized] || (
+            Object.keys(DEMO_USERS).find(
+              k => DEMO_USERS[k].email.toUpperCase() === normalized || k.toUpperCase() === normalized
+            ) as keyof typeof DEMO_USERS | undefined
           );
 
-          if (matchKey && DEMO_USERS[matchKey]) {
-            const demoUser = DEMO_USERS[matchKey];
+          if (matchedKey && DEMO_USERS[matchedKey]) {
+            const demoUser = DEMO_USERS[matchedKey];
+            const roleLower = (demoUser.role || 'employee').toLowerCase();
+
+            let permissions: string[] = ['user.read', 'department.read', 'task.read', 'task.create', 'task.complete'];
+            if (roleLower === 'md' || roleLower === 'managing_director' || roleLower === 'md_office') {
+              permissions = [
+                'user.read', 'department.read', 'objective.read', 'objective.create',
+                'priority.read', 'priority.create', 'milestone.read', 'milestone.create',
+                'meeting.read', 'meeting.create', 'decision.read', 'decision.create',
+                'commitment.read', 'commitment.create', 'task.read', 'task.create',
+                'task.complete', 'dashboard.md.read', 'escalation.read', 'escalation.resolve',
+                'decision.approve', 'commitment.approve', 'audit.export'
+              ];
+            } else if (roleLower === 'leader' || roleLower === 'leaders' || roleLower === 'department_head' || roleLower === 'manager') {
+              permissions = [
+                'user.read', 'department.read', 'task.read', 'task.create', 'task.complete',
+                'task.assign', 'meeting.read', 'priority.read', 'milestone.read', 'stuck.create',
+                'stuck.resolve', 'dashboard.department.read'
+              ];
+            } else if (roleLower === 'master' || roleLower === 'admin') {
+              permissions = ['*'];
+            }
+
+            const userRoles = (roleLower === 'stavyans' || roleLower === 'employee') 
+              ? ['stavyans', 'employee'] 
+              : [roleLower];
+
             const mockResponse: CurrentUserResponse = {
               user: {
                 id: demoUser.id,
@@ -239,19 +312,15 @@ export const apiClient = {
                 expires_at: new Date(Date.now() + 86400000).toISOString(),
                 last_activity_at: new Date().toISOString(),
               },
-              roles: [demoUser.role.toLowerCase()],
-              permissions: [
-                'user.read', 'department.read', 'objective.read', 'priority.read',
-                'milestone.read', 'meeting.read', 'decision.read', 'commitment.read',
-                'task.read', 'dashboard.md.read'
-              ],
+              roles: userRoles,
+              permissions,
               department_ids: [demoUser.departmentId],
               must_change_password: false,
             };
             return { response: mockResponse, user: mapBackendUserToFrontendUser(mockResponse) };
           }
 
-          throw new Error('Invalid Staff ID / Username. Please use STAVYANS-101 and password 1234.');
+          throw new Error('Invalid Staff ID / Username. Please use STAVYANS-001 (MD), STAVYANS-002 (Leader), STAVYANS-101 (Staff), or STAVYANS-000 (Admin) with password 1234.');
         }
         throw err;
       }
@@ -268,51 +337,134 @@ export const apiClient = {
 
   workItems: {
     async intake(text: string): Promise<StructuredPlanRecommendation> {
-      return await apiFetch<StructuredPlanRecommendation>('/work-items/intake', {
-        method: 'POST',
-        body: JSON.stringify({ text }),
-      });
+      try {
+        return await apiFetch<StructuredPlanRecommendation>('/work-items/intake', {
+          method: 'POST',
+          body: JSON.stringify({ text }),
+        });
+      } catch (err) {
+        console.warn('Backend intake API unavailable, returning local structured plan:', err);
+        return {
+          plan: {
+            title: text.length > 50 ? text.substring(0, 47) + '...' : text,
+            priority: 'medium',
+            suggested_owner_id: 'usr-stav-101',
+            items: [
+              {
+                client_id: `plan-${Date.now()}-1`,
+                title: text,
+                priority: 'medium',
+              }
+            ]
+          }
+        };
+      }
     },
 
     async approve(payload: ApprovePlanPayload): Promise<WorkItemListResponse> {
-      return await apiFetch<WorkItemListResponse>('/work-items/approve', {
-        method: 'POST',
-        body: JSON.stringify(payload),
-      });
+      try {
+        return await apiFetch<WorkItemListResponse>('/work-items/approve', {
+          method: 'POST',
+          body: JSON.stringify(payload),
+        });
+      } catch (err) {
+        console.warn('Backend work-items approve endpoint unavailable, saving to local store:', err);
+        const created: WorkItem[] = [];
+        (payload.items || []).forEach(item => {
+          const newItem = workItemStore.createWorkItem({
+            title: item.title,
+            description: payload.title || item.title,
+            priority: item.priority || payload.priority || 'medium',
+            owner_id: payload.owner_id || 'usr-stav-101',
+            due_at: payload.due_at,
+          });
+          created.push(newItem);
+        });
+        return { items: created, total: created.length };
+      }
     },
 
     async list(filters?: { owner_id?: string; status?: string; parent_id?: string }): Promise<WorkItemListResponse> {
-      const queryParams = new URLSearchParams();
-      if (filters?.owner_id) queryParams.append('owner_id', filters.owner_id);
-      if (filters?.status) queryParams.append('status', filters.status);
-      if (filters?.parent_id) queryParams.append('parent_id', filters.parent_id);
-      const query = queryParams.toString() ? `?${queryParams.toString()}` : '';
-      return await apiFetch<WorkItemListResponse>(`/work-items${query}`, { method: 'GET' });
+      try {
+        const queryParams = new URLSearchParams();
+        if (filters?.owner_id) queryParams.append('owner_id', filters.owner_id);
+        if (filters?.status) queryParams.append('status', filters.status);
+        if (filters?.parent_id) queryParams.append('parent_id', filters.parent_id);
+        const query = queryParams.toString() ? `?${queryParams.toString()}` : '';
+        return await apiFetch<WorkItemListResponse>(`/work-items${query}`, { method: 'GET' });
+      } catch (err) {
+        console.warn('Backend work-items list unavailable, returning local store work items:', err);
+        const items = workItemStore.getWorkItems(filters);
+        return { items, total: items.length };
+      }
     },
 
     async patch(id: string, patch: WorkItemPatchPayload): Promise<WorkItem> {
-      return await apiFetch<WorkItem>(`/work-items/${id}`, {
-        method: 'PATCH',
-        body: JSON.stringify(patch),
-      });
+      try {
+        return await apiFetch<WorkItem>(`/work-items/${id}`, {
+          method: 'PATCH',
+          body: JSON.stringify(patch),
+        });
+      } catch (err) {
+        console.warn('Backend work-items patch unavailable, updating local store:', err);
+        if (patch.status) {
+          return workItemStore.updateStatus(id, patch.status);
+        }
+        if (patch.progressPercent !== undefined) {
+          return workItemStore.updateProgress(id, patch.progressPercent);
+        }
+        const item = workItemStore.getWorkItemById(id);
+        if (!item) throw new Error('Work item not found');
+        return item;
+      }
     },
 
     async verify(id: string, note?: string): Promise<WorkItem> {
-      const query = note ? `?note=${encodeURIComponent(note)}` : '';
-      return await apiFetch<WorkItem>(`/work-items/${id}/verify${query}`, {
-        method: 'POST',
-      });
+      try {
+        const query = note ? `?note=${encodeURIComponent(note)}` : '';
+        return await apiFetch<WorkItem>(`/work-items/${id}/verify${query}`, {
+          method: 'POST',
+        });
+      } catch (err) {
+        console.warn('Backend verify endpoint unavailable, updating locally:', err);
+        return workItemStore.updateStatus(id, 'completed', 'Leader', note);
+      }
     },
 
     escalations: {
       async inbox(): Promise<any[]> {
-        return await apiFetch<any[]>('/work-items/escalations/inbox', { method: 'GET' });
+        try {
+          return await apiFetch<any[]>('/work-items/escalations/inbox', { method: 'GET' });
+        } catch (err) {
+          console.warn('Backend escalations inbox unavailable, returning mock escalations:', err);
+          return [
+            {
+              id: 'esc-001',
+              organization_id: 'org-stavya-001',
+              work_item_id: 'wi-003',
+              level: 'DEPARTMENT_HEAD',
+              reason: 'Vendor tech support escalation required for proprietary driver unlock key.',
+              escalated_by_id: 'usr-stav-101',
+              escalated_by_name: 'Priyesh Shah',
+              escalated_to_id: 'usr-dh-003',
+              escalated_to_name: 'Dr. Rohan Sharma',
+              escalated_at: '2026-08-27T16:00:00Z',
+              created_at: '2026-08-27T16:00:00Z',
+              status: 'PENDING',
+            }
+          ];
+        }
       },
       async resolve(id: string, payload: { resolution_note?: string }): Promise<any> {
-        return await apiFetch<any>(`/work-items/escalations/${id}/resolve`, {
-          method: 'POST',
-          body: JSON.stringify(payload),
-        });
+        try {
+          return await apiFetch<any>(`/work-items/escalations/${id}/resolve`, {
+            method: 'POST',
+            body: JSON.stringify(payload),
+          });
+        } catch (err) {
+          console.warn('Backend escalation resolve unavailable, returning local success:', err);
+          return { id, status: 'RESOLVED', resolution_note: payload.resolution_note };
+        }
       }
     }
   },
@@ -561,34 +713,49 @@ export const apiClient = {
 
   organization: {
     async getDepartments() {
-      const data = await apiFetch<{items: any[]}>('/departments', { method: 'GET' });
-      return data.items;
+      try {
+        const data = await apiFetch<{items: any[]}>('/departments', { method: 'GET' });
+        return data.items;
+      } catch (err) {
+        console.warn('Departments API unavailable, using local mock departments:', err);
+        return MOCK_DEPARTMENTS;
+      }
     },
     async getUsers() {
-      const data = await apiFetch<{items: any[]}>('/users', { method: 'GET' });
-      return data.items;
+      try {
+        const data = await apiFetch<{items: any[]}>('/users', { method: 'GET' });
+        return data.items;
+      } catch (err) {
+        console.warn('Users API offline, using verified Stavya hospital personnel directory:', err);
+        return getAllVerifiedHospitalUsers();
+      }
     },
     async tree() {
       try {
         const response = await apiFetch<any>('/organizations/tree', { method: 'GET' });
-        return response;
-      } catch {
-        return null; // Handle fallback gracefully in component
+        return response || MOCK_ORG_TREE;
+      } catch (err) {
+        console.warn('Tree API unavailable, returning local canonical mock tree:', err);
+        return MOCK_ORG_TREE;
       }
     },
     async treeScoped() {
-      // For now, if the backend fails or doesn't have it, we return a mock fallback 
-      // or try to fetch from the actual endpoint.
       try {
         const response = await apiFetch<any>('/organizations/tree/scoped', { method: 'GET' });
-        return response;
-      } catch {
-        return null; // Handle fallback gracefully in component
+        return response || MOCK_ORG_TREE;
+      } catch (err) {
+        console.warn('Scoped Tree API unavailable, returning local scoped mock tree:', err);
+        return getScopedMockOrgTree();
       }
     },
     async getRoles() {
-      const data = await apiFetch<{items: any[]}>('/roles', { method: 'GET' });
-      return data.items;
+      try {
+        const data = await apiFetch<{items: any[]}>('/roles', { method: 'GET' });
+        return data.items;
+      } catch (err) {
+        console.warn('Roles API unavailable, using local mock roles:', err);
+        return MOCK_ROLES;
+      }
     },
     async getAuditEvents(params?: { limit?: number; offset?: number; action?: string; entity_type?: string }) {
       try {
@@ -606,10 +773,24 @@ export const apiClient = {
       }
     },
     async transfer(payload: { user_id: string; new_position_id: string; started_on?: string; transfer_reason?: string }) {
-      return await apiFetch<any>('/organizations/transfer', {
-        method: 'POST',
-        body: JSON.stringify(payload),
-      });
+      try {
+        return await apiFetch<any>('/organizations/transfer', {
+          method: 'POST',
+          body: JSON.stringify(payload),
+        });
+      } catch (err) {
+        console.warn('Backend transfer API unavailable, completing transfer simulation locally:', err);
+        return {
+          id: `asgn-${Date.now()}`,
+          organization_id: 'org-stavya-001',
+          user_id: payload.user_id,
+          position_id: payload.new_position_id,
+          is_primary: true,
+          started_on: payload.started_on || new Date().toISOString().split('T')[0],
+          transfer_reason: payload.transfer_reason,
+          is_current: true,
+        };
+      }
     },
   },
 

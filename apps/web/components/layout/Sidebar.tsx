@@ -23,7 +23,7 @@ export const Sidebar: React.FC = () => {
   const { user, can } = useAuth();
   const [isCollapsed, setIsCollapsed] = useState(false);
 
-  const isManagement = can('dashboard.md.read') || can('quarterly_direction.create') || user.role === 'ADMIN';
+  const isLeaderOrMD = ['MD', 'MD_OFFICE', 'MANAGING_DIRECTOR', 'DEPARTMENT_HEAD', 'MANAGER', 'LEADER', 'LEADERS', 'MASTER', 'ADMIN'].includes(user.role) || can('dashboard.md.read');
 
   const navItems = [
     {
@@ -72,7 +72,7 @@ export const Sidebar: React.FC = () => {
       label: 'Organization',
       href: '/organization',
       icon: Building2,
-      show: true,
+      show: isLeaderOrMD,
     },
     {
       label: 'Settings',

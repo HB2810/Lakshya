@@ -86,8 +86,11 @@ export interface ReviewablePlanItem {
   title: string;
   description?: string | null;
   suggested_owner_id?: string | null;
+  owner_id?: string | null;
+  owner_name?: string | null;
   due_at?: string | null;
   priority: WorkItemPriority;
+  raci?: WorkItemRACI | null;
 }
 
 export interface ReviewablePlan {

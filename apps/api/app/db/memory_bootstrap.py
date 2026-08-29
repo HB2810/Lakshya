@@ -22,7 +22,7 @@ from app.modules.access.catalog import ScopeType
 from app.modules.access.models import Permission, Role, RoleAssignment, RolePermission
 from app.modules.audit.models import AuditEvent
 from app.modules.identity.models import CREDENTIAL_KIND_PASSWORD, Credential, User
-from app.modules.organization.models import Department, DepartmentMembership, Organization
+from app.modules.organization.models import Department, DepartmentMembership, Organization, Position, PositionAssignment
 from app.modules.strategy.models import QuarterlyPriority
 from app.modules.strategy.service import DEFAULT_10_MILESTONE_TEMPLATES, StrategyService
 from app.modules.strategy.schemas import MilestoneStepSchema
@@ -147,6 +147,84 @@ def bootstrap_seed_data(session: Session, settings: Settings) -> None:
             started_on=date(2026, 1, 1),
         )
         session.add(membership)
+
+    # 4b. Seed Canonical Positions and Hierarchy for Org Chart Tree
+    pos_md = Position(
+        id=uuid.uuid4(),
+        organization_id=org.id,
+        department_id=dept_mdoffice.id,
+        title="Managing Director & Chief Spine Surgeon",
+        code="MD-EXEC",
+        is_leadership=True,
+        is_active=True,
+    )
+    session.add(pos_md)
+
+    pos_it_lead = Position(
+        id=uuid.uuid4(),
+        organization_id=org.id,
+        department_id=dept_it.id,
+        title="Head of IT & Digital Health",
+        code="IT-HEAD",
+        reports_to_position_id=pos_md.id,
+        is_leadership=True,
+        is_active=True,
+    )
+    session.add(pos_it_lead)
+
+    pos_it_eng = Position(
+        id=uuid.uuid4(),
+        organization_id=org.id,
+        department_id=dept_it.id,
+        title="Systems & Medical IoT Engineer",
+        code="IT-ENG",
+        reports_to_position_id=pos_it_lead.id,
+        is_leadership=False,
+        is_active=True,
+    )
+    session.add(pos_it_eng)
+
+    pos_nurse = Position(
+        id=uuid.uuid4(),
+        organization_id=org.id,
+        department_id=dept_spine.id,
+        title="Senior Spine Nurse & OT Incharge",
+        code="NRS-SR",
+        reports_to_position_id=pos_md.id,
+        is_leadership=False,
+        is_active=True,
+    )
+    session.add(pos_nurse)
+
+    pos_admin = Position(
+        id=uuid.uuid4(),
+        organization_id=org.id,
+        department_id=dept_mdoffice.id,
+        title="Master System Administrator",
+        code="SYS-ADMIN",
+        reports_to_position_id=pos_md.id,
+        is_leadership=True,
+        is_active=True,
+    )
+    session.add(pos_admin)
+
+    # Assign Users to Positions
+    pos_assignments = [
+        (created_users["md@stavya.local"].id, pos_md.id),
+        (created_users["leader@stavya.local"].id, pos_it_lead.id),
+        (created_users["employee@stavya.local"].id, pos_nurse.id),
+        (created_users["master@stavya.local"].id, pos_admin.id),
+    ]
+
+    for u_id, p_id in pos_assignments:
+        asg = PositionAssignment(
+            id=uuid.uuid4(),
+            organization_id=org.id,
+            user_id=u_id,
+            position_id=p_id,
+            started_on=date(2026, 1, 1),
+        )
+        session.add(asg)
 
     # 5. Seed Canonical WorkItems with RACI, EDC, Dependencies, Escalation
     emp_user = created_users["employee@stavya.local"]

@@ -102,45 +102,9 @@ export const INITIAL_10_MILESTONES: MilestoneStep[] = [
   },
 ];
 
-export const INITIAL_QUARTERLY_PRIORITIES: QuarterlyPriority[] = [
-  {
-    id: 'qp-001',
-    year: 2026,
-    quarter: 'Q3',
-    title: 'Q3 Precision Spine Surgery & Patient Flow Optimization',
-    description: 'End-to-end digital integration of surgical sterile supply chain and OPD queue reduction to cut patient wait time by 35%.',
-    strategicObjective: 'Deliver flawless pre-op sterile implant traceability and sub-20 min OPD waiting time across Stavya Spine Hospital.',
-    reportingAuthority: 'Managing Director (MD Office)',
-    department: 'Spine Surgery & Hospital Operations',
-    status: 'ACTIVE',
-    progressPercent: 45,
-    currentStep: 5, // Currently on step 5 of 10
-    targetDate: '2026-09-30',
-    milestones: INITIAL_10_MILESTONES,
-  },
-  {
-    id: 'qp-002',
-    year: 2026,
-    quarter: 'Q3',
-    title: 'Q3 Digital Health EMR Migration & Diagnostic Automation',
-    description: 'Transition hospital core electronic medical records to high-availability database cluster with instant PACS imaging access.',
-    strategicObjective: 'Achieve 99.99% diagnostic system uptime and sub-second MRI scan viewing latency in consultation rooms.',
-    reportingAuthority: 'Head of IT & Digital Health',
-    department: 'IT & Digital Health',
-    status: 'ACTIVE',
-    progressPercent: 30,
-    currentStep: 3,
-    targetDate: '2026-09-30',
-    milestones: INITIAL_10_MILESTONES.map((m, idx) => ({
-      ...m,
-      title: `EMR Track Stage ${idx + 1}: ${m.title}`,
-      status: idx < 3 ? 'COMPLETED' : idx === 3 ? 'IN_PROGRESS' : 'PENDING',
-      completedAt: idx < 3 ? '2026-07-25' : undefined,
-    })),
-  },
-];
+export const INITIAL_QUARTERLY_PRIORITIES: QuarterlyPriority[] = [];
 
-export let MOCK_QUARTERLY_DIRECTIONS: QuarterlyPriority[] = [...INITIAL_QUARTERLY_PRIORITIES];
+export let MOCK_QUARTERLY_DIRECTIONS: QuarterlyPriority[] = [];
 export let MOCK_MONTHLY_PRIORITIES: MonthlyPriority[] = [];
 export let MOCK_WEEKLY_MILESTONES: WeeklyMilestone[] = [];
 

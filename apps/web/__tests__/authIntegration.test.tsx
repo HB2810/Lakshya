@@ -136,4 +136,52 @@ describe('FastAPI Authentication Client Integration (Vertical Slice 01)', () => 
 
     expect(user.role).toBe('DEPARTMENT_HEAD');
   });
+
+  describe('Development Mode Fallback Multi-Persona Logins', () => {
+    beforeEach(() => {
+      vi.stubEnv('NODE_ENV', 'development');
+      // Mock network failure to trigger fallback
+      global.fetch = vi.fn().mockRejectedValue(new Error('Network error: server offline'));
+    });
+
+    it('authenticates MD persona with STAVYANS-001 and password 1234', async () => {
+      const { user, response } = await apiClient.auth.login('STAVYANS-001', '1234');
+      expect(user.role).toBe('MD');
+      expect(response.roles).toContain('md');
+      expect(response.permissions).toContain('dashboard.md.read');
+      expect(response.permissions).toContain('decision.approve');
+    });
+
+    it('authenticates MD persona with md@stavya.local and password 1234', async () => {
+      const { user } = await apiClient.auth.login('md@stavya.local', '1234');
+      expect(user.role).toBe('MD');
+    });
+
+    it('authenticates Leader persona with STAVYANS-002 and password 1234', async () => {
+      const { user, response } = await apiClient.auth.login('STAVYANS-002', '1234');
+      expect(user.role).toBe('LEADER');
+      expect(response.roles).toContain('leader');
+      expect(response.permissions).toContain('task.assign');
+    });
+
+    it('authenticates Employee persona with STAVYANS-101 and password 1234', async () => {
+      const { user, response } = await apiClient.auth.login('STAVYANS-101', '1234');
+      expect(user.role).toBe('EMPLOYEE');
+      expect(response.roles).toContain('employee');
+      expect(response.permissions).toContain('task.create');
+    });
+
+    it('authenticates Master Admin persona with STAVYANS-000 and password 1234', async () => {
+      const { user, response } = await apiClient.auth.login('STAVYANS-000', '1234');
+      expect(user.role).toBe('MASTER');
+      expect(response.roles).toContain('master');
+      expect(response.permissions).toContain('*');
+    });
+
+    it('rejects invalid password in dev fallback', async () => {
+      await expect(apiClient.auth.login('STAVYANS-001', 'wrongpass')).rejects.toThrow(
+        /Invalid password/i
+      );
+    });
+  });
 });

@@ -34,6 +34,8 @@ import { EscalationDetailDrawer } from '../../../components/leader/EscalationDet
 import { PositionDetailDrawer } from '../../../components/leader/PositionDetailDrawer';
 import { CanonicalOrgNode, OrgTreeResponse } from '../../../types/organization';
 import { WorkItemEscalationRecord } from '../../../types/workItem';
+import { DynamicHospitalOrgChart } from '../../../components/organization/DynamicHospitalOrgChart';
+import { ExecutiveStaffTracker } from '../../../components/leader/ExecutiveStaffTracker';
 
 export default function OverviewPage() {
   const { user } = useAuth();
@@ -60,10 +62,10 @@ export default function OverviewPage() {
   const [newPriority, setNewPriority] = useState<WorkItemPriority>('medium');
   const [showAddSuccess, setShowAddSuccess] = useState(false);
 
-  // Leader Specific State
+  // Leader & MD Specific State
   const [teamMembers, setTeamMembers] = useState<any[]>([]);
-  const isLeader = ['MD', 'MD_OFFICE', 'DEPARTMENT_HEAD', 'MANAGER', 'LEADER'].includes(user.role);
-  const isMD = user.role === 'MD' || user.role === 'MD_OFFICE';
+  const isLeader = ['MD', 'MD_OFFICE', 'MANAGING_DIRECTOR', 'DEPARTMENT_HEAD', 'MANAGER', 'LEADER', 'LEADERS', 'MASTER', 'ADMIN'].includes(user.role);
+  const isMD = ['MD', 'MD_OFFICE', 'MANAGING_DIRECTOR', 'MASTER', 'ADMIN'].includes(user.role);
 
   const refreshTasks = useCallback(async () => {
     setIsLoading(true);
@@ -71,39 +73,51 @@ export default function OverviewPage() {
     try {
       const filters = isMD ? {} : { owner_id: user.id || 'usr-stav-101' };
       const response = await apiClient.workItems.list(filters);
-      setWorkItems(response.items);
+      setWorkItems(response.items || []);
       const priorities = strategyStore.getQuarterlyPriorities();
       if (priorities.length > 0) {
         setActivePriority(priorities[0]);
+      } else {
+        setActivePriority(null);
       }
       if (selectedTask) {
-        const updated = response.items.find((item) => item.id === selectedTask.id);
+        const updated = (response.items || []).find((item) => item.id === selectedTask.id);
         if (updated) setSelectedTask(updated);
       }
       
       if (isLeader) {
         // Fetch Escalations inbox
-        const escInbox = await apiClient.workItems.escalations.inbox();
-        setEscalations(escInbox);
+        try {
+          const escInbox = await apiClient.workItems.escalations.inbox();
+          setEscalations(escInbox || []);
+        } catch (e) {
+          console.warn('Could not load escalations inbox:', e);
+        }
 
         // Fetch Org Tree Scope
-        const treeData = isMD 
-          ? await apiClient.organization.tree() 
-          : await apiClient.organization.treeScoped();
-          
-        if (treeData) {
-          setOrgTree(treeData);
-          
-          // Flatten tree into teamMembers for workload grid
-          const members: any[] = [];
-          if (treeData.root_nodes) {
-            treeData.root_nodes.forEach((node: any) => {
-              if (node.subordinates) {
-                members.push(...node.subordinates);
-              }
-            });
+        try {
+          const treeData = isMD 
+            ? await apiClient.organization.tree() 
+            : await apiClient.organization.treeScoped();
+            
+          if (treeData) {
+            setOrgTree(treeData);
+            
+            // Flatten tree into teamMembers for workload grid
+            const members: any[] = [];
+            if (treeData.root_nodes) {
+              treeData.root_nodes.forEach((node: any) => {
+                if (node.subordinates && node.subordinates.length > 0) {
+                  members.push(...node.subordinates);
+                } else {
+                  members.push(node);
+                }
+              });
+            }
+            setTeamMembers(members);
           }
-          setTeamMembers(members);
+        } catch (e) {
+          console.warn('Could not load org tree:', e);
         }
       }
     } catch (err: any) {
@@ -295,6 +309,29 @@ export default function OverviewPage() {
         </div>
       </div>
 
+      {/* STRATEGIC 10-MILESTONE DELIVERY TRACKER (FOR MD & LEADERSHIP) */}
+      {isLeader && activePriority && (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-purple-600" />
+              <h2 className="text-xs font-black uppercase tracking-wider text-slate-800">
+                Institutional Priority Delivery Track (10-Milestone Stepper)
+              </h2>
+            </div>
+            <Link
+              href="/strategy"
+              className="text-xs font-bold text-purple-700 hover:text-purple-900 flex items-center gap-1"
+            >
+              <span>View All Priorities</span>
+              <ChevronRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
+
+          <ZomatoDeliveryStepper priority={activePriority} onRefresh={refreshTasks} />
+        </div>
+      )}
+
       {primaryNextAction ? (
         <div className="bg-white border-2 border-blue-500/30 rounded-3xl p-6 shadow-xs relative overflow-hidden bg-gradient-to-br from-blue-50/50 via-white to-indigo-50/30">
           <div className="relative z-10 space-y-4">
@@ -472,15 +509,27 @@ export default function OverviewPage() {
           {isLeader && (
             <div className="flex-1 mt-6 xl:mt-0 space-y-6">
               {isMD ? (
-                <DepartmentWorkloadGrid treeData={orgTree} workItems={workItems} isLoading={isLoading} />
+                <>
+                  <ExecutiveStaffTracker
+                    workItems={workItems}
+                    onSelectStaff={(staff) => {
+                      setNewTitle(`Directive for ${staff.name}: `);
+                    }}
+                    onAssignWork={(staffId, staffName) => {
+                      setNewTitle(`Directive for ${staffName}: `);
+                    }}
+                  />
+                  <DepartmentWorkloadGrid treeData={orgTree} workItems={workItems} isLoading={isLoading} />
+                </>
               ) : (
                 <TeamWorkloadGrid teamMembers={teamMembers} workItems={workItems} isLoading={isLoading} />
               )}
               
-              <ScopedOrgTree 
-                treeData={orgTree} 
-                isLoading={isLoading} 
-                onSelectNode={openOrgNodeDetail}
+              <DynamicHospitalOrgChart 
+                workItems={workItems}
+                onOpenTaskModal={(assigneeId, assigneeName) => {
+                  setNewTitle(`Task for ${assigneeName}: `);
+                }}
               />
             </div>
           )}
@@ -594,30 +643,7 @@ export default function OverviewPage() {
         </div>
       </div>
 
-      {/* 4. STRATEGIC 10-MILESTONE ZOMATO-STYLE DELIVERY TRACKER */}
-      {activePriority && (
-        <div className="space-y-3 pt-2">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-purple-600" />
-              <h2 className="text-sm font-bold uppercase tracking-wider text-slate-900">
-                Quarterly Priority Milestone Delivery Tracker
-              </h2>
-            </div>
-            <Link
-              href="/strategy"
-              className="text-xs font-semibold text-purple-700 hover:text-purple-900 flex items-center gap-1"
-            >
-              <span>View All Priorities</span>
-              <ChevronRight className="w-3.5 h-3.5" />
-            </Link>
-          </div>
-
-          <ZomatoDeliveryStepper priority={activePriority} />
-        </div>
-      )}
-
-      {/* 5. TASK DETAIL DRAWER */}
+      {/* TASK DETAIL DRAWER */}
       <TaskDetailDrawer
         workItem={selectedTask}
         isOpen={isDrawerOpen}

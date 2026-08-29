@@ -10,8 +10,8 @@ export function can(capability: Capability, user: User | null): boolean {
 
   const { role } = user;
   const isMD = role === 'MD' || role === 'MANAGING_DIRECTOR' || role === 'MD_OFFICE';
-  const isAdmin = role === 'ADMIN';
-  const isLeader = role === 'LEADERS' || role === 'DEPARTMENT_HEAD' || role === 'MANAGER';
+  const isAdmin = role === 'ADMIN' || role === 'MASTER';
+  const isLeader = role === 'LEADER' || role === 'LEADERS' || role === 'DEPARTMENT_HEAD' || role === 'MANAGER';
   const isHR = role === 'HR';
   const isStaff = role === 'STAVYANS' || role === 'EMPLOYEE';
 

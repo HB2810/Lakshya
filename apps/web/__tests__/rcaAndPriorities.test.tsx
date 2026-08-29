@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { rcaStore } from '../lib/mocks/rcaMock';
 import { strategyStore } from '../lib/mocks/strategyMock';
 
@@ -115,6 +115,16 @@ describe('LAKSHYA RCA, FMEA & 10-Milestone Strategic Priority Engine Suite', () 
 
   // 4. Quarterly Priorities with 10 Milestones (Zomato-Style Delivery Engine)
   describe('Quarterly Priorities & 10-Milestone Stepper', () => {
+    beforeEach(() => {
+      strategyStore.resetToZero();
+      strategyStore.addQuarterlyPriority({
+        title: 'Q3 Precision Spine Surgery & Patient Flow Optimization',
+        description: 'End-to-end digital integration of surgical sterile supply chain and OPD queue reduction.',
+        reportingAuthority: 'Managing Director (MD Office)',
+        department: 'Spine Surgery',
+      });
+    });
+
     it('initializes every Quarterly Priority with exactly 10 sequential delivery milestones', () => {
       const qps = strategyStore.getQuarterlyPriorities();
       expect(qps.length).toBeGreaterThan(0);
