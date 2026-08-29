@@ -141,18 +141,18 @@ class StrategyService:
     def _parse_milestones(expected_outcome: str | None) -> list[MilestoneStepSchema]:
         """Deserialize milestones from expected_outcome JSON or return default templates."""
         if not expected_outcome:
-            return [MilestoneStepSchema(**m) for m in DEFAULT_10_MILESTONE_TEMPLATES]
+            return [MilestoneStepSchema.model_validate(m) for m in DEFAULT_10_MILESTONE_TEMPLATES]
 
         try:
             data = json.loads(expected_outcome)
             if isinstance(data, dict) and "milestones" in data:
-                return [MilestoneStepSchema(**m) for m in data["milestones"]]
+                return [MilestoneStepSchema.model_validate(m) for m in data["milestones"]]
             elif isinstance(data, list):
-                return [MilestoneStepSchema(**m) for m in data]
+                return [MilestoneStepSchema.model_validate(m) for m in data]
         except Exception:
             pass
 
-        return [MilestoneStepSchema(**m) for m in DEFAULT_10_MILESTONE_TEMPLATES]
+        return [MilestoneStepSchema.model_validate(m) for m in DEFAULT_10_MILESTONE_TEMPLATES]
 
     @staticmethod
     def _dump_milestones(milestones: list[MilestoneStepSchema], extra_meta: dict[str, Any] | None = None) -> str:
@@ -268,7 +268,7 @@ class StrategyService:
                 detail="Not authorized to create quarterly priorities",
             )
 
-        milestones = payload.milestones or [MilestoneStepSchema(**m) for m in DEFAULT_10_MILESTONE_TEMPLATES]
+        milestones = payload.milestones or [MilestoneStepSchema.model_validate(m) for m in DEFAULT_10_MILESTONE_TEMPLATES]
         extra_meta = {
             "reporting_authority": payload.reporting_authority,
             "department": payload.department,

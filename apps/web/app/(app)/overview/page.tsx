@@ -37,6 +37,7 @@ import { WorkItemEscalationRecord } from '../../../types/workItem';
 import { DynamicHospitalOrgChart } from '../../../components/organization/DynamicHospitalOrgChart';
 import { ExecutiveStaffTracker } from '../../../components/leader/ExecutiveStaffTracker';
 import { NeedsMDAttentionView } from '../../../components/leader/NeedsMDAttentionView';
+import { isMDAttentionAuthorized, isLeaderOrAbove } from '../../../lib/auth/rbacPolicies';
 
 export default function OverviewPage() {
   const { user } = useAuth();
@@ -64,10 +65,10 @@ export default function OverviewPage() {
   const [newPriority, setNewPriority] = useState<WorkItemPriority>('medium');
   const [showAddSuccess, setShowAddSuccess] = useState(false);
 
-  // Leader & MD Specific State
+  // Canonical Role Policy State
   const [teamMembers, setTeamMembers] = useState<any[]>([]);
-  const isLeader = ['MD', 'MD_OFFICE', 'MANAGING_DIRECTOR', 'DEPARTMENT_HEAD', 'MANAGER', 'LEADER', 'LEADERS', 'MASTER', 'ADMIN'].includes(user.role);
-  const isMD = ['MD', 'MD_OFFICE', 'MANAGING_DIRECTOR', 'MASTER', 'ADMIN'].includes(user.role);
+  const isLeader = isLeaderOrAbove(user?.role);
+  const isMD = isMDAttentionAuthorized(user?.role);
 
   const refreshTasks = useCallback(async () => {
     setIsLoading(true);
@@ -319,17 +320,10 @@ export default function OverviewPage() {
         </div>
       </div>
 
-      {/* NEEDS MD ATTENTION COMMAND CENTER (FOR MD & LEADERSHIP) */}
-      {isLeader && (
+      {/* NEEDS MD ATTENTION COMMAND CENTER (STRICTLY FOR MD & MD OFFICE) */}
+      {isMD && (
         <div className="space-y-4">
-          <NeedsMDAttentionView
-            onSelectItem={(item) => {
-              const matchedTask = workItems.find(w => w.id === item.entity_id);
-              if (matchedTask) {
-                openTaskDetail(matchedTask);
-              }
-            }}
-          />
+          <NeedsMDAttentionView />
         </div>
       )}
 

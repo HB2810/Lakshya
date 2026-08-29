@@ -12,6 +12,8 @@ from app.modules.md_attention.schemas import (
     GrantExtensionRequest,
     MDAttentionSummary,
     ReassignRaciRequest,
+    RecordDecisionRequest,
+    RequestEvidenceRequest,
     ResolveEscalationRequest,
     VerifyEvidenceRequest,
 )
@@ -62,6 +64,38 @@ def verify_evidence(
     """Formally verifies Definition of Done evidence or reopens task to in_progress."""
     effective_roles = list(ctx.authorization.effective_roles)
     return MDAttentionService.verify_evidence(
+        session=db,
+        current_user=ctx.authenticated.user,
+        effective_roles=effective_roles,
+        payload=payload,
+    )
+
+
+@router.post("/request-evidence", response_model=CockpitActionResponse)
+def request_evidence(
+    payload: RequestEvidenceRequest,
+    db: Session = Depends(get_db),
+    ctx: RequestContext = CurrentContext,
+) -> CockpitActionResponse:
+    """Requests accountable owner or contributor to submit concrete evidence or recovery plan."""
+    effective_roles = list(ctx.authorization.effective_roles)
+    return MDAttentionService.request_evidence(
+        session=db,
+        current_user=ctx.authenticated.user,
+        effective_roles=effective_roles,
+        payload=payload,
+    )
+
+
+@router.post("/record-decision", response_model=CockpitActionResponse)
+def record_decision(
+    payload: RecordDecisionRequest,
+    db: Session = Depends(get_db),
+    ctx: RequestContext = CurrentContext,
+) -> CockpitActionResponse:
+    """Records a formal MD executive decision and directive on a work item."""
+    effective_roles = list(ctx.authorization.effective_roles)
+    return MDAttentionService.record_decision(
         session=db,
         current_user=ctx.authenticated.user,
         effective_roles=effective_roles,

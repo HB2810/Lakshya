@@ -30,19 +30,31 @@ class MDAttentionItemResponse(BaseModel):
     accountable_name: str
     department_name: str | None = None
     due_at: datetime | None = None
+    original_due_at: datetime | None = None
     due_age_days: int | None = None
+    deferral_count: int = 0
+    deferral_history: list[dict[str, Any]] = Field(default_factory=list)
     impact: str
     requested_action: str
+    requested_decision: str | None = None
     evidence_state: str
+    evidence_list: list[dict[str, Any]] = Field(default_factory=list)
+    activity_history: list[dict[str, Any]] = Field(default_factory=list)
     audit_provenance: str
     why_included: str
     priority: str = "medium"
+    status: str = "todo"
+    description: str | None = None
+    version: int = 1
     entity_id: str
     entity_type: str = "work_item"
     escalation_id: str | None = None
     blocker_details: dict[str, Any] | None = None
     raci: dict[str, Any] | None = None
     edc: dict[str, Any] | None = None
+    is_synthetic: bool = False
+    allowed_actions: list[str] = Field(default_factory=list)
+    disabled_actions: dict[str, str] = Field(default_factory=dict)
 
 
 class MDAttentionSummary(BaseModel):
@@ -65,12 +77,29 @@ class ResolveEscalationRequest(BaseModel):
     decision: str = Field(..., description="'APPROVED', 'REJECTED', or 'DIRECTIVE_ISSUED'")
     directive_notes: str = Field(..., min_length=3)
     unblock_work_item: bool = True
+    expected_version: int | None = None
 
 
 class VerifyEvidenceRequest(BaseModel):
     work_item_id: uuid.UUID
     verification_result: str = Field(..., description="'VERIFIED_CLOSED' or 'REJECTED_REOPEN'")
     verification_notes: str = Field(..., min_length=3)
+    expected_version: int | None = None
+
+
+class RequestEvidenceRequest(BaseModel):
+    work_item_id: uuid.UUID
+    request_notes: str = Field(..., min_length=3)
+    deadline_extension_days: int | None = None
+    expected_version: int | None = None
+
+
+class RecordDecisionRequest(BaseModel):
+    work_item_id: uuid.UUID
+    decision_text: str = Field(..., min_length=3)
+    directive: str = Field(..., min_length=3)
+    unblock: bool = True
+    expected_version: int | None = None
 
 
 class ExecutiveOverrideRequest(BaseModel):
@@ -78,12 +107,14 @@ class ExecutiveOverrideRequest(BaseModel):
     override_reason: str = Field(..., min_length=3)
     clear_blocker: bool = True
     new_due_at: datetime | None = None
+    expected_version: int | None = None
 
 
 class GrantExtensionRequest(BaseModel):
     work_item_id: uuid.UUID
     new_due_at: datetime
     justification: str = Field(..., min_length=3)
+    expected_version: int | None = None
 
 
 class ReassignRaciRequest(BaseModel):
@@ -93,6 +124,7 @@ class ReassignRaciRequest(BaseModel):
     accountable_id: uuid.UUID | None = None
     accountable_name: str
     rationale: str = Field(..., min_length=3)
+    expected_version: int | None = None
 
 
 class UpdateMilestoneStepRequest(BaseModel):
@@ -100,6 +132,7 @@ class UpdateMilestoneStepRequest(BaseModel):
     step_number: int = Field(..., ge=1, le=10)
     status: str = Field(..., description="'IN_PROGRESS', 'COMPLETED', or 'AT_RISK'")
     verification_notes: str | None = None
+    expected_version: int | None = None
 
 
 class CockpitActionResponse(BaseModel):

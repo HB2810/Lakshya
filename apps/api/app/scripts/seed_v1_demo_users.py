@@ -189,7 +189,7 @@ def seed_database() -> None:
         # 5. Strategic Priority Demo Data
         qp = session.scalar(select(QuarterlyPriority).where(QuarterlyPriority.organization_id == org.id).limit(1))
         if not qp:
-            milestones = [MilestoneStepSchema(**m) for m in DEFAULT_10_MILESTONE_TEMPLATES]
+            milestones = [MilestoneStepSchema.model_validate(m) for m in DEFAULT_10_MILESTONE_TEMPLATES]
             qp = QuarterlyPriority(
                 id=uuid.uuid4(),
                 organization_id=org.id,

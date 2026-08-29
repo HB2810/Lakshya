@@ -380,7 +380,7 @@ def bootstrap_seed_data(session: Session, settings: Settings) -> None:
     session.add(wi2)
 
     # 8. Seed Strategic Priorities with 10-Milestone Delivery Stepper
-    milestones = [MilestoneStepSchema(**m) for m in DEFAULT_10_MILESTONE_TEMPLATES]
+    milestones = [MilestoneStepSchema.model_validate(m) for m in DEFAULT_10_MILESTONE_TEMPLATES]
     qp1 = QuarterlyPriority(
         id=uuid.uuid4(),
         organization_id=org.id,

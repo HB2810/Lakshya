@@ -911,19 +911,22 @@ export const apiClient = {
       });
     },
   },
-  mdAttention: {
+    mdAttention: {
     async getSummary(): Promise<import('../../types/mdAttention').MDAttentionSummary> {
       try {
-        return await apiFetch<import('../../types/mdAttention').MDAttentionSummary>('/md-attention', {
+        const res = await apiFetch<import('../../types/mdAttention').MDAttentionSummary>('/md-attention', {
           method: 'GET',
         });
+        return {
+          ...res,
+          is_synthetic_fallback: false,
+        };
       } catch (err: any) {
         if (err?.status === 403) {
           throw err;
         }
         // Resilient fallback for local mock / offline mode
         const allItems = workItemStore.getWorkItems();
-        const now = new Date();
         const items: import('../../types/mdAttention').MDAttentionItem[] = [];
 
         // 1. Critical overdue
@@ -939,15 +942,46 @@ export const apiClient = {
               accountable_name: i.raci?.accountable_name || 'Het Bhatt (MD)',
               department_name: i.department_name || 'Spine Surgery & Clinical Operations',
               due_at: new Date(Date.now() - 86400000 * 2).toISOString(),
+              original_due_at: new Date(Date.now() - 86400000 * 5).toISOString(),
               due_age_days: 2,
+              deferral_count: 1,
+              deferral_history: [
+                {
+                  id: 'def-1',
+                  author_name: 'Dr. Mirant Dave (MD)',
+                  activity_type: 'DEADLINE_EXTENSION',
+                  note: 'Granted 3-day recovery extension for OT equipment check.',
+                  created_at: new Date(Date.now() - 86400000 * 3).toISOString(),
+                }
+              ],
               impact: 'Critical pathway deliverable delayed past due date. Threatens patient workflow.',
               requested_action: 'Require owner to submit recovery milestone plan or escalate resource allocation.',
+              requested_decision: 'Grant emergency extension or assign clinical co-lead.',
               evidence_state: 'OVERDUE — Incomplete',
-              audit_provenance: `work_items.id=${i.id}`,
+              evidence_list: [],
+              activity_history: (i.activity_history || []).map(a => ({
+                id: a.id,
+                author_name: a.authorName || 'Staff Member',
+                activity_type: a.type,
+                note: a.note,
+                previous_status: a.previousStatus,
+                new_status: a.newStatus,
+                progress_percent: a.progressPercent,
+                created_at: a.timestamp,
+              })),
+              audit_provenance: `work_items.id=${i.id} [SYNTHETIC FALLBACK]`,
               why_included: 'Rule: High/Urgent priority item breached scheduled delivery target.',
               priority: i.priority,
+              status: i.status,
+              description: i.description,
+              version: 1,
               entity_id: i.id,
               entity_type: 'work_item',
+              is_synthetic: true,
+              allowed_actions: ['GRANT_EXTENSION', 'REQUEST_EVIDENCE', 'REASSIGN_RACI', 'RECORD_DECISION'],
+              disabled_actions: {
+                VERIFY_EVIDENCE: 'Item is not yet completed; cannot verify evidence.',
+              },
             });
           });
 
@@ -964,15 +998,39 @@ export const apiClient = {
               accountable_name: i.raci?.accountable_name || 'Het Bhatt (MD)',
               department_name: i.department_name || 'IT & Digital Health',
               due_at: null,
+              original_due_at: null,
               due_age_days: null,
+              deferral_count: 0,
+              deferral_history: [],
               impact: i.blocker_details?.needDescription || 'External vendor delay on PACS API credentials.',
               requested_action: 'Issue executive override or contact vendor leadership directly.',
+              requested_decision: 'Authorize executive unblock directive.',
               evidence_state: 'BLOCKED — StuckNeedItem Active',
-              audit_provenance: `work_items.id=${i.id} (status=blocked)`,
+              evidence_list: [],
+              activity_history: (i.activity_history || []).map(a => ({
+                id: a.id,
+                author_name: a.authorName || 'Staff Member',
+                activity_type: a.type,
+                note: a.note,
+                previous_status: a.previousStatus,
+                new_status: a.newStatus,
+                progress_percent: a.progressPercent,
+                created_at: a.timestamp,
+              })),
+              audit_provenance: `work_items.id=${i.id} (status=blocked) [SYNTHETIC FALLBACK]`,
               why_included: `Rule: Unresolved blocker reported: ${i.blocker_details?.reason || 'Vendor delay'}`,
               priority: i.priority,
+              status: i.status,
+              description: i.description,
+              version: 1,
               entity_id: i.id,
               entity_type: 'work_item',
+              blocker_details: i.blocker_details,
+              is_synthetic: true,
+              allowed_actions: ['EXECUTIVE_OVERRIDE', 'RECORD_DECISION', 'REASSIGN_RACI', 'GRANT_EXTENSION', 'REQUEST_EVIDENCE'],
+              disabled_actions: {
+                VERIFY_EVIDENCE: 'Deliverable is currently blocked; unblock before closure.',
+              },
             });
           });
 
@@ -989,15 +1047,46 @@ export const apiClient = {
               accountable_name: 'Het Bhatt (MD)',
               department_name: i.department_name || 'Nursing & Clinical Operations',
               due_at: null,
+              original_due_at: null,
               due_age_days: null,
+              deferral_count: 0,
+              deferral_history: [],
               impact: 'Reported complete by staff. Must be independently verified against Definition of Done.',
               requested_action: 'Audit physical checklist evidence before marking VERIFIED in registry.',
+              requested_decision: 'Approve closure or reject evidence.',
               evidence_state: 'REPORTED_COMPLETE (Awaiting Independent Signoff)',
-              audit_provenance: `work_items.id=${i.id}`,
+              evidence_list: [
+                {
+                  name: 'Physical NABH Protocol Inspection Checklist',
+                  submitted_by: i.owner_name || 'Sister Sunita Rao',
+                  submitted_at: new Date(Date.now() - 3600000 * 4).toISOString(),
+                  status: 'PENDING_REVIEW',
+                  notes: 'Signed sterilisation batch register sheet #OT-2026-088.',
+                }
+              ],
+              activity_history: (i.activity_history || []).map(a => ({
+                id: a.id,
+                author_name: a.authorName || 'Staff Member',
+                activity_type: a.type,
+                note: a.note,
+                previous_status: a.previousStatus,
+                new_status: a.newStatus,
+                progress_percent: a.progressPercent,
+                created_at: a.timestamp,
+              })),
+              audit_provenance: `work_items.id=${i.id} [SYNTHETIC FALLBACK]`,
               why_included: 'Rule: Claimed completion is never equated with VERIFIED/CLOSED without independent evidence.',
               priority: i.priority,
+              status: i.status,
+              description: i.description,
+              version: 1,
               entity_id: i.id,
               entity_type: 'work_item',
+              is_synthetic: true,
+              allowed_actions: ['VERIFY_EVIDENCE', 'REQUEST_EVIDENCE', 'RECORD_DECISION', 'REASSIGN_RACI'],
+              disabled_actions: {
+                EXECUTIVE_OVERRIDE: 'Deliverable has no active blocker to override.',
+              },
             });
           });
 
@@ -1014,8 +1103,58 @@ export const apiClient = {
           total_items: items.length,
           ...counts,
           items,
+          is_synthetic_fallback: true,
         };
       }
+    },
+
+    async resolveEscalation(payload: import('../../types/mdAttention').ResolveEscalationPayload): Promise<import('../../types/mdAttention').CockpitActionResponse> {
+      return await apiFetch<import('../../types/mdAttention').CockpitActionResponse>('/md-attention/resolve-escalation', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+    },
+
+    async verifyEvidence(payload: import('../../types/mdAttention').VerifyEvidencePayload): Promise<import('../../types/mdAttention').CockpitActionResponse> {
+      return await apiFetch<import('../../types/mdAttention').CockpitActionResponse>('/md-attention/verify-evidence', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+    },
+
+    async requestEvidence(payload: import('../../types/mdAttention').RequestEvidencePayload): Promise<import('../../types/mdAttention').CockpitActionResponse> {
+      return await apiFetch<import('../../types/mdAttention').CockpitActionResponse>('/md-attention/request-evidence', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+    },
+
+    async recordDecision(payload: import('../../types/mdAttention').RecordDecisionPayload): Promise<import('../../types/mdAttention').CockpitActionResponse> {
+      return await apiFetch<import('../../types/mdAttention').CockpitActionResponse>('/md-attention/record-decision', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+    },
+
+    async executiveOverride(payload: import('../../types/mdAttention').ExecutiveOverridePayload): Promise<import('../../types/mdAttention').CockpitActionResponse> {
+      return await apiFetch<import('../../types/mdAttention').CockpitActionResponse>('/md-attention/executive-override', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+    },
+
+    async grantExtension(payload: import('../../types/mdAttention').GrantExtensionPayload): Promise<import('../../types/mdAttention').CockpitActionResponse> {
+      return await apiFetch<import('../../types/mdAttention').CockpitActionResponse>('/md-attention/grant-extension', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+    },
+
+    async reassignRaci(payload: import('../../types/mdAttention').ReassignRaciPayload): Promise<import('../../types/mdAttention').CockpitActionResponse> {
+      return await apiFetch<import('../../types/mdAttention').CockpitActionResponse>('/md-attention/reassign-raci', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
     },
   },
 };
