@@ -156,7 +156,21 @@ export const apiClient = {
 
     async login(emailOrId: string, password?: string, organization_slug?: string): Promise<{ response: CurrentUserResponse; user: User }> {
       try {
-        const body: Record<string, string> = { email: emailOrId, password: password || '1234' };
+        const idKey = emailOrId.trim().toUpperCase();
+        const emailMap: Record<string, string> = {
+          'STAVYANS-101': 'employee@stavya.local',
+          'STAVYANS-001': 'md@stavya.local',
+          'STAVYANS-002': 'leader@stavya.local',
+          'STAVYANS-000': 'master@stavya.local',
+          'EMPLOYEE': 'employee@stavya.local',
+          'LEADER': 'leader@stavya.local',
+          'MD': 'md@stavya.local',
+          'MASTER': 'master@stavya.local',
+        };
+        const resolvedEmail = emailMap[idKey] || emailOrId.trim();
+        const resolvedPassword = password === '1234' ? 'password123' : (password || 'password123');
+
+        const body: Record<string, string> = { email: resolvedEmail, password: resolvedPassword };
         if (organization_slug) {
           body.organization_slug = organization_slug;
         }

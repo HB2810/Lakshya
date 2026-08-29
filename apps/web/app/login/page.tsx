@@ -162,6 +162,98 @@ export default function LoginPage() {
                 </>
               )}
             </button>
+
+            {/* 1-Click Role Switcher Quick Logins */}
+            <div className="pt-2 border-t border-slate-100">
+              <p className="text-[10px] uppercase font-bold text-slate-400 mb-2 text-center">
+                One-Click Persona Login
+              </p>
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <button
+                  type="button"
+                  onClick={async () => {
+                    setStaffId('md@stavya.local');
+                    setPassword('1234');
+                    setIsSubmitting(true);
+                    try {
+                      await login('md@stavya.local', '1234');
+                      router.push('/overview');
+                    } catch (e: any) {
+                      setError(e.message);
+                    } finally {
+                      setIsSubmitting(false);
+                    }
+                  }}
+                  className="p-2.5 bg-blue-50 hover:bg-blue-100 border border-blue-200 text-blue-900 font-bold rounded-xl text-left transition-colors cursor-pointer"
+                >
+                  <span className="block text-[10px] text-blue-600 uppercase font-black">MD Office</span>
+                  <span className="truncate block">Managing Director</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={async () => {
+                    setStaffId('leader@stavya.local');
+                    setPassword('1234');
+                    setIsSubmitting(true);
+                    try {
+                      await login('leader@stavya.local', '1234');
+                      router.push('/overview');
+                    } catch (e: any) {
+                      setError(e.message);
+                    } finally {
+                      setIsSubmitting(false);
+                    }
+                  }}
+                  className="p-2.5 bg-purple-50 hover:bg-purple-100 border border-purple-200 text-purple-900 font-bold rounded-xl text-left transition-colors cursor-pointer"
+                >
+                  <span className="block text-[10px] text-purple-600 uppercase font-black">IT / Ops Lead</span>
+                  <span className="truncate block">Priyesh Shah</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={async () => {
+                    setStaffId('employee@stavya.local');
+                    setPassword('1234');
+                    setIsSubmitting(true);
+                    try {
+                      await login('employee@stavya.local', '1234');
+                      router.push('/overview');
+                    } catch (e: any) {
+                      setError(e.message);
+                    } finally {
+                      setIsSubmitting(false);
+                    }
+                  }}
+                  className="p-2.5 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-900 font-bold rounded-xl text-left transition-colors cursor-pointer"
+                >
+                  <span className="block text-[10px] text-emerald-600 uppercase font-black">Clinical Staff</span>
+                  <span className="truncate block">Sister Sunita Rao</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={async () => {
+                    setStaffId('master@stavya.local');
+                    setPassword('1234');
+                    setIsSubmitting(true);
+                    try {
+                      await login('master@stavya.local', '1234');
+                      router.push('/settings');
+                    } catch (e: any) {
+                      setError(e.message);
+                    } finally {
+                      setIsSubmitting(false);
+                    }
+                  }}
+                  className="p-2.5 bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-900 font-bold rounded-xl text-left transition-colors cursor-pointer"
+                >
+                  <span className="block text-[10px] text-slate-600 uppercase font-black">System Admin</span>
+                  <span className="truncate block">Master Admin</span>
+                </button>
+              </div>
+            </div>
           </form>
         </div>
       </main>
