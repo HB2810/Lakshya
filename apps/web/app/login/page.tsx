@@ -28,8 +28,13 @@ export default function LoginPage() {
     setIsSubmitting(true);
 
     try {
-      await login(staffId.trim(), password);
-      router.push('/overview');
+      const loggedInUser = await login(staffId.trim(), password);
+      
+      if (loggedInUser?.role === 'MASTER') {
+        router.push('/settings'); // System Admin Workspace
+      } else {
+        router.push('/overview'); // MD, LEADER, EMPLOYEE workspaces
+      }
     } catch (err: unknown) {
       const errorMsg = (err as Error)?.message || 'Authentication failed. Please verify your credentials.';
       setError(errorMsg);

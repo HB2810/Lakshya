@@ -84,7 +84,11 @@ export default function OverviewPage() {
         setEscalations(escInbox);
 
         // Fetch Org Tree Scope
-        const treeData = await apiClient.organization.treeScoped();
+        const isMD = user.role === 'MD';
+        const treeData = isMD 
+          ? await apiClient.organization.tree() 
+          : await apiClient.organization.treeScoped();
+          
         if (treeData) {
           setOrgTree(treeData);
           

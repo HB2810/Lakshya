@@ -12,7 +12,7 @@ interface AuthContextType {
   isLoading: boolean;
   activePersona: Persona;
   mustChangePassword: boolean;
-  login: (email: string, password?: string, organization_slug?: string) => Promise<void>;
+  login: (email: string, password?: string, organization_slug?: string) => Promise<any>;
   logout: () => Promise<void>;
   switchPersona: (persona: Persona) => void;
   can: (capability: Capability) => boolean;
@@ -65,6 +65,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setActivePersona(loggedInUser.role);
       setIsAuthenticated(true);
       setMustChangePassword(response.must_change_password);
+      return loggedInUser;
     } finally {
       setIsLoading(false);
     }

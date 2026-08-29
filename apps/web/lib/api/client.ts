@@ -419,6 +419,14 @@ export const apiClient = {
       const data = await apiFetch<{items: any[]}>('/users', { method: 'GET' });
       return data.items;
     },
+    async tree() {
+      try {
+        const response = await apiFetch<any>('/organizations/tree', { method: 'GET' });
+        return response;
+      } catch {
+        return null; // Handle fallback gracefully in component
+      }
+    },
     async treeScoped() {
       // For now, if the backend fails or doesn't have it, we return a mock fallback 
       // or try to fetch from the actual endpoint.
