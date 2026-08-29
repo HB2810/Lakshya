@@ -1,6 +1,6 @@
 import { describe, it, expect, afterEach, vi } from 'vitest';
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { can } from '../lib/permissions/can';
 import { DEMO_USERS } from '../lib/mocks/organizationMock';
 import { Button } from '../components/ui/Button';
@@ -8,6 +8,7 @@ import { StatusBadge } from '../components/ui/StatusBadge';
 import { DataTable, Column } from '../components/ui/DataTable';
 import { EmptyState, LoadingState, ErrorState } from '../components/ui/States';
 import { Header } from '../components/layout/Header';
+import { Sidebar } from '../components/layout/Sidebar';
 import { AuthProvider } from '../lib/auth/AuthContext';
 import LoginPage from '../app/login/page';
 
@@ -99,6 +100,28 @@ describe('LAKSHYA Frontend Hardening & Security Audit Suite', () => {
 
   // 3. Reusable Component Integrity Tests
   describe('UI Component Library', () => {
+    it('exposes the mobile navigation controls and drawer state', () => {
+      const openNavigation = vi.fn();
+      const closeNavigation = vi.fn();
+
+      const { rerender } = render(
+        <AuthProvider>
+          <Header onOpenNavigation={openNavigation} />
+        </AuthProvider>
+      );
+      fireEvent.click(screen.getByRole('button', { name: 'Open navigation menu' }));
+      expect(openNavigation).toHaveBeenCalledOnce();
+
+      rerender(
+        <AuthProvider>
+          <Sidebar isMobileOpen onCloseMobile={closeNavigation} />
+        </AuthProvider>
+      );
+      expect(screen.getByLabelText('Primary navigation').className).toContain('translate-x-0');
+      fireEvent.click(screen.getByRole('button', { name: 'Close navigation menu' }));
+      expect(closeNavigation).toHaveBeenCalledOnce();
+    });
+
     it('renders Button with variants and loading state', () => {
       const { rerender } = render(<Button variant="primary">Submit</Button>);
       expect(screen.getByText('Submit')).toBeDefined();

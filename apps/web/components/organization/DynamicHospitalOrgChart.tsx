@@ -39,6 +39,7 @@ import {
   Lock,
   UserPlus,
   GitBranch,
+  LayoutGrid,
 } from 'lucide-react';
 import {
   STAVYA_ORG_STRUCTURE,
@@ -92,6 +93,18 @@ export const DynamicHospitalOrgChart: React.FC<DynamicHospitalOrgChartProps> = (
   const [selectedStaff, setSelectedStaff] = useState<HospitalStaffMember | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [zoomLevel, setZoomLevel] = useState<number>(100);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return;
+
+    const mobileQuery = window.matchMedia('(max-width: 767px)');
+    const applyResponsiveView = (matches: boolean) => setViewMode(matches ? 'grid' : 'tree');
+
+    applyResponsiveView(mobileQuery.matches);
+    const handleChange = (event: MediaQueryListEvent) => applyResponsiveView(event.matches);
+    mobileQuery.addEventListener('change', handleChange);
+    return () => mobileQuery.removeEventListener('change', handleChange);
+  }, []);
 
   // Expanded nodes in tree view
   const [expandedNodes, setExpandedNodes] = useState<Record<string, boolean>>({
@@ -763,7 +776,7 @@ export const DynamicHospitalOrgChart: React.FC<DynamicHospitalOrgChartProps> = (
   return (
     <div className="space-y-6">
       {/* 1. TOP MINIMALIST CONTROL HEADER */}
-      <div className="bg-white border border-slate-200/90 rounded-3xl p-6 shadow-xs space-y-5">
+      <div className="bg-white border border-slate-200/90 rounded-3xl p-4 sm:p-6 shadow-xs space-y-5">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="space-y-1">
             <div className="flex items-center gap-2">
@@ -780,9 +793,32 @@ export const DynamicHospitalOrgChart: React.FC<DynamicHospitalOrgChartProps> = (
             </p>
           </div>
 
-          {/* Quick Metrics & View Mode Switcher */}
+          {/* Quick Metrics & Mobile View Mode Switcher */}
           <div className="flex flex-wrap items-center gap-3">
-            {/* Removed View Mode Switcher per user request */}
+            <div className="flex items-center rounded-xl border border-slate-200 bg-slate-50 p-1 md:hidden" aria-label="Organization view">
+              <button
+                type="button"
+                onClick={() => setViewMode('grid')}
+                aria-pressed={viewMode === 'grid'}
+                className={`flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-bold transition-colors ${
+                  viewMode === 'grid' ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-600'
+                }`}
+              >
+                <LayoutGrid className="h-4 w-4" />
+                Directory
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode('tree')}
+                aria-pressed={viewMode === 'tree'}
+                className={`flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-bold transition-colors ${
+                  viewMode === 'tree' ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-600'
+                }`}
+              >
+                <Network className="h-4 w-4" />
+                Tree
+              </button>
+            </div>
             <div className="hidden sm:flex items-center gap-2">
               <div className="bg-slate-50 px-3.5 py-2 rounded-xl text-center border border-slate-200">
                 <span className="block text-sm font-black text-slate-900">{totalStaff}</span>
@@ -949,7 +985,7 @@ export const DynamicHospitalOrgChart: React.FC<DynamicHospitalOrgChartProps> = (
       {/* 4. VIEW MODE RENDER */}
       {viewMode === 'tree' ? (
         /* HIERARCHICAL TOP-DOWN TREE VIEW WITH ZOOM & CLEAN CONNECTOR ARMS */
-        <div className="bg-white border border-slate-200 rounded-3xl p-8 overflow-auto shadow-xs min-h-[550px]">
+        <div className="bg-white border border-slate-200 rounded-3xl p-3 sm:p-8 overflow-auto overscroll-contain shadow-xs min-h-[420px] sm:min-h-[550px]">
           <div
             className="inline-block min-w-full text-center space-y-12 transition-transform duration-150 origin-top"
             style={{ transform: `scale(${zoomLevel / 100})` }}
@@ -1061,9 +1097,9 @@ export const DynamicHospitalOrgChart: React.FC<DynamicHospitalOrgChartProps> = (
       {/* 5. STAFF PROFILE & ACTION DRAWER */}
       {isDrawerOpen && selectedStaff && (
         <div className="fixed inset-0 z-50 flex justify-end bg-slate-900/40 backdrop-blur-xs animate-fadeIn">
-          <div className="w-full max-w-md bg-white h-full shadow-2xl flex flex-col border-l border-slate-200 animate-slideInRight">
+          <div className="w-full max-w-md bg-white h-[100dvh] shadow-2xl flex flex-col border-l border-slate-200 animate-slideInRight" role="dialog" aria-modal="true" aria-label="Staff profile and actions">
             {/* Header */}
-            <div className="p-5 border-b border-slate-100 flex items-start justify-between gap-3 bg-gradient-to-b from-slate-50 to-white">
+            <div className="px-4 pb-4 pt-[calc(1rem+env(safe-area-inset-top))] sm:p-5 border-b border-slate-100 flex items-start justify-between gap-3 bg-gradient-to-b from-slate-50 to-white">
               <div className="space-y-1">
                 <div className="flex items-center gap-1.5">
                   <span className="px-2 py-0.5 bg-blue-50 text-blue-700 text-[10px] font-black rounded uppercase tracking-wider">
@@ -1082,14 +1118,15 @@ export const DynamicHospitalOrgChart: React.FC<DynamicHospitalOrgChartProps> = (
               <button
                 type="button"
                 onClick={() => setIsDrawerOpen(false)}
-                className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition-colors"
+                className="flex min-h-11 min-w-11 shrink-0 items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition-colors"
+                aria-label="Close staff profile"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             {/* Body */}
-            <div className="flex-1 overflow-y-auto p-5 space-y-5 text-xs">
+            <div className="flex-1 overflow-y-auto overscroll-contain p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] sm:p-5 space-y-5 text-xs">
               {/* Action Buttons */}
               <div className="grid grid-cols-2 gap-2">
                 {isLeader && (
@@ -1276,8 +1313,8 @@ export const DynamicHospitalOrgChart: React.FC<DynamicHospitalOrgChartProps> = (
 
       {/* 6. INLINE TASK DELEGATION MODAL */}
       {isTaskModalOpen && taskAssignee && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs p-4">
-          <div className="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl border border-slate-200 space-y-5 animate-fadeIn">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs p-3 sm:p-4">
+          <div className="bg-white rounded-3xl p-4 sm:p-6 max-w-md w-full max-h-[calc(100dvh-1.5rem)] overflow-y-auto overscroll-contain shadow-2xl border border-slate-200 space-y-5 animate-fadeIn">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div>
                 <h3 className="text-base font-black text-slate-900">Delegate Execution Task</h3>
@@ -1371,8 +1408,8 @@ export const DynamicHospitalOrgChart: React.FC<DynamicHospitalOrgChartProps> = (
 
       {/* 7. MD DYNAMIC RE-PARENTING / CHANGE SUPERVISOR MODAL */}
       {isReparentModalOpen && reparentStaff && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs p-4">
-          <div className="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl border border-slate-200 space-y-4 animate-fadeIn">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs p-3 sm:p-4">
+          <div className="bg-white rounded-3xl p-4 sm:p-6 max-w-md w-full max-h-[calc(100dvh-1.5rem)] overflow-y-auto overscroll-contain shadow-2xl border border-slate-200 space-y-4 animate-fadeIn">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div className="flex items-center gap-2">
                 <span className="p-1.5 bg-blue-600 text-white rounded-lg">
@@ -1440,8 +1477,8 @@ export const DynamicHospitalOrgChart: React.FC<DynamicHospitalOrgChartProps> = (
 
       {/* 8. MD DYNAMIC DEPARTMENT TRANSFER MODAL */}
       {isTransferModalOpen && transferStaff && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs p-4">
-          <div className="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl border border-slate-200 space-y-4 animate-fadeIn">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs p-3 sm:p-4">
+          <div className="bg-white rounded-3xl p-4 sm:p-6 max-w-md w-full max-h-[calc(100dvh-1.5rem)] overflow-y-auto overscroll-contain shadow-2xl border border-slate-200 space-y-4 animate-fadeIn">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div className="flex items-center gap-2">
                 <span className="p-1.5 bg-blue-600 text-white rounded-lg">
@@ -1546,8 +1583,8 @@ export const DynamicHospitalOrgChart: React.FC<DynamicHospitalOrgChartProps> = (
 
       {/* 9. MD ADD NEW STAFF / POSITION MODAL */}
       {isAddStaffModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs p-4">
-          <div className="bg-white rounded-3xl p-6 max-w-lg w-full shadow-2xl border border-slate-200 space-y-4 animate-fadeIn">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs p-3 sm:p-4">
+          <div className="bg-white rounded-3xl p-4 sm:p-6 max-w-lg w-full max-h-[calc(100dvh-1.5rem)] overflow-y-auto overscroll-contain shadow-2xl border border-slate-200 space-y-4 animate-fadeIn">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div className="flex items-center gap-2">
                 <span className="p-1.5 bg-blue-600 text-white rounded-lg">
@@ -1685,8 +1722,8 @@ export const DynamicHospitalOrgChart: React.FC<DynamicHospitalOrgChartProps> = (
 
       {/* 10. MD EDIT DETAILS MODAL */}
       {isEditStaffModalOpen && editingStaff && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs p-4">
-          <div className="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl border border-slate-200 space-y-4 animate-fadeIn">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs p-3 sm:p-4">
+          <div className="bg-white rounded-3xl p-4 sm:p-6 max-w-md w-full max-h-[calc(100dvh-1.5rem)] overflow-y-auto overscroll-contain shadow-2xl border border-slate-200 space-y-4 animate-fadeIn">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div className="flex items-center gap-2">
                 <span className="p-1.5 bg-blue-600 text-white rounded-lg">

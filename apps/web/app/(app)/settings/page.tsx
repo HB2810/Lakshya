@@ -12,7 +12,7 @@ export default function SettingsPage() {
   return (
     <div className="space-y-6 max-w-4xl">
       {/* Header */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6 shadow-sm">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 sm:p-6 shadow-sm">
         <h2 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">System & Account Settings</h2>
         <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
           Manage user profile information, notification delivery rules, and session security preferences.

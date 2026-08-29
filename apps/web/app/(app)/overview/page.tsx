@@ -255,7 +255,7 @@ export default function OverviewPage() {
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
-      <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-6">
+      <div className="bg-white border border-slate-200 rounded-3xl p-4 sm:p-6 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4 md:gap-6">
         <div>
           <div className="flex items-center gap-2">
             <span className="px-2.5 py-0.5 bg-blue-600 text-white text-[10px] font-black rounded-full uppercase tracking-wider shadow-2xs">
@@ -351,7 +351,7 @@ export default function OverviewPage() {
       )}
 
       {primaryNextAction ? (
-        <div className="bg-white border-2 border-blue-500/30 rounded-3xl p-6 shadow-xs relative overflow-hidden bg-gradient-to-br from-blue-50/50 via-white to-indigo-50/30">
+        <div className="bg-white border-2 border-blue-500/30 rounded-3xl p-4 sm:p-6 shadow-xs relative overflow-hidden bg-gradient-to-br from-blue-50/50 via-white to-indigo-50/30">
           <div className="relative z-10 space-y-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">

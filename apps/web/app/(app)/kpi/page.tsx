@@ -126,8 +126,8 @@ export default function KPIPage() {
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-12">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-        <div className="flex items-center gap-3">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-4 sm:p-6 rounded-2xl border border-slate-200 shadow-sm">
+        <div className="flex items-start gap-3">
           <div className="p-2.5 bg-purple-50 text-purple-600 rounded-xl">
             <BarChart3 className="w-6 h-6" />
           </div>
@@ -139,11 +139,11 @@ export default function KPIPage() {
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
-          <Button variant="outline" className="text-xs font-semibold border-slate-200">
+        <div className="grid w-full grid-cols-1 gap-2 min-[420px]:grid-cols-2 sm:flex sm:w-auto sm:items-center">
+          <Button variant="outline" className="w-full justify-center text-xs font-semibold border-slate-200">
             <Plus className="w-4 h-4 mr-1.5" /> Add KPI Definition
           </Button>
-          <Button className="flex items-center gap-2 bg-brand-blue hover:bg-brand-blue/90 text-white shadow-md shadow-brand-blue/20">
+          <Button className="flex w-full items-center justify-center gap-2 bg-brand-blue hover:bg-brand-blue/90 text-white shadow-md shadow-brand-blue/20">
             <Plus className="w-4 h-4" /> Record KPI Value
           </Button>
         </div>

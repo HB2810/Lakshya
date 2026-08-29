@@ -187,7 +187,7 @@ export const ScopedOrgTree: React.FC<ScopedOrgTreeProps> = ({
 
   if (isLoading) {
     return (
-      <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-xs animate-pulse space-y-4">
+      <div className="bg-white border border-slate-200 rounded-3xl p-4 sm:p-6 shadow-xs animate-pulse space-y-4">
         <div className="h-5 bg-slate-200 rounded w-1/3"></div>
         <div className="h-4 bg-slate-100 rounded w-1/2"></div>
         <div className="space-y-3 pl-4 border-l-2 border-slate-100 pt-2">
@@ -210,7 +210,7 @@ export const ScopedOrgTree: React.FC<ScopedOrgTreeProps> = ({
   }
 
   return (
-    <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-xs space-y-5">
+    <div className="bg-white border border-slate-200 rounded-3xl p-4 sm:p-6 shadow-xs space-y-5">
       {/* Header with Title & Stats */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
         <div>
@@ -291,4 +291,3 @@ export const ScopedOrgTree: React.FC<ScopedOrgTreeProps> = ({
     </div>
   );
 };
-

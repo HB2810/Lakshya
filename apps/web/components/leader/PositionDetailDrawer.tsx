@@ -80,9 +80,9 @@ export const PositionDetailDrawer: React.FC<PositionDetailDrawerProps> = ({
         onClick={onClose}
       />
 
-      <div className="fixed inset-y-2 right-2 w-[400px] bg-white rounded-3xl shadow-2xl z-50 flex flex-col border border-slate-200/60 overflow-hidden">
+      <div className="fixed inset-0 w-full bg-white rounded-none shadow-2xl z-50 flex flex-col border border-slate-200/60 overflow-hidden sm:inset-y-2 sm:left-auto sm:right-2 sm:w-[400px] sm:rounded-3xl">
         
-        <div className="shrink-0 p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+        <div className="shrink-0 px-4 pb-4 pt-[calc(1rem+env(safe-area-inset-top))] sm:p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
           <div className="flex items-center gap-2.5 text-slate-800">
             <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center">
               <Network className="w-4 h-4" />
@@ -97,12 +97,13 @@ export const PositionDetailDrawer: React.FC<PositionDetailDrawerProps> = ({
           <button 
             onClick={onClose}
             className="p-2 hover:bg-slate-200/50 rounded-full text-slate-400 hover:text-slate-700 transition-colors"
+            aria-label="Close position details"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-5 space-y-6">
+        <div className="flex-1 overflow-y-auto overscroll-contain p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] sm:p-5 space-y-6">
           {error && (
             <div className="p-3 bg-red-50 text-red-700 text-xs rounded-xl border border-red-200">
               {error}

@@ -176,10 +176,10 @@ export const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({
         className="absolute inset-0 bg-slate-900/40 backdrop-blur-2xs transition-opacity animate-in fade-in"
       />
 
-      <div className="fixed inset-y-0 right-0 max-w-full flex pl-10">
+      <div className="fixed inset-y-0 right-0 flex max-w-full pl-0 sm:pl-10">
         <div className="w-screen max-w-xl bg-white shadow-2xl border-l border-slate-200 flex flex-col justify-between animate-in slide-in-from-right duration-200">
           {/* 1. DRAWER TOP HEADER */}
-          <div className="p-6 border-b border-slate-100 flex items-start justify-between gap-4">
+          <div className="px-4 pb-4 pt-[calc(1rem+env(safe-area-inset-top))] sm:p-6 border-b border-slate-100 flex items-start justify-between gap-4">
             <div className="space-y-2">
               <div className="flex items-center gap-2">
                 <span
@@ -212,14 +212,15 @@ export const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
+              className="flex min-h-11 min-w-11 shrink-0 items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
+              aria-label="Close task details"
             >
               <X className="w-5 h-5" />
             </button>
           </div>
 
           {/* 2. TAB NAVIGATION */}
-          <div className="flex border-b border-slate-100 px-6 gap-6 text-xs font-bold uppercase tracking-wider bg-slate-50/50">
+          <div className="flex shrink-0 overflow-x-auto overscroll-x-contain border-b border-slate-100 px-4 sm:px-6 gap-5 sm:gap-6 text-xs font-bold uppercase tracking-wider bg-slate-50/50">
             {[
               { id: 'overview', label: 'Overview' },
               { id: 'execution', label: 'RACI & EDC' },
@@ -229,7 +230,7 @@ export const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as any)}
-                className={`py-3 border-b-2 transition-colors ${
+                className={`shrink-0 whitespace-nowrap py-3 border-b-2 transition-colors ${
                   activeTab === tab.id
                     ? 'border-blue-600 text-blue-700'
                     : 'border-transparent text-slate-500 hover:text-slate-700'
@@ -241,7 +242,7 @@ export const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({
           </div>
 
           {/* 3. DRAWER BODY CONTENT */}
-          <div className="flex-1 overflow-y-auto p-6 space-y-6">
+          <div className="flex-1 overflow-y-auto overscroll-contain p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] sm:p-6 space-y-5 sm:space-y-6">
             
             {/* OVERVIEW TAB */}
             {activeTab === 'overview' && (

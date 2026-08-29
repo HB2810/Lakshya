@@ -159,7 +159,7 @@ export const ZomatoDeliveryStepper: React.FC<ZomatoDeliveryStepperProps> = ({ pr
   return (
     <div className="space-y-6">
       {/* 1. TOP LIVE DELIVERY PROGRESS SUMMARY (PURE WHITE & LIGHT ACCENTS) */}
-      <div className="bg-white border border-blue-200/90 rounded-3xl p-6 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-6 relative overflow-hidden bg-gradient-to-r from-blue-50/40 via-white to-indigo-50/30">
+      <div className="bg-white border border-blue-200/90 rounded-3xl p-4 sm:p-6 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-6 relative overflow-hidden bg-gradient-to-r from-blue-50/40 via-white to-indigo-50/30">
         <div className="space-y-2 relative z-10">
           <div className="flex items-center gap-2">
             <span className="px-2.5 py-0.5 bg-blue-100 text-blue-800 border border-blue-200 text-[10px] font-bold rounded-full uppercase tracking-wider flex items-center gap-1.5">
@@ -212,7 +212,7 @@ export const ZomatoDeliveryStepper: React.FC<ZomatoDeliveryStepperProps> = ({ pr
       </div>
 
       {/* 2. ZOMATO-STYLE PROGRESSIVE STEPPER TRACK (STRICT PREREQUISITE LOCKS) */}
-      <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-xs space-y-6">
+      <div className="bg-white border border-slate-200 rounded-3xl p-4 sm:p-6 shadow-xs space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
           <div>
             <div className="flex items-center gap-2">
@@ -348,7 +348,7 @@ export const ZomatoDeliveryStepper: React.FC<ZomatoDeliveryStepperProps> = ({ pr
 
         {/* 3. SELECTED STEP EXPANDED DETAIL & EDIT PANEL */}
         {selectedStep && (
-          <div className="bg-slate-50/80 border border-slate-200 rounded-2xl p-6 space-y-4 animate-in fade-in duration-150">
+          <div className="bg-slate-50/80 border border-slate-200 rounded-2xl p-4 sm:p-6 space-y-4 animate-in fade-in duration-150">
             {/* Prerequisite Gate Banner */}
             {isStepLocked && (
               <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl flex items-center justify-between gap-2 text-xs text-amber-800">

@@ -2,8 +2,7 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Image from 'next/image';
-import { Lock, User as UserIcon, Eye, EyeOff, ShieldCheck, ArrowRight, AlertCircle, Info } from 'lucide-react';
+import { Lock, User as UserIcon, Eye, EyeOff, ArrowRight, AlertCircle, Info } from 'lucide-react';
 import { useAuth } from '../../lib/auth/AuthContext';
 
 export default function LoginPage() {
@@ -46,7 +45,7 @@ export default function LoginPage() {
   const isLoading = isSubmitting || authLoading;
 
   return (
-    <div className="min-h-screen w-full bg-[#f8fafc] flex items-center justify-center p-4 sm:p-6 relative selection:bg-slate-200">
+    <div className="h-[100dvh] w-full overflow-y-auto bg-[#f8fafc] flex items-start sm:items-center justify-center px-4 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-[calc(1rem+env(safe-area-inset-top))] sm:p-6 relative selection:bg-slate-200">
       {/* Subtle Ambient Background Accents */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute -top-40 left-1/2 -translate-x-1/2 w-[700px] h-[400px] bg-slate-200/50 rounded-full blur-3xl" />
@@ -58,7 +57,7 @@ export default function LoginPage() {
         <div className="bg-white rounded-2xl shadow-xl shadow-slate-200/60 border border-slate-200/90 overflow-hidden">
 
           {/* Card Brand Header */}
-          <div className="pt-8 pb-6 px-8 text-center border-b border-slate-100 bg-gradient-to-b from-slate-50/50 to-white">
+          <div className="px-5 pb-5 pt-6 text-center border-b border-slate-100 bg-gradient-to-b from-slate-50/50 to-white sm:px-8 sm:pb-6 sm:pt-8">
             <div className="inline-flex items-center justify-center p-3 rounded-2xl bg-white border border-slate-200 shadow-xs mb-3">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
@@ -78,7 +77,7 @@ export default function LoginPage() {
           </div>
 
           {/* Form */}
-          <form onSubmit={handleSubmit} className="p-8 space-y-4">
+          <form onSubmit={handleSubmit} className="p-5 space-y-4 sm:p-8">
             {error && (
               <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-xs font-semibold text-red-700 flex items-start gap-2 animate-in fade-in duration-200">
                 <AlertCircle className="w-4 h-4 shrink-0 text-red-600 mt-0.5" />
@@ -130,6 +129,7 @@ export default function LoginPage() {
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 transition-colors p-0.5"
                   title={showPassword ? 'Hide password' : 'Show password'}
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
@@ -142,7 +142,7 @@ export default function LoginPage() {
                 <Info className="w-4 h-4 shrink-0 text-slate-500" />
                 <span>Development Credentials (Password: 1234)</span>
               </div>
-              <div className="grid grid-cols-2 gap-1.5 text-[11px] font-mono text-slate-600 pl-6">
+              <div className="grid grid-cols-1 gap-1.5 pl-6 font-mono text-[11px] text-slate-600 min-[380px]:grid-cols-2">
                 <div>MD: <span className="font-bold text-slate-900">STAVYANS-001</span></div>
                 <div>Leader: <span className="font-bold text-slate-900">STAVYANS-002</span></div>
                 <div>Staff: <span className="font-bold text-slate-900">STAVYANS-101</span></div>
@@ -171,7 +171,7 @@ export default function LoginPage() {
               <p className="text-[10px] uppercase font-bold text-slate-400 mb-2 text-center">
                 One-Click Persona Login
               </p>
-              <div className="grid grid-cols-2 gap-2 text-xs">
+              <div className="grid grid-cols-1 gap-2 text-xs min-[380px]:grid-cols-2">
                 <button
                   type="button"
                   onClick={async () => {

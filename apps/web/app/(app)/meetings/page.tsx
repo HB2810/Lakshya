@@ -117,18 +117,18 @@ export default function MeetingsPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6 shadow-sm">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 sm:p-6 shadow-sm">
         <div>
           <h2 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">SSIE Meetings Hub</h2>
           <p className="text-xs text-slate-600 dark:text-slate-400 font-medium mt-1">
             Operational meetings, live agenda & decision logging, and direct work extraction into SSIE.
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <Button size="sm" variant="outline" onClick={() => setIsExtractModalOpen(true)}>
+        <div className="grid w-full grid-cols-1 gap-2 min-[420px]:grid-cols-2 sm:flex sm:w-auto sm:items-center">
+          <Button className="w-full justify-center" size="sm" variant="outline" onClick={() => setIsExtractModalOpen(true)}>
             + Add Work from Meeting
           </Button>
-          <Button size="sm" leftIcon={<Plus className="w-4 h-4" />} onClick={() => setIsCreateModalOpen(true)}>
+          <Button className="w-full justify-center" size="sm" leftIcon={<Plus className="w-4 h-4" />} onClick={() => setIsCreateModalOpen(true)}>
             Schedule Meeting
           </Button>
         </div>

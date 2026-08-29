@@ -320,10 +320,10 @@ export const MDAttentionItemDrawer: React.FC<MDAttentionItemDrawerProps> = ({
     >
       <div
         ref={drawerRef}
-        className="w-full max-w-2xl bg-white dark:bg-slate-900 h-full shadow-2xl flex flex-col border-l border-slate-200 dark:border-slate-800 overflow-hidden"
+        className="w-full max-w-2xl bg-white dark:bg-slate-900 h-[100dvh] shadow-2xl flex flex-col border-l border-slate-200 dark:border-slate-800 overflow-hidden"
       >
         {/* Top Header Bar */}
-        <div className="p-4 sm:p-5 border-b border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-950/80 flex items-center justify-between gap-3">
+        <div className="px-4 pb-4 pt-[calc(1rem+env(safe-area-inset-top))] sm:p-5 border-b border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-950/80 flex items-center justify-between gap-3">
           <div className="flex items-center gap-2 flex-wrap">
             <span className={`px-2.5 py-1 text-xs font-bold rounded-lg uppercase tracking-wider border flex items-center gap-1.5 ${config.badge}`}>
               <Icon className="w-3.5 h-3.5" />
@@ -376,7 +376,7 @@ export const MDAttentionItemDrawer: React.FC<MDAttentionItemDrawerProps> = ({
         )}
 
         {/* Scrollable Body: Read-First Details & Evidence */}
-        <div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-6">
+        <div className="flex-1 overflow-y-auto overscroll-contain p-4 sm:p-6 space-y-5 sm:space-y-6">
           {/* Title & Description */}
           <div className="space-y-2">
             <h1 id="md-drawer-title" className="text-lg sm:text-xl font-black text-slate-900 dark:text-white leading-tight">
@@ -398,7 +398,7 @@ export const MDAttentionItemDrawer: React.FC<MDAttentionItemDrawerProps> = ({
             <p className="text-xs text-slate-800 dark:text-slate-200 font-medium">
               {item.why_included}
             </p>
-            <div className="text-[10px] font-mono text-slate-500 dark:text-slate-400 pt-1 flex items-center gap-2">
+            <div className="text-[10px] font-mono text-slate-500 dark:text-slate-400 pt-1 flex flex-wrap items-center gap-x-2 gap-y-1 break-all">
               <span>Source: {item.source}</span>
               <span>•</span>
               <span>Entity: {item.audit_provenance}</span>
@@ -588,7 +588,7 @@ export const MDAttentionItemDrawer: React.FC<MDAttentionItemDrawerProps> = ({
         </div>
 
         {/* Bottom Action Command Bar (Gated Human-Authority Actions) */}
-        <div className="p-4 sm:p-5 border-t border-slate-200 dark:border-slate-800 bg-slate-50/90 dark:bg-slate-950/90 space-y-3">
+        <div className="max-h-[44dvh] overflow-y-auto overscroll-contain px-4 pt-4 pb-[calc(1rem+env(safe-area-inset-bottom))] sm:p-5 border-t border-slate-200 dark:border-slate-800 bg-slate-50/95 dark:bg-slate-950/95 space-y-3">
           <div className="text-[10px] font-black uppercase tracking-wider text-slate-500 dark:text-slate-400">
             Executive Cockpit Decisions & Authority Controls
           </div>
@@ -728,12 +728,12 @@ export const MDAttentionItemDrawer: React.FC<MDAttentionItemDrawerProps> = ({
         {/* ------------------------------------------------------------- */}
         {activeModal && (
           <div
-            className="fixed inset-0 z-60 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4"
+            className="fixed inset-0 z-60 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4"
             role="dialog"
             aria-modal="true"
             aria-labelledby="modal-action-title"
           >
-            <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-2xl border border-slate-200 dark:border-slate-800 animate-in zoom-in-95 duration-150">
+            <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-lg w-full max-h-[calc(100dvh-1.5rem)] overflow-y-auto overscroll-contain p-4 sm:p-6 space-y-4 shadow-2xl border border-slate-200 dark:border-slate-800 animate-in zoom-in-95 duration-150">
               {/* Modal Header */}
               <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
                 <div className="flex items-center gap-2">

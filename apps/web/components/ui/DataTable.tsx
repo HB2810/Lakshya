@@ -64,7 +64,7 @@ export function DataTable<T extends Record<string, any>>({
   return (
     <div className="w-full bg-white border border-slate-200 rounded-xl shadow-card overflow-hidden">
       {/* Search Bar */}
-      <div className="p-4 border-b border-slate-200 flex items-center justify-between bg-slate-50/50">
+      <div className="p-3 sm:p-4 border-b border-slate-200 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between bg-slate-50/50">
         <input
           type="text"
           value={searchTerm}
@@ -73,7 +73,7 @@ export function DataTable<T extends Record<string, any>>({
             setCurrentPage(1);
           }}
           placeholder={searchPlaceholder}
-          className="w-full max-w-xs px-3 py-1.5 text-xs bg-white border border-slate-200 rounded-lg shadow-sm text-slate-900 placeholder-slate-400 focus:border-brand-blue focus:ring-1 focus:ring-brand-blue"
+          className="w-full sm:max-w-xs px-3 py-1.5 text-xs bg-white border border-slate-200 rounded-lg shadow-sm text-slate-900 placeholder-slate-400 focus:border-brand-blue focus:ring-1 focus:ring-brand-blue"
         />
         <div className="text-xs text-slate-500 font-semibold">
           Showing <span className="font-bold text-slate-900">{sortedData.length}</span> entries
@@ -82,7 +82,7 @@ export function DataTable<T extends Record<string, any>>({
 
       {/* Table */}
       <div className="overflow-x-auto">
-        <table className="w-full text-left text-xs">
+        <table className="w-full min-w-[680px] text-left text-xs">
           <thead className="bg-slate-50/80 uppercase tracking-wider text-slate-600 border-b border-slate-200 font-bold">
             <tr>
               {columns.map(col => (

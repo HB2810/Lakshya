@@ -113,7 +113,7 @@ export const NeedsMDAttentionView: React.FC<NeedsMDAttentionViewProps> = ({ onSe
   // 2. LOADING STATE
   if (isLoading && !summary) {
     return (
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 space-y-4 shadow-sm">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 sm:p-6 space-y-4 shadow-sm">
         <div className="flex items-center justify-between">
           <div className="h-5 w-48 bg-slate-200 dark:bg-slate-800 rounded animate-pulse" />
           <div className="h-4 w-20 bg-slate-200 dark:bg-slate-800 rounded animate-pulse" />

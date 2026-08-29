@@ -106,7 +106,7 @@ export const ExecutiveStaffTracker: React.FC<ExecutiveStaffTrackerProps> = ({
   }, [staffList, search, selectedDept, statusFilter, staffTasksMap, leaderNames]);
 
   return (
-    <div className="bg-white border border-slate-200/90 rounded-3xl p-6 shadow-xs space-y-5">
+    <div className="bg-white border border-slate-200/90 rounded-3xl p-4 sm:p-6 shadow-xs space-y-5">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
         <div>

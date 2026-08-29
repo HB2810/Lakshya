@@ -129,8 +129,8 @@ export default function OOPage() {
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-12">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-        <div className="flex items-center gap-3">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-4 sm:p-6 rounded-2xl border border-slate-200 shadow-sm">
+        <div className="flex items-start gap-3">
           <div className="p-2.5 bg-rose-50 text-rose-600 rounded-xl">
             <AlertCircle className="w-6 h-6" />
           </div>
@@ -142,8 +142,8 @@ export default function OOPage() {
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
-          <Button className="flex items-center gap-2 bg-brand-blue hover:bg-brand-blue/90 text-white shadow-md shadow-brand-blue/20">
+        <div className="flex w-full items-center gap-3 sm:w-auto">
+          <Button className="flex w-full items-center justify-center gap-2 bg-brand-blue hover:bg-brand-blue/90 text-white shadow-md shadow-brand-blue/20">
             <Plus className="w-4 h-4" /> Raise O&O
           </Button>
         </div>
@@ -151,8 +151,8 @@ export default function OOPage() {
 
       {/* Control Bar */}
       <Card className="p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 border-slate-200 shadow-sm">
-        <div className="flex items-center gap-3">
-          <div className="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200">
+        <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center">
+          <div className="grid w-full grid-cols-2 bg-slate-100 p-1 rounded-xl border border-slate-200 sm:flex sm:w-auto sm:items-center">
             <button
               onClick={() => setViewMode('kanban')}
               className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${
@@ -171,10 +171,10 @@ export default function OOPage() {
             </button>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex w-full items-center gap-2 overflow-x-auto overscroll-x-contain sm:w-auto">
             <button
               onClick={() => setFilterType('ALL')}
-              className={`px-3 py-1 rounded-full text-xs font-bold transition-all ${
+              className={`shrink-0 whitespace-nowrap px-3 py-1 rounded-full text-xs font-bold transition-all ${
                 filterType === 'ALL' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600'
               }`}
             >
@@ -182,7 +182,7 @@ export default function OOPage() {
             </button>
             <button
               onClick={() => setFilterType('OBSTACLE')}
-              className={`px-3 py-1 rounded-full text-xs font-bold transition-all ${
+              className={`shrink-0 whitespace-nowrap px-3 py-1 rounded-full text-xs font-bold transition-all ${
                 filterType === 'OBSTACLE' ? 'bg-rose-600 text-white' : 'bg-rose-50 text-rose-700'
               }`}
             >
@@ -190,7 +190,7 @@ export default function OOPage() {
             </button>
             <button
               onClick={() => setFilterType('OPPORTUNITY')}
-              className={`px-3 py-1 rounded-full text-xs font-bold transition-all ${
+              className={`shrink-0 whitespace-nowrap px-3 py-1 rounded-full text-xs font-bold transition-all ${
                 filterType === 'OPPORTUNITY' ? 'bg-emerald-600 text-white' : 'bg-emerald-50 text-emerald-700'
               }`}
             >
@@ -199,12 +199,12 @@ export default function OOPage() {
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex w-full items-center gap-3 md:w-auto">
           <Filter className="w-4 h-4 text-slate-400" />
           <select
             value={filterPriority}
             onChange={(e) => setFilterPriority(e.target.value)}
-            className="text-xs font-medium bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-slate-700"
+            className="min-w-0 flex-1 text-xs font-medium bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-slate-700 md:flex-none"
           >
             <option value="ALL">All Priorities</option>
             <option value="CRITICAL">Critical Only</option>

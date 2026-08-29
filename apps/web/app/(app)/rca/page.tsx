@@ -151,9 +151,9 @@ export default function RCAPage() {
   return (
     <div className="max-w-6xl mx-auto space-y-6">
       {/* 1. QUALITY & RCA EXECUTIVE HEADER */}
-      <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="bg-white border border-slate-200 rounded-2xl p-4 sm:p-6 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <span className="px-2.5 py-0.5 bg-red-50 text-red-700 border border-red-200 text-[10px] font-bold rounded-full uppercase tracking-wider flex items-center gap-1">
               <ShieldAlert className="w-3 h-3" />
               Clinical Quality & Risk Assurance
@@ -171,11 +171,11 @@ export default function RCAPage() {
         </div>
 
         {/* Tab Navigation Pill */}
-        <div className="flex items-center gap-1 bg-slate-100 p-1.5 rounded-xl self-start md:self-auto">
+        <div className="flex w-full items-center gap-1 overflow-x-auto overscroll-x-contain bg-slate-100 p-1.5 rounded-xl self-start md:w-auto md:self-auto">
           <button
             type="button"
             onClick={() => setActiveTab('5why')}
-            className={`px-3.5 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+            className={`shrink-0 whitespace-nowrap px-3.5 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
               activeTab === '5why'
                 ? 'bg-white text-slate-900 shadow-xs'
                 : 'text-slate-500 hover:text-slate-900'
@@ -186,7 +186,7 @@ export default function RCAPage() {
           <button
             type="button"
             onClick={() => setActiveTab('fishbone')}
-            className={`px-3.5 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+            className={`shrink-0 whitespace-nowrap px-3.5 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
               activeTab === 'fishbone'
                 ? 'bg-white text-slate-900 shadow-xs'
                 : 'text-slate-500 hover:text-slate-900'
@@ -197,7 +197,7 @@ export default function RCAPage() {
           <button
             type="button"
             onClick={() => setActiveTab('fmea')}
-            className={`px-3.5 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+            className={`shrink-0 whitespace-nowrap px-3.5 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
               activeTab === 'fmea'
                 ? 'bg-white text-slate-900 shadow-xs'
                 : 'text-slate-500 hover:text-slate-900'
@@ -211,8 +211,8 @@ export default function RCAPage() {
       {/* 2. TAB 1: 5-WHY ROOT CAUSE ANALYSIS */}
       {activeTab === '5why' && (
         <div className="space-y-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 overflow-x-auto pb-1 max-w-2xl">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex w-full items-center gap-2 overflow-x-auto pb-1 sm:max-w-2xl">
               {fiveWhyList.map(fw => (
                 <button
                   key={fw.id}
@@ -232,7 +232,7 @@ export default function RCAPage() {
             <button
               type="button"
               onClick={() => setShowNew5WhyModal(true)}
-              className="px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-xs transition-colors flex items-center gap-1.5 shrink-0 cursor-pointer"
+              className="w-full justify-center px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-xs transition-colors flex items-center gap-1.5 shrink-0 cursor-pointer sm:w-auto"
             >
               <Plus className="w-4 h-4" />
               <span>New 5-Why RCA</span>
@@ -240,7 +240,7 @@ export default function RCAPage() {
           </div>
 
           {activeAnalysis && (
-            <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-6">
+            <div className="bg-white border border-slate-200 rounded-2xl p-4 sm:p-6 shadow-xs space-y-6">
               {/* Problem Statement Card */}
               <div className="p-5 bg-red-50/70 border border-red-200/80 rounded-2xl space-y-2">
                 <div className="flex items-center justify-between">
@@ -462,7 +462,7 @@ export default function RCAPage() {
       {/* MODAL: NEW 5-WHY RCA */}
       {showNew5WhyModal && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white border border-slate-200 rounded-2xl max-w-2xl w-full p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-150">
+          <div className="bg-white border border-slate-200 rounded-2xl max-w-2xl w-full p-4 sm:p-6 shadow-2xl space-y-4 max-h-[calc(100dvh-2rem)] overflow-y-auto animate-in fade-in zoom-in-95 duration-150">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div>
                 <h3 className="text-base font-bold text-slate-900">New 5-Why Investigation</h3>
@@ -564,7 +564,7 @@ export default function RCAPage() {
       {/* MODAL: NEW FMEA ROW */}
       {showNewFmeaModal && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white border border-slate-200 rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-150">
+          <div className="bg-white border border-slate-200 rounded-2xl max-w-lg w-full p-4 sm:p-6 shadow-2xl space-y-4 max-h-[calc(100dvh-2rem)] overflow-y-auto animate-in fade-in zoom-in-95 duration-150">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div>
                 <h3 className="text-base font-bold text-slate-900">Add FMEA Process Step</h3>

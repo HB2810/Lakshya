@@ -158,7 +158,7 @@ export const FishboneMindMap: React.FC<FishboneMindMapProps> = ({ fishbone }) =>
       </div>
 
       {/* 2. FISHBONE DIAGRAMMATIC CANVAS */}
-      <div className="bg-[#fafbfc] border border-slate-200 rounded-3xl p-6 sm:p-10 shadow-sm relative overflow-x-auto">
+      <div className="bg-[#fafbfc] border border-slate-200 rounded-3xl p-4 sm:p-10 shadow-sm relative overflow-x-auto overscroll-x-contain">
         {/* Subtle graph blueprint background */}
         <div
           className="absolute inset-0 opacity-40 pointer-events-none rounded-3xl"
@@ -511,8 +511,8 @@ export const FishboneMindMap: React.FC<FishboneMindMapProps> = ({ fishbone }) =>
 
       {/* 3. MODAL: EDIT PROBLEM STATEMENT HEAD */}
       {isEditingProblemHead && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white border border-slate-200 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 animate-in fade-in zoom-in-95 duration-150">
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center p-3 sm:p-4">
+          <div className="bg-white border border-slate-200 rounded-2xl max-w-md w-full max-h-[calc(100dvh-1.5rem)] overflow-y-auto overscroll-contain p-4 sm:p-6 shadow-2xl space-y-4 animate-in fade-in zoom-in-95 duration-150">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <h3 className="text-base font-bold text-slate-900">Edit Incident / Effect</h3>
               <button

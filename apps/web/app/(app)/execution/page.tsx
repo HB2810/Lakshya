@@ -217,7 +217,7 @@ export default function ExecutionPage() {
   return (
     <div className="max-w-6xl mx-auto space-y-6">
       {/* 1. HEADER & ACTIONS */}
-      <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="bg-white border border-slate-200 rounded-3xl p-4 sm:p-6 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
             <span className="px-2.5 py-0.5 bg-blue-600 text-white text-[10px] font-black rounded-full uppercase tracking-wider shadow-2xs">
@@ -235,11 +235,11 @@ export default function ExecutionPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex w-full items-center gap-3 md:w-auto">
           <button
             type="button"
             onClick={() => setIsQuickAddOpen(!isQuickAddOpen)}
-            className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl transition-colors inline-flex items-center gap-1.5 shadow-xs cursor-pointer"
+            className="w-full justify-center px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl transition-colors inline-flex items-center gap-1.5 shadow-xs cursor-pointer md:w-auto"
           >
             <Plus className="w-4 h-4" />
             <span>Add Work Item</span>
@@ -251,7 +251,7 @@ export default function ExecutionPage() {
       {isQuickAddOpen && (
         <form
           onSubmit={handleQuickAdd}
-          className="p-5 bg-white border border-blue-200/80 rounded-3xl shadow-xs space-y-3 animate-in fade-in duration-150"
+          className="p-4 sm:p-5 bg-white border border-blue-200/80 rounded-3xl shadow-xs space-y-3 animate-in fade-in duration-150"
         >
           <div className="flex items-center justify-between border-b border-slate-100 pb-2">
             <h3 className="text-xs font-bold uppercase tracking-wider text-slate-900">
@@ -340,7 +340,7 @@ export default function ExecutionPage() {
       {/* 3. FILTER TABS & SEARCH BAR */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white border border-slate-200 p-3 rounded-2xl shadow-2xs">
         {/* Filter Pills */}
-        <div className="flex flex-wrap items-center gap-1">
+        <div className="flex w-full flex-nowrap items-center gap-1 overflow-x-auto overscroll-x-contain pb-1 sm:w-auto sm:flex-wrap sm:overflow-visible sm:pb-0">
           {(
             [
               { id: 'all', label: 'All', count: filterCounts.all },
@@ -354,7 +354,7 @@ export default function ExecutionPage() {
             <button
               key={tab.id}
               onClick={() => setActiveFilter(tab.id)}
-              className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-colors cursor-pointer flex items-center gap-1.5 ${
+              className={`shrink-0 whitespace-nowrap px-3 py-1.5 text-xs font-bold rounded-xl transition-colors cursor-pointer flex items-center gap-1.5 ${
                 activeFilter === tab.id
                   ? 'bg-blue-600 text-white shadow-xs'
                   : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'

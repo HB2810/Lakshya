@@ -52,8 +52,8 @@ export const UserCredentialModal: React.FC<UserCredentialModalProps> = ({
   return (
     <>
       <div className="fixed inset-0 bg-slate-900/30 backdrop-blur-xs z-50 transition-opacity" onClick={onClose} />
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-        <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-2xl max-w-lg w-full space-y-5 animate-in zoom-in-95 duration-150">
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4">
+        <div className="bg-white border border-slate-200 rounded-3xl p-4 sm:p-6 shadow-2xl max-w-lg w-full max-h-[calc(100dvh-1.5rem)] overflow-y-auto overscroll-contain space-y-5 animate-in zoom-in-95 duration-150" role="dialog" aria-modal="true" aria-label={editUser ? 'Update staff account and credentials' : 'Create staff account and credentials'}>
           <div className="flex items-center justify-between border-b border-slate-100 pb-3">
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center">
@@ -71,7 +71,8 @@ export const UserCredentialModal: React.FC<UserCredentialModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="p-1 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 cursor-pointer"
+              className="flex min-h-11 min-w-11 items-center justify-center rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 cursor-pointer"
+              aria-label="Close staff account dialog"
             >
               <X className="w-5 h-5" />
             </button>
