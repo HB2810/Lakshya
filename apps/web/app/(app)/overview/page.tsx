@@ -52,6 +52,7 @@ export default function OverviewPage() {
   const [orgTree, setOrgTree] = useState<OrgTreeResponse | null>(null);
   const [selectedOrgNode, setSelectedOrgNode] = useState<CanonicalOrgNode | null>(null);
   const [isOrgNodeDrawerOpen, setIsOrgNodeDrawerOpen] = useState(false);
+  const [todayEvents, setTodayEvents] = useState<any[]>([]);
 
   // Data Fetching State
   const [isLoading, setIsLoading] = useState(true);
@@ -119,6 +120,14 @@ export default function OverviewPage() {
         } catch (e) {
           console.warn('Could not load org tree:', e);
         }
+      }
+
+      // Fetch Today's Calendar Schedule
+      try {
+        const calEvents = await apiClient.calendar.getEvents();
+        setTodayEvents(calEvents || []);
+      } catch (e) {
+        setTodayEvents([]);
       }
     } catch (err: any) {
       setError(err.message || 'Failed to load tasks');
@@ -616,29 +625,27 @@ export default function OverviewPage() {
               </Link>
             </div>
 
-            <div className="space-y-2.5 text-xs">
-              <div className="p-3 bg-slate-50 border border-slate-100 rounded-2xl space-y-1">
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded">
-                    10:30 AM IST
-                  </span>
-                  <span className="text-[10px] text-slate-400">Boardroom A</span>
-                </div>
-                <p className="font-bold text-slate-900">Daily Spine Surgery Operations Sync</p>
-                <p className="text-[11px] text-slate-500">Cross-department patient flow and OT readiness.</p>
+            {todayEvents.length === 0 ? (
+              <div className="p-4 bg-slate-50 border border-slate-100 rounded-2xl text-center space-y-1">
+                <p className="text-slate-600 font-medium text-xs">No meetings scheduled for today.</p>
+                <p className="text-[11px] text-slate-400">Your day is clear for clinical and operational focus.</p>
               </div>
-
-              <div className="p-3 bg-slate-50 border border-slate-100 rounded-2xl space-y-1">
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded">
-                    03:00 PM IST
-                  </span>
-                  <span className="text-[10px] text-slate-400">IT Lab</span>
-                </div>
-                <p className="font-bold text-slate-900">Digital Health Infrastructure Review</p>
-                <p className="text-[11px] text-slate-500">EMR database optimization and server status.</p>
+            ) : (
+              <div className="space-y-2.5 text-xs">
+                {todayEvents.map((evt: any) => (
+                  <div key={evt.id} className="p-3 bg-slate-50 border border-slate-100 rounded-2xl space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded">
+                        {evt.start_time ? new Date(evt.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Scheduled'}
+                      </span>
+                      <span className="text-[10px] text-slate-400">{evt.location || 'Hospital'}</span>
+                    </div>
+                    <p className="font-bold text-slate-900">{evt.title}</p>
+                    {evt.description && <p className="text-[11px] text-slate-500">{evt.description}</p>}
+                  </div>
+                ))}
               </div>
-            </div>
+            )}
           </div>
         </div>
       </div>
