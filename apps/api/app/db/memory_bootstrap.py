@@ -20,6 +20,7 @@ from app.core.security import PASSWORD_ALGORITHM, PasswordHasherService
 from app.db.base import Base
 from app.modules.access.catalog import ScopeType
 from app.modules.access.models import Permission, Role, RoleAssignment, RolePermission
+from app.modules.audit.models import AuditEvent
 from app.modules.identity.models import CREDENTIAL_KIND_PASSWORD, Credential, User
 from app.modules.organization.models import Department, DepartmentMembership, Organization
 from app.modules.strategy.models import QuarterlyPriority
@@ -249,3 +250,41 @@ def bootstrap_seed_data(session: Session, settings: Settings) -> None:
         status="ACTIVE",
     )
     session.add(qp1)
+
+    # 7. Seed Sample Audit Events
+    evt1 = AuditEvent(
+        id=uuid.uuid4(),
+        organization_id=org.id,
+        occurred_at=now,
+        action="work_item.created",
+        entity_type="work_item",
+        entity_id=wi1.id,
+        actor_type="user",
+        actor_user_id=ldr_user.id,
+        actor_label=None,
+        source="api",
+        correlation_id="corr-init-001",
+        reason="Initial setup of OT-2 barcode scanning assignment",
+        after_state={"title": wi1.title, "priority": wi1.priority, "status": wi1.status},
+        created_at=now,
+    )
+    session.add(evt1)
+
+    evt2 = AuditEvent(
+        id=uuid.uuid4(),
+        organization_id=org.id,
+        occurred_at=now,
+        action="work_item.escalated",
+        entity_type="work_item",
+        entity_id=wi2.id,
+        actor_type="user",
+        actor_user_id=ldr_user.id,
+        actor_label=None,
+        source="api",
+        correlation_id="corr-init-002",
+        reason="Missing OEM firmware license activation key",
+        before_state={"status": "in_progress"},
+        after_state={"status": "blocked", "urgency": "URGENT"},
+        created_at=now,
+    )
+    session.add(evt2)

@@ -575,14 +575,59 @@ export const apiClient = {
       const data = await apiFetch<{items: any[]}>('/roles', { method: 'GET' });
       return data.items;
     },
-    async getAuditEvents() {
-      return MOCK_AUDIT_EVENTS; // Mock fallback kept as no v1 audit endpoint exists
+    async getAuditEvents(params?: { limit?: number; offset?: number; action?: string; entity_type?: string }) {
+      try {
+        const queryParams = new URLSearchParams();
+        if (params?.limit) queryParams.append('limit', params.limit.toString());
+        if (params?.offset) queryParams.append('offset', params.offset.toString());
+        if (params?.action) queryParams.append('action', params.action);
+        if (params?.entity_type) queryParams.append('entity_type', params.entity_type);
+        const query = queryParams.toString() ? `?${queryParams.toString()}` : '';
+        const res = await apiFetch<{ items: any[]; total: number }>(`/audit/events${query}`, { method: 'GET' });
+        return res.items;
+      } catch (err) {
+        console.warn('Audit API error, using local fallback events:', err);
+        return MOCK_AUDIT_EVENTS;
+      }
     },
     async transfer(payload: { user_id: string; new_position_id: string; started_on?: string; transfer_reason?: string }) {
       return await apiFetch<any>('/organizations/transfer', {
         method: 'POST',
         body: JSON.stringify(payload),
       });
+    },
+  },
+
+  audit: {
+    async listEvents(params?: {
+      start_time?: string;
+      end_time?: string;
+      action?: string;
+      entity_type?: string;
+      entity_id?: string;
+      actor_id?: string;
+      limit?: number;
+      offset?: number;
+    }) {
+      try {
+        const queryParams = new URLSearchParams();
+        if (params?.start_time) queryParams.append('start_time', params.start_time);
+        if (params?.end_time) queryParams.append('end_time', params.end_time);
+        if (params?.action) queryParams.append('action', params.action);
+        if (params?.entity_type) queryParams.append('entity_type', params.entity_type);
+        if (params?.entity_id) queryParams.append('entity_id', params.entity_id);
+        if (params?.actor_id) queryParams.append('actor_id', params.actor_id);
+        if (params?.limit) queryParams.append('limit', params.limit.toString());
+        if (params?.offset) queryParams.append('offset', params.offset.toString());
+        const query = queryParams.toString() ? `?${queryParams.toString()}` : '';
+        return await apiFetch<{ items: any[]; total: number; limit: number; offset: number }>(
+          `/audit/events${query}`,
+          { method: 'GET' }
+        );
+      } catch (err) {
+        console.warn('Audit API query error, using local fallback:', err);
+        return { items: MOCK_AUDIT_EVENTS, total: MOCK_AUDIT_EVENTS.length, limit: 50, offset: 0 };
+      }
     },
   },
 

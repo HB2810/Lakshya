@@ -180,3 +180,107 @@ class AuditRecorder:
         self._session.add(event)
         self._session.flush()
         return event
+
+
+class AuditQueryService:
+    """Read-only query service for audit events with strict RBAC scoping."""
+
+    @staticmethod
+    def query_events(
+        session: Session,
+        current_user: Any,
+        effective_roles: list[str],
+        subordinate_user_ids: set[uuid.UUID],
+        start_time: datetime | None = None,
+        end_time: datetime | None = None,
+        actor_id: uuid.UUID | None = None,
+        action: str | None = None,
+        entity_type: str | None = None,
+        entity_id: uuid.UUID | None = None,
+        limit: int = 50,
+        offset: int = 0,
+    ) -> tuple[list[dict[str, Any]], int]:
+        from sqlalchemy import func, or_, select
+        from app.modules.identity.models import User
+
+        is_admin_or_md = any(r in ("master", "md", "md_office") for r in effective_roles)
+        is_leader = any(r in ("leader", "department_head", "manager") for r in effective_roles)
+
+        stmt = select(AuditEvent).where(
+            AuditEvent.organization_id == current_user.organization_id
+        )
+
+        if not is_admin_or_md:
+            if is_leader:
+                # Leader sees audit events for self, subordinates, or events where subordinate was entity
+                allowed_users = subordinate_user_ids | {current_user.id}
+                stmt = stmt.where(
+                    or_(
+                        AuditEvent.actor_user_id.in_(allowed_users),
+                        AuditEvent.entity_id.in_(allowed_users),
+                    )
+                )
+            else:
+                # Employee strictly sees events they initiated or where they are the entity
+                stmt = stmt.where(
+                    or_(
+                        AuditEvent.actor_user_id == current_user.id,
+                        AuditEvent.entity_id == current_user.id,
+                    )
+                )
+
+        if start_time:
+            stmt = stmt.where(AuditEvent.occurred_at >= start_time)
+        if end_time:
+            stmt = stmt.where(AuditEvent.occurred_at <= end_time)
+        if actor_id:
+            stmt = stmt.where(AuditEvent.actor_user_id == actor_id)
+        if action:
+            stmt = stmt.where(AuditEvent.action.ilike(f"%{action}%"))
+        if entity_type:
+            stmt = stmt.where(AuditEvent.entity_type == entity_type)
+        if entity_id:
+            stmt = stmt.where(AuditEvent.entity_id == entity_id)
+
+        # Count total
+        count_stmt = select(func.count()).select_from(stmt.subquery())
+        total = session.scalar(count_stmt) or 0
+
+        # Query paginated items
+        items = session.scalars(
+            stmt.order_by(AuditEvent.occurred_at.desc()).limit(limit).offset(offset)
+        ).all()
+
+        # Resolve actor names
+        actor_ids = {item.actor_user_id for item in items if item.actor_user_id}
+        users_map: dict[uuid.UUID, str] = {}
+        if actor_ids:
+            users = session.scalars(select(User).where(User.id.in_(actor_ids))).all()
+            users_map = {u.id: u.full_name for u in users}
+
+        results = []
+        for item in items:
+            actor_name = users_map.get(item.actor_user_id, item.actor_label or "System")
+            results.append({
+                "id": item.id,
+                "organization_id": item.organization_id,
+                "occurred_at": item.occurred_at,
+                "action": item.action,
+                "entity_type": item.entity_type,
+                "entity_id": item.entity_id,
+                "actor_type": item.actor_type,
+                "actor_user_id": item.actor_user_id,
+                "actor_name": actor_name,
+                "actor_label": item.actor_label,
+                "source": item.source,
+                "correlation_id": item.correlation_id,
+                "causation_id": item.causation_id,
+                "reason": item.reason,
+                "before_state": item.before_state,
+                "after_state": item.after_state,
+                "ip_address": item.ip_address,
+                "user_agent": item.user_agent,
+                "created_at": item.created_at,
+            })
+
+        return results, total
