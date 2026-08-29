@@ -134,22 +134,31 @@ export const strategyStore = {
     return MOCK_WEEKLY_MILESTONES;
   },
 
-  updateMilestoneStatus(priorityId: string, stepNumber: number, newStatus: MilestoneStep['status'], notes?: string) {
+  updateMilestone(priorityId: string, stepNumber: number, data: Partial<MilestoneStep>) {
     MOCK_QUARTERLY_DIRECTIONS = MOCK_QUARTERLY_DIRECTIONS.map(qp => {
       if (qp.id !== priorityId) return qp;
       const updatedMilestones = qp.milestones.map(m => {
         if (m.stepNumber !== stepNumber) return m;
+        const newStatus = data.status !== undefined ? data.status : m.status;
         return {
           ...m,
+          ...data,
           status: newStatus,
-          completedAt: newStatus === 'COMPLETED' ? new Date().toISOString().substring(0, 10) : undefined,
-          verificationNotes: notes || m.verificationNotes,
+          completedAt:
+            newStatus === 'COMPLETED'
+              ? data.completedAt || m.completedAt || new Date().toISOString().substring(0, 10)
+              : undefined,
+          verificationNotes:
+            data.verificationNotes !== undefined ? data.verificationNotes : m.verificationNotes,
         };
       });
 
+      const totalMilestones = updatedMilestones.length || 1;
       const completedCount = updatedMilestones.filter(m => m.status === 'COMPLETED').length;
-      const progressPercent = Math.round((completedCount / 10) * 100);
-      const nextInProgress = updatedMilestones.find(m => m.status === 'IN_PROGRESS' || m.status === 'PENDING')?.stepNumber || 10;
+      const progressPercent = Math.round((completedCount / totalMilestones) * 100);
+      const nextInProgress =
+        updatedMilestones.find(m => m.status === 'IN_PROGRESS' || m.status === 'PENDING')?.stepNumber ||
+        totalMilestones;
 
       return {
         ...qp,
@@ -162,17 +171,101 @@ export const strategyStore = {
     notify();
   },
 
+  updateMilestoneStatus(priorityId: string, stepNumber: number, newStatus: MilestoneStep['status'], notes?: string) {
+    this.updateMilestone(priorityId, stepNumber, { status: newStatus, verificationNotes: notes });
+  },
+
+  addMilestoneStep(priorityId: string, stepData?: Partial<MilestoneStep>) {
+    MOCK_QUARTERLY_DIRECTIONS = MOCK_QUARTERLY_DIRECTIONS.map(qp => {
+      if (qp.id !== priorityId) return qp;
+      if (qp.milestones.length >= 10) {
+        throw new Error('Maximum 10 milestone steps allowed per priority');
+      }
+
+      const nextNum = qp.milestones.length + 1;
+      const newStep: MilestoneStep = {
+        stepNumber: nextNum,
+        title: stepData?.title || `Milestone Step ${nextNum}: New Checkpoint`,
+        description: stepData?.description || `Execution milestone checkpoint #${nextNum}`,
+        ownerName: stepData?.ownerName || qp.reportingAuthority || 'Assigned Lead',
+        targetDate: stepData?.targetDate || new Date(Date.now() + nextNum * 604800000).toISOString().substring(0, 10),
+        status: 'PENDING',
+        keyDeliverable: stepData?.keyDeliverable || `Deliverable for Step #${nextNum}`,
+        verificationNotes: stepData?.verificationNotes,
+      };
+
+      const updatedMilestones = [...qp.milestones, newStep];
+      const completedCount = updatedMilestones.filter(m => m.status === 'COMPLETED').length;
+      const progressPercent = Math.round((completedCount / updatedMilestones.length) * 100);
+
+      return {
+        ...qp,
+        milestones: updatedMilestones,
+        progressPercent,
+      };
+    });
+    notify();
+  },
+
+  removeMilestoneStep(priorityId: string, stepNumber: number) {
+    MOCK_QUARTERLY_DIRECTIONS = MOCK_QUARTERLY_DIRECTIONS.map(qp => {
+      if (qp.id !== priorityId) return qp;
+      if (qp.milestones.length <= 1) {
+        throw new Error('A priority must have at least 1 milestone step');
+      }
+
+      const filtered = qp.milestones.filter(m => m.stepNumber !== stepNumber);
+      // Re-index remaining steps 1..N
+      const reIndexed = filtered.map((m, idx) => ({
+        ...m,
+        stepNumber: idx + 1,
+      }));
+
+      const completedCount = reIndexed.filter(m => m.status === 'COMPLETED').length;
+      const progressPercent = Math.round((completedCount / reIndexed.length) * 100);
+      const nextInProgress =
+        reIndexed.find(m => m.status === 'IN_PROGRESS' || m.status === 'PENDING')?.stepNumber ||
+        reIndexed.length;
+
+      return {
+        ...qp,
+        milestones: reIndexed,
+        progressPercent,
+        currentStep: nextInProgress,
+      };
+    });
+    notify();
+  },
+
+  updateQuarterlyPriority(priorityId: string, data: Partial<QuarterlyPriority>) {
+    MOCK_QUARTERLY_DIRECTIONS = MOCK_QUARTERLY_DIRECTIONS.map(qp => {
+      if (qp.id !== priorityId) return qp;
+      return {
+        ...qp,
+        ...data,
+      };
+    });
+    notify();
+  },
+
   addQuarterlyPriority(newQp: Partial<QuarterlyPriority>): QuarterlyPriority {
     const id = `qp-${Date.now()}`;
-    const milestones: MilestoneStep[] = Array.from({ length: 10 }, (_, i) => ({
-      stepNumber: i + 1,
-      title: `Milestone Step ${i + 1}: Implementation Checkpoint`,
-      description: `Specific execution milestone ${i + 1} for ${newQp.title || 'Quarterly Priority'}.`,
-      ownerName: newQp.reportingAuthority || 'Assigned Lead',
-      targetDate: new Date(Date.now() + (i + 1) * 604800000).toISOString().substring(0, 10),
-      status: i === 0 ? 'IN_PROGRESS' : 'PENDING',
-      keyDeliverable: `Deliverable milestone checkpoint #${i + 1}`,
-    }));
+    const stepCount = Math.min(newQp.milestones?.length || 10, 10); // default to 10, max 10
+    const milestones: MilestoneStep[] =
+      newQp.milestones && newQp.milestones.length > 0
+        ? newQp.milestones.slice(0, 10).map((m, i) => ({
+            ...m,
+            stepNumber: i + 1,
+          }))
+        : Array.from({ length: stepCount }, (_, i) => ({
+            stepNumber: i + 1,
+            title: `Milestone Step ${i + 1}: Implementation Checkpoint`,
+            description: `Specific execution milestone ${i + 1} for ${newQp.title || 'Quarterly Priority'}.`,
+            ownerName: newQp.reportingAuthority || 'Assigned Lead',
+            targetDate: new Date(Date.now() + (i + 1) * 604800000).toISOString().substring(0, 10),
+            status: i === 0 ? 'IN_PROGRESS' : 'PENDING',
+            keyDeliverable: `Deliverable milestone checkpoint #${i + 1}`,
+          }));
 
     const qp: QuarterlyPriority = {
       id,

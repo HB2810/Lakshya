@@ -1,7 +1,7 @@
 import { DEMO_USERS, MOCK_DEPARTMENTS, MOCK_ROLES, MOCK_AUDIT_EVENTS, MOCK_ORG_TREE, getScopedMockOrgTree } from '../mocks/organizationMock';
 import { getAllVerifiedHospitalUsers } from '../data/stavyaHospitalOrgData';
 import { MOCK_QUARTERLY_DIRECTIONS, MOCK_MONTHLY_PRIORITIES, MOCK_WEEKLY_MILESTONES, strategyStore } from '../mocks/strategyMock';
-import { QuarterlyPriority } from '../../types/strategy';
+import { QuarterlyPriority, MilestoneStep } from '../../types/strategy';
 import { MOCK_COMMITMENTS, MOCK_TASKS, MOCK_STUCK_NEEDS, MOCK_ESCALATIONS } from '../mocks/executionMock';
 import { MOCK_MEETINGS, MOCK_DECISIONS, meetingStore } from '../mocks/meetingsMock';
 import { workItemStore } from '../mocks/workItemMock';
@@ -572,7 +572,7 @@ export const apiClient = {
     async updateMilestone(
       priorityId: string,
       stepNumber: number,
-      payload: { status: string; verificationNotes?: string }
+      payload: Partial<MilestoneStep> & { verificationNotes?: string }
     ): Promise<QuarterlyPriority> {
       try {
         const item = await apiFetch<any>(`/strategy/quarterly-priorities/${priorityId}/milestones/${stepNumber}`, {
@@ -580,6 +580,11 @@ export const apiClient = {
           body: JSON.stringify({
             status: payload.status,
             verification_notes: payload.verificationNotes,
+            title: payload.title,
+            description: payload.description,
+            key_deliverable: payload.keyDeliverable,
+            owner_name: payload.ownerName,
+            target_date: payload.targetDate,
           }),
         });
         return {
@@ -608,9 +613,24 @@ export const apiClient = {
           })),
         };
       } catch {
-        strategyStore.updateMilestoneStatus(priorityId, stepNumber, payload.status as any, payload.verificationNotes);
+        strategyStore.updateMilestone(priorityId, stepNumber, payload);
         return strategyStore.getQuarterlyPriorities().find((p: QuarterlyPriority) => p.id === priorityId)!;
       }
+    },
+
+    async addMilestoneStep(priorityId: string, data?: Partial<MilestoneStep>) {
+      strategyStore.addMilestoneStep(priorityId, data);
+      return strategyStore.getQuarterlyPriorities().find((p: QuarterlyPriority) => p.id === priorityId)!;
+    },
+
+    async removeMilestoneStep(priorityId: string, stepNumber: number) {
+      strategyStore.removeMilestoneStep(priorityId, stepNumber);
+      return strategyStore.getQuarterlyPriorities().find((p: QuarterlyPriority) => p.id === priorityId)!;
+    },
+
+    async updatePriority(priorityId: string, data: Partial<QuarterlyPriority>) {
+      strategyStore.updateQuarterlyPriority(priorityId, data);
+      return strategyStore.getQuarterlyPriorities().find((p: QuarterlyPriority) => p.id === priorityId)!;
     },
 
     async getMonthlyPriorities() {

@@ -1,7 +1,8 @@
 import React, { useState, useMemo } from 'react';
-import { Network, X, User, Briefcase, ArrowRightLeft, CheckCircle2, ShieldAlert } from 'lucide-react';
+import { Network, X, User, Briefcase, ArrowRightLeft, CheckCircle2, ShieldAlert, Lock } from 'lucide-react';
 import { CanonicalOrgNode, OrgTreeResponse } from '../../types/organization';
 import { apiClient } from '../../lib/api/client';
+import { useAuth } from '../../lib/auth/AuthContext';
 
 interface PositionDetailDrawerProps {
   node: CanonicalOrgNode | null;
@@ -18,6 +19,9 @@ export const PositionDetailDrawer: React.FC<PositionDetailDrawerProps> = ({
   onClose,
   onUpdated,
 }) => {
+  const { user } = useAuth();
+  const isMD = user?.role === 'MD' || user?.role === 'MANAGING_DIRECTOR' || user?.role === 'MASTER' || user?.role === 'ADMIN';
+
   const [isTransferring, setIsTransferring] = useState(false);
   const [selectedDestination, setSelectedDestination] = useState<string>('');
   const [transferReason, setTransferReason] = useState('');
@@ -137,76 +141,83 @@ export const PositionDetailDrawer: React.FC<PositionDetailDrawerProps> = ({
             </div>
           </div>
 
-          {/* Transfer Action */}
+          {/* Transfer Action - MD & Master Executive Authority Only */}
           {occupant && (
             <div className="border-t border-slate-100 pt-6">
-              {!isTransferring ? (
-                <button
-                  onClick={() => setIsTransferring(true)}
-                  className="w-full py-2.5 bg-white border border-slate-200 hover:border-blue-300 hover:bg-blue-50 text-blue-600 text-xs font-bold rounded-xl shadow-xs transition-colors flex items-center justify-center gap-2"
-                >
-                  <ArrowRightLeft className="w-4 h-4" />
-                  Transfer {occupant.full_name}
-                </button>
-              ) : (
-                <form onSubmit={handleTransfer} className="space-y-4 p-4 bg-blue-50/50 border border-blue-100 rounded-2xl">
-                  <div className="flex items-center gap-2 text-blue-800 mb-2">
+              {isMD ? (
+                !isTransferring ? (
+                  <button
+                    onClick={() => setIsTransferring(true)}
+                    className="w-full py-2.5 bg-white border border-slate-200 hover:border-blue-300 hover:bg-blue-50 text-blue-600 text-xs font-bold rounded-xl shadow-xs transition-colors flex items-center justify-center gap-2"
+                  >
                     <ArrowRightLeft className="w-4 h-4" />
-                    <h3 className="text-xs font-bold">Transfer Employee</h3>
-                  </div>
+                    Transfer {occupant.full_name}
+                  </button>
+                ) : (
+                  <form onSubmit={handleTransfer} className="space-y-4 p-4 bg-blue-50/50 border border-blue-100 rounded-2xl">
+                    <div className="flex items-center gap-2 text-blue-800 mb-2">
+                      <ArrowRightLeft className="w-4 h-4" />
+                      <h3 className="text-xs font-bold">Transfer Employee (MD Authority)</h3>
+                    </div>
 
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-bold uppercase tracking-wider text-slate-700">
-                      Destination Position
-                    </label>
-                    <select
-                      value={selectedDestination}
-                      onChange={e => setSelectedDestination(e.target.value)}
-                      required
-                      className="w-full text-xs p-2.5 bg-white border border-slate-200 rounded-xl focus:outline-none"
-                    >
-                      <option value="">-- Select Position --</option>
-                      {allPositions
-                        .filter(p => p.position_id !== node.position_id)
-                        .map(p => (
-                          <option key={p.position_id} value={p.position_id}>
-                            {p.title} ({p.department_name}) {p.current_occupant ? '- Occupied' : '- Vacant'}
-                          </option>
-                      ))}
-                    </select>
-                  </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-bold uppercase tracking-wider text-slate-700">
+                        Destination Position
+                      </label>
+                      <select
+                        value={selectedDestination}
+                        onChange={e => setSelectedDestination(e.target.value)}
+                        required
+                        className="w-full text-xs p-2.5 bg-white border border-slate-200 rounded-xl focus:outline-none"
+                      >
+                        <option value="">-- Select Position --</option>
+                        {allPositions
+                          .filter(p => p.position_id !== node.position_id)
+                          .map(p => (
+                            <option key={p.position_id} value={p.position_id}>
+                              {p.title} ({p.department_name}) {p.current_occupant ? '- Occupied' : '- Vacant'}
+                            </option>
+                        ))}
+                      </select>
+                    </div>
 
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-bold uppercase tracking-wider text-slate-700">
-                      Reason for Transfer
-                    </label>
-                    <input
-                      type="text"
-                      value={transferReason}
-                      onChange={e => setTransferReason(e.target.value)}
-                      placeholder="e.g. Department Restructuring"
-                      required
-                      className="w-full text-xs p-2.5 bg-white border border-slate-200 rounded-xl focus:outline-none"
-                    />
-                  </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-bold uppercase tracking-wider text-slate-700">
+                        Reason for Transfer
+                      </label>
+                      <input
+                        type="text"
+                        value={transferReason}
+                        onChange={e => setTransferReason(e.target.value)}
+                        placeholder="e.g. Department Restructuring"
+                        required
+                        className="w-full text-xs p-2.5 bg-white border border-slate-200 rounded-xl focus:outline-none"
+                      />
+                    </div>
 
-                  <div className="flex gap-2 pt-2">
-                    <button
-                      type="button"
-                      onClick={() => setIsTransferring(false)}
-                      className="flex-1 py-2 text-xs font-bold text-slate-600 hover:bg-slate-200 rounded-xl transition-colors"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="submit"
-                      disabled={isSubmitting || !selectedDestination}
-                      className="flex-1 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-xs font-bold rounded-xl shadow-xs transition-colors flex items-center justify-center gap-1.5"
-                    >
-                      {isSubmitting ? 'Transferring...' : 'Confirm'}
-                    </button>
-                  </div>
-                </form>
+                    <div className="flex gap-2 pt-2">
+                      <button
+                        type="button"
+                        onClick={() => setIsTransferring(false)}
+                        className="flex-1 py-2 text-xs font-bold text-slate-600 hover:bg-slate-200 rounded-xl transition-colors"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={isSubmitting || !selectedDestination}
+                        className="flex-1 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-xs font-bold rounded-xl shadow-xs transition-colors flex items-center justify-center gap-1.5"
+                      >
+                        {isSubmitting ? 'Transferring...' : 'Confirm'}
+                      </button>
+                    </div>
+                  </form>
+                )
+              ) : (
+                <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl flex items-center gap-2.5 text-xs text-slate-600">
+                  <Lock className="w-4 h-4 text-slate-400 shrink-0" />
+                  <span>Cross-department transfers require Managing Director (MD) authorization.</span>
+                </div>
               )}
             </div>
           )}

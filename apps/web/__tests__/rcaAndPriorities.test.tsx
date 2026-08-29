@@ -155,17 +155,35 @@ describe('LAKSHYA RCA, FMEA & 10-Milestone Strategic Priority Engine Suite', () 
       expect(updatedQp?.progressPercent).toBeGreaterThanOrEqual(10);
     });
 
-    it('creates new Quarterly Priority with auto-generated 10-step delivery milestones', () => {
-      const created = strategyStore.addQuarterlyPriority({
-        title: 'Q4 Emergency Trauma OT Turnaround Reduction',
-        reportingAuthority: 'Managing Director',
-        department: 'Emergency & Trauma',
+    it('allows dynamic addition, editing, and removal of milestone steps up to max 10', () => {
+      const qp = strategyStore.getQuarterlyPriorities()[0];
+      
+      // Edit milestone 1
+      strategyStore.updateMilestone(qp.id, 1, {
+        title: 'Custom Updated Milestone Title',
+        description: 'New custom description',
       });
 
-      expect(created.id).toBeDefined();
-      expect(created.milestones.length).toBe(10);
-      expect(created.milestones[0].status).toBe('IN_PROGRESS');
-      expect(created.milestones[1].status).toBe('PENDING');
+      let updatedQp = strategyStore.getQuarterlyPriorities().find(p => p.id === qp.id);
+      expect(updatedQp?.milestones[0].title).toBe('Custom Updated Milestone Title');
+
+      // Remove step 10
+      strategyStore.removeMilestoneStep(qp.id, 10);
+      updatedQp = strategyStore.getQuarterlyPriorities().find(p => p.id === qp.id);
+      expect(updatedQp?.milestones.length).toBe(9);
+
+      // Add new step
+      strategyStore.addMilestoneStep(qp.id, {
+        title: 'Re-added 10th Step',
+      });
+      updatedQp = strategyStore.getQuarterlyPriorities().find(p => p.id === qp.id);
+      expect(updatedQp?.milestones.length).toBe(10);
+      expect(updatedQp?.milestones[9].title).toBe('Re-added 10th Step');
+
+      // Attempting to exceed 10 throws error
+      expect(() => {
+        strategyStore.addMilestoneStep(qp.id, { title: '11th step' });
+      }).toThrow('Maximum 10 milestone steps allowed');
     });
   });
 });

@@ -190,7 +190,7 @@ export default function LoginPage() {
                   className="p-2.5 bg-blue-50 hover:bg-blue-100 border border-blue-200 text-blue-900 font-bold rounded-xl text-left transition-colors cursor-pointer"
                 >
                   <span className="block text-[10px] text-blue-600 uppercase font-black">MD Office (STAVYANS-001)</span>
-                  <span className="truncate block">Managing Director</span>
+                  <span className="truncate block">Dr. Mirant Dave (MD)</span>
                 </button>
 
                 <button
@@ -232,7 +232,7 @@ export default function LoginPage() {
                   className="p-2.5 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-900 font-bold rounded-xl text-left transition-colors cursor-pointer"
                 >
                   <span className="block text-[10px] text-emerald-600 uppercase font-black">Clinical Staff (STAVYANS-101)</span>
-                  <span className="truncate block">Sister Sunita Rao</span>
+                  <span className="truncate block">Hospital Staff</span>
                 </button>
 
                 <button
