@@ -153,6 +153,14 @@ def test_local_environment_permits_development_settings() -> None:
     assert settings.allow_local_bootstrap
 
 
+def test_local_environment_defaults_session_cookie_secure_to_false() -> None:
+    """Local development defaults session_cookie_secure to False so Safari over HTTP receives cookies."""
+    settings = Settings(_env_file=None, environment=Environment.LOCAL)
+    assert settings.environment.is_local
+    assert settings.session_cookie_secure is False
+
+
+
 def test_migration_url_falls_back_to_database_url() -> None:
     settings = _settings()
     assert settings.effective_migration_database_url == settings.database_url

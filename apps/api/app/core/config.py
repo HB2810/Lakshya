@@ -180,7 +180,7 @@ class Settings(BaseSettings):
     session_cookie_name: str = "lakshya_session"
     csrf_cookie_name: str = "lakshya_csrf"
     csrf_header_name: str = "X-CSRF-Token"
-    session_cookie_secure: bool = True
+    session_cookie_secure: bool = False
     session_cookie_path: str = "/"
     session_absolute_lifetime_minutes: int = Field(default=720, ge=5, le=10_080)
     session_idle_timeout_minutes: int = Field(default=60, ge=5, le=10_080)
