@@ -375,9 +375,27 @@ export const HealthJournalView: React.FC = () => {
             onChange={(e) => updateHealth('waterGlasses', parseInt(e.target.value, 10))}
             className="w-full accent-blue-600 cursor-pointer h-2 bg-slate-100 rounded-lg"
           />
+          <div className="flex items-center gap-2 pt-1">
+            <button
+              type="button"
+              onClick={() => updateHealth('waterGlasses', Math.max(0, health.waterGlasses - 1))}
+              className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-all active-press cursor-pointer"
+            >
+              - 1 Glass
+            </button>
+            <button
+              type="button"
+              onClick={() => updateHealth('waterGlasses', Math.min(20, health.waterGlasses + 1))}
+              className="flex-1 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 border border-blue-200 text-blue-700 text-xs font-bold rounded-xl transition-all active-press cursor-pointer flex items-center justify-center gap-1"
+            >
+              <Droplets className="w-3.5 h-3.5" />
+              <span>+ 1 Glass (250 ml)</span>
+            </button>
+          </div>
+
           <div className="flex justify-between text-[10px] font-bold text-slate-400">
             <span>0</span>
-            <span>8 glasses (Target)</span>
+            <span>8 glasses (2.0 L Goal)</span>
             <span>16</span>
           </div>
         </Card>

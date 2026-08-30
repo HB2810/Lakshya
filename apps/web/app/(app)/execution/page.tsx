@@ -158,6 +158,26 @@ export default function ExecutionPage() {
     }
   };
 
+  // Usability & Status Feedback
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  const handleQuickStatusChange = async (item: WorkItem, newStatus: WorkItemStatus, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const progress = newStatus === 'completed' ? 100 : newStatus === 'in_progress' ? 50 : 0;
+    try {
+      await apiClient.workItems.patch(item.id, {
+        status: newStatus,
+        progressPercent: progress,
+        update_note: `Fast status change to ${newStatus.replace('_', ' ')} from execution board.`,
+      });
+      setToastMessage(`✓ Marked "${item.title}" as ${newStatus === 'completed' ? 'Completed' : newStatus === 'in_progress' ? 'In Progress' : 'To Do'}!`);
+      setTimeout(() => setToastMessage(null), 3500);
+      refreshWork();
+    } catch (err) {
+      console.error('Failed to update status:', err);
+    }
+  };
+
   const openTask = (item: WorkItem) => {
     setSelectedTask(item);
     setIsDrawerOpen(true);
@@ -268,6 +288,23 @@ export default function ExecutionPage() {
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
+      {/* Toast Feedback */}
+      {toastMessage && (
+        <div className="p-3.5 bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs font-bold rounded-2xl flex items-center justify-between shadow-xs animate-in fade-in">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+            <span>{toastMessage}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setToastMessage(null)}
+            className="text-emerald-700 hover:text-emerald-900 text-xs font-black p-1 cursor-pointer"
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
       {/* 1. HEADER & ACTIONS */}
       <div className="bg-white border border-slate-200/90 rounded-3xl p-5 sm:p-6 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
@@ -572,6 +609,18 @@ export default function ExecutionPage() {
                   </p>
                 )}
 
+                {/* RACI Ownership & Accountability Preview */}
+                <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-500 pt-0.5">
+                  <span className="font-semibold text-slate-700 bg-slate-100/80 px-2 py-0.5 rounded">
+                    R: {item.raci?.responsible_name || item.owner_name}
+                  </span>
+                  {item.raci?.accountable_name && (
+                    <span className="text-slate-500 bg-slate-100/80 px-2 py-0.5 rounded">
+                      A: <strong className="text-slate-700 font-semibold">{item.raci.accountable_name}</strong>
+                    </span>
+                  )}
+                </div>
+
                 {/* If Blocked: Display blocker highlight */}
                 {item.status === 'blocked' && (
                   <div className="p-2 bg-red-50 text-red-800 text-[11px] rounded-lg font-semibold flex items-center gap-1.5 mt-1">
@@ -582,13 +631,13 @@ export default function ExecutionPage() {
               </div>
 
               {/* Progress & Quick Action */}
-              <div className="flex items-center gap-4 shrink-0 pt-2 md:pt-0 border-t md:border-t-0 border-slate-100">
-                <div className="text-right space-y-0.5">
+              <div className="flex items-center gap-3 shrink-0 pt-2 md:pt-0 border-t md:border-t-0 border-slate-100">
+                <div className="text-right space-y-0.5 hidden sm:block">
                   <div className="text-[10px] text-slate-400 font-bold uppercase">
                     Due: <span className="text-slate-700 font-mono">{item.due_at ? item.due_at.substring(0, 10) : 'Today'}</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className="w-20 bg-slate-100 h-1.5 rounded-full overflow-hidden">
+                    <div className="w-16 bg-slate-100 h-1.5 rounded-full overflow-hidden">
                       <div
                         className="bg-slate-900 h-full rounded-full transition-all"
                         style={{ width: `${item.progressPercent || 0}%` }}
@@ -598,17 +647,50 @@ export default function ExecutionPage() {
                   </div>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={e => {
-                    e.stopPropagation();
-                    openTask(item);
-                  }}
-                  className="px-3.5 py-2 bg-slate-50 hover:bg-slate-100 text-slate-900 border border-slate-200 text-xs font-bold rounded-xl transition-colors flex items-center gap-1"
-                >
-                  <span>Open</span>
-                  <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
-                </button>
+                <div className="flex items-center gap-1.5">
+                  {item.status !== 'completed' ? (
+                    <>
+                      {item.status === 'todo' && (
+                        <button
+                          type="button"
+                          onClick={(e) => handleQuickStatusChange(item, 'in_progress', e)}
+                          className="px-2.5 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-xs font-bold rounded-xl transition-colors cursor-pointer"
+                          title="Start Working"
+                        >
+                          ▶ Start
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={(e) => handleQuickStatusChange(item, 'completed', e)}
+                        className="px-2.5 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 text-xs font-bold rounded-xl transition-colors cursor-pointer"
+                        title="Mark Completed"
+                      >
+                        ✓ Done
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={(e) => handleQuickStatusChange(item, 'todo', e)}
+                      className="px-2.5 py-1.5 bg-slate-50 hover:bg-slate-100 text-slate-600 border border-slate-200 text-xs font-bold rounded-xl transition-colors cursor-pointer"
+                      title="Reopen Task"
+                    >
+                      ↩ Reopen
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={e => {
+                      e.stopPropagation();
+                      openTask(item);
+                    }}
+                    className="px-3 py-1.5 bg-slate-50 hover:bg-slate-100 text-slate-900 border border-slate-200 text-xs font-bold rounded-xl transition-colors flex items-center gap-1 cursor-pointer"
+                  >
+                    <span>Open</span>
+                    <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
+                  </button>
+                </div>
               </div>
             </div>
             );

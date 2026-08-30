@@ -101,6 +101,20 @@ export default function PoliciesPage() {
   const [isNABH, setIsNABH] = useState(true);
   const [uploadSuccessNote, setUploadSuccessNote] = useState<string | null>(null);
 
+  // Live Interactive Checklist & Staff Compliance State
+  const [checkedSteps, setCheckedSteps] = useState<Record<string, boolean>>({});
+  const [acknowledgedPolicies, setAcknowledgedPolicies] = useState<Record<string, string>>({});
+
+  const toggleChecklistStep = (policyId: string, index: number) => {
+    const key = `${policyId}-${index}`;
+    setCheckedSteps(prev => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const handleAcknowledgePolicy = (policyId: string) => {
+    const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    setAcknowledgedPolicies(prev => ({ ...prev, [policyId]: `Acknowledged by ${user.name || 'Staff'} at ${timestamp}` }));
+  };
+
   const refreshData = () => {
     setPolicies([...policyStore.getPolicies()]);
   };
@@ -548,25 +562,59 @@ export default function PoliciesPage() {
                 </div>
               </div>
 
-              {/* 4. Execution Checklist */}
-              {selectedPolicyForView.checklist && selectedPolicyForView.checklist.length > 0 && (
-                <div className="space-y-2">
-                  <h4 className="font-bold text-slate-900 uppercase tracking-wider text-[10px] flex items-center gap-1">
-                    <ListChecks className="w-3.5 h-3.5 text-blue-600" />
-                    4. Standard Execution Checklist
-                  </h4>
-                  <div className="space-y-1.5">
-                    {selectedPolicyForView.checklist.map((c, i) => (
-                      <div key={i} className="flex items-center gap-2 p-2 bg-slate-50 border border-slate-200/60 rounded-xl text-slate-700">
-                        <span className="w-3.5 h-3.5 rounded border border-slate-400 bg-white flex items-center justify-center shrink-0">
-                          <Check className="w-2.5 h-2.5 text-emerald-600" />
-                        </span>
-                        <span>{c}</span>
-                      </div>
-                    ))}
+              {/* 4. Interactive Live Execution Checklist */}
+              {(() => {
+                const checklistItems = (selectedPolicyForView.checklist && selectedPolicyForView.checklist.length > 0)
+                  ? selectedPolicyForView.checklist
+                  : [
+                      'Verify 2 patient identifiers (Name & UHID) and informed consent',
+                      'Verify sterile indicator strip & infection control compliance',
+                      'Complete digital register sign-off and audit log entry',
+                    ];
+                return (
+                  <div className="space-y-2 bg-blue-50/50 p-3.5 rounded-2xl border border-blue-100">
+                    <div className="flex items-center justify-between">
+                      <h4 className="font-bold text-slate-900 uppercase tracking-wider text-[10px] flex items-center gap-1.5">
+                        <ListChecks className="w-3.5 h-3.5 text-blue-600" />
+                        4. Live Clinical Execution Checklist
+                      </h4>
+                      <span className="text-[10px] font-bold text-blue-700">
+                        Tap items to mark verified
+                      </span>
+                    </div>
+                    <div className="space-y-1.5">
+                      {checklistItems.map((c, i) => {
+                        const isChecked = !!checkedSteps[`${selectedPolicyForView.id}-${i}`];
+                        return (
+                          <button
+                            key={i}
+                            type="button"
+                            onClick={() => toggleChecklistStep(selectedPolicyForView.id, i)}
+                            className={`w-full flex items-center gap-2.5 p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
+                              isChecked
+                                ? 'bg-emerald-50 border-emerald-200 text-emerald-900 font-semibold'
+                                : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
+                            }`}
+                          >
+                            <span
+                              className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 ${
+                                isChecked
+                                  ? 'bg-emerald-600 border-emerald-600 text-white'
+                                  : 'border-slate-400 bg-white'
+                              }`}
+                            >
+                              {isChecked && <Check className="w-3 h-3 text-white" />}
+                            </span>
+                            <span className={`text-xs ${isChecked ? 'line-through text-emerald-800' : 'text-slate-800'}`}>
+                              {c}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
-                </div>
-              )}
+                );
+              })()}
 
               {/* 5. Governance & Audit Metadata */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 border-t border-slate-100 text-[11px]">
@@ -589,12 +637,28 @@ export default function PoliciesPage() {
               </div>
             </div>
 
-            {/* Modal Footer */}
-            <div className="flex justify-end pt-3 border-t border-slate-100">
+            {/* Modal Footer & Staff Compliance Acknowledgment */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t border-slate-100">
+              {acknowledgedPolicies[selectedPolicyForView.id] ? (
+                <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-xl flex items-center gap-1.5 border border-emerald-200">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                  {acknowledgedPolicies[selectedPolicyForView.id]}
+                </span>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => handleAcknowledgePolicy(selectedPolicyForView.id)}
+                  className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-xs transition-colors cursor-pointer flex items-center gap-1.5"
+                >
+                  <Check className="w-3.5 h-3.5" />
+                  <span>Acknowledge SOP Read &amp; Understood</span>
+                </button>
+              )}
+
               <button
                 type="button"
                 onClick={() => setSelectedPolicyForView(null)}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-xs transition-colors cursor-pointer"
+                className="px-4 py-2 bg-slate-900 hover:bg-black text-white font-bold text-xs rounded-xl shadow-xs transition-colors cursor-pointer"
               >
                 Close Protocol Viewer
               </button>

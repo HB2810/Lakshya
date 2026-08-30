@@ -195,4 +195,42 @@ describe('LAKSHYA Stavyan Execution Workspace Suite', () => {
     // But sees the searchable approved protocol catalog
     expect(screen.getByText(/Clinical Governance & NABH Protocols/i)).toBeDefined();
   });
+
+  it('10. Renders Hospital Shift & Handover Quick Bar and Emergency Codes button on My Day', async () => {
+    render(
+      <AuthProvider>
+        <OverviewPage />
+      </AuthProvider>
+    );
+
+    expect(await screen.findByText(/HOSPITAL DUTY ROSTER/i)).toBeDefined();
+    expect(screen.getByText(/Post Handover Memo/i)).toBeDefined();
+    expect(screen.getByText(/Emergency Codes/i)).toBeDefined();
+  });
+
+  it('11. Renders 1-click status action buttons (✓ Done / ▶ Start) on My Work queue cards', async () => {
+    render(
+      <AuthProvider>
+        <ExecutionPage />
+      </AuthProvider>
+    );
+
+    const doneButtons = await screen.findAllByText(/✓ Done/i);
+    expect(doneButtons.length).toBeGreaterThan(0);
+  });
+
+  it('12. Supports interactive SOP viewing and compliance acknowledgment in Policies', async () => {
+    render(
+      <AuthProvider>
+        <PoliciesPage />
+      </AuthProvider>
+    );
+
+    // Click on the first SOP View Details button
+    const viewButtons = await screen.findAllByText(/View Details/i);
+    expect(viewButtons.length).toBeGreaterThan(0);
+    fireEvent.click(viewButtons[0]);
+    expect(await screen.findByText(/Live Clinical Execution Checklist/i)).toBeDefined();
+    expect(screen.getByText(/Acknowledge SOP Read & Understood/i)).toBeDefined();
+  });
 });
