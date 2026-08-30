@@ -81,7 +81,7 @@ export default function StrategyPage() {
         <button
           type="button"
           onClick={() => setShowAddModal(true)}
-          className="w-full justify-center px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl transition-colors flex items-center gap-1.5 shadow-xs cursor-pointer md:w-auto"
+          className="w-full justify-center px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl transition-colors flex items-center gap-1.5 shadow-xs cursor-pointer md:w-auto"
         >
           <Plus className="w-4 h-4" />
           <span>New Quarterly Priority</span>
@@ -100,8 +100,8 @@ export default function StrategyPage() {
                 onClick={() => setActivePriorityId(qp.id)}
                 className={`px-4 py-3 rounded-xl text-left border transition-all shrink-0 min-w-[260px] cursor-pointer ${
                   isActive
-                    ? 'bg-white border-slate-900 shadow-sm ring-1 ring-slate-900'
-                    : 'bg-white/70 border-slate-200 hover:border-slate-300'
+                    ? 'bg-white border-blue-600 shadow-xs ring-2 ring-blue-600/20'
+                    : 'bg-white border-slate-200 hover:border-blue-200'
                 }`}
               >
                 <div className="flex items-center justify-between">
@@ -229,7 +229,7 @@ export default function StrategyPage() {
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-xs transition-colors cursor-pointer"
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-xs transition-colors cursor-pointer"
                 >
                   Create & Initialize 10 Milestones
                 </button>

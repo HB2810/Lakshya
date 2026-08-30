@@ -154,6 +154,7 @@ export interface WorkItem {
   origin_meeting_id?: string | null;
   source_type?: 'MANUAL' | 'MEETING' | 'STRATEGY' | 'SMART_INTAKE' | string;
   source_title?: string | null;
+  tags?: string[];
   activity_history?: WorkItemActivity[];
   created_at: string;
   updated_at: string;

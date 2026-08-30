@@ -264,7 +264,7 @@ export default function CalendarPage() {
           <button
             type="button"
             onClick={() => setIsCreateModalOpen(true)}
-            className="w-full justify-center px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer"
+            className="w-full justify-center px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer"
           >
             <Plus className="w-4 h-4" />
             <span>+ Schedule Event</span>
@@ -552,7 +552,7 @@ export default function CalendarPage() {
 
                     <button
                       type="button"
-                      className="px-3.5 py-1.5 bg-slate-900 text-white font-bold text-xs rounded-xl shadow-xs"
+                      className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-xs transition-colors cursor-pointer"
                     >
                       View Prep
                     </button>
@@ -676,7 +676,7 @@ export default function CalendarPage() {
               <button
                 type="button"
                 onClick={() => setSelectedEventForModal(null)}
-                className="px-4 py-2 bg-slate-900 text-white font-bold text-xs rounded-xl"
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-xs transition-colors cursor-pointer"
               >
                 Close
               </button>

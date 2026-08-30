@@ -120,11 +120,26 @@ class DynamicOrgStore {
   /**
    * MD Action: Add New Hospital Staff / Position
    */
-  public addStaffMember(newStaff: Omit<HospitalStaffMember, 'id'>): HospitalStaffMember {
+  public addStaffMember(newStaff: Partial<HospitalStaffMember>): HospitalStaffMember {
     const newId = `usr-stav-${Date.now().toString(36)}-${Math.floor(Math.random() * 1000)}`;
     const fullStaff: HospitalStaffMember = {
-      ...newStaff,
       id: newId,
+      code: newStaff.code || '000',
+      name: newStaff.name || 'New Staff Member',
+      unit: newStaff.unit || 'General Administration',
+      desig: newStaff.desig || 'Staff Member',
+      reports: newStaff.reports || 'Dr. Mirant Bharat Dave',
+      dept_master: newStaff.dept_master || 'ADMIN',
+      mobile: newStaff.mobile || '0000000000',
+      email: newStaff.email || `${newId}@stavyaspine.com`,
+      gender: newStaff.gender || 'unspecified',
+      join: newStaff.join || new Date().toISOString().substring(0, 10),
+      worker: newStaff.worker || 'Company Staff',
+      emp: newStaff.emp || 'Active',
+      shift: newStaff.shift || 'General Shift',
+      skill: newStaff.skill || 'SKILLED',
+      branch: newStaff.branch || 'Ahmedabad',
+      ...newStaff,
     };
     this.staffMap[newId] = fullStaff;
     this.saveToStorage();

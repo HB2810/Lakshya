@@ -37,20 +37,30 @@ const CATEGORY_LABELS: Record<PolicyCategory | 'ALL', string> = {
   SURGICAL_OT: 'Surgical & OT',
   INFECTION_CONTROL: 'Infection Control',
   CLINICAL_PROTOCOL: 'Clinical Protocols',
+  CLINICAL_OPERATIONS: 'Clinical Operations',
   NURSING: 'Nursing & Wards',
   IT_DATA_SECURITY: 'IT & Data Security',
   BIOMEDICAL_SAFETY: 'Biomedical Safety',
+  FACILITY_SAFETY: 'Facility Management & Safety',
   ADMINISTRATIVE: 'Administrative & HR',
+  GENERAL: 'General & Quality',
+  PHARMACY: 'Medication Management & Pharmacy',
+  GOVERNANCE: 'Governance & Leadership',
 };
 
 const CATEGORY_DEPARTMENTS: Record<PolicyCategory, string> = {
   SURGICAL_OT: 'Spine Surgery & OT Complex',
   INFECTION_CONTROL: 'Hospital Infection Control Committee (HICC)',
   CLINICAL_PROTOCOL: 'Clinical Spine & Inpatient Care',
+  CLINICAL_OPERATIONS: 'Clinical Operations & Patient Flow',
   NURSING: 'Nursing Services & IPD Wards',
   IT_DATA_SECURITY: 'Digital Health, EMR & IT Infrastructure',
   BIOMEDICAL_SAFETY: 'Biomedical Engineering & Equipment Safety',
+  FACILITY_SAFETY: 'Facility Management & Safety',
   ADMINISTRATIVE: 'Hospital Administration & HR',
+  GENERAL: 'General Hospital Administration',
+  PHARMACY: 'Medication Management & Pharmacy',
+  GOVERNANCE: 'Hospital Executive Governance',
 };
 
 export default function PoliciesPage() {
@@ -280,7 +290,7 @@ export default function PoliciesPage() {
           <button
             type="button"
             onClick={() => setShowAddModal(true)}
-            className="w-full justify-center px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer md:w-auto md:shrink-0"
+            className="w-full justify-center px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer md:w-auto md:shrink-0"
           >
             <Plus className="w-4 h-4" />
             <span>+ Upload / Author New SOP</span>
@@ -321,7 +331,7 @@ export default function PoliciesPage() {
       <div className="space-y-3">
         <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
           {/* Category Pills */}
-          <div className="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto pb-1">
+          <div className="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto pb-1 bg-slate-100 p-1 rounded-2xl border border-slate-200">
             {(['ALL', 'SURGICAL_OT', 'INFECTION_CONTROL', 'CLINICAL_PROTOCOL', 'NURSING', 'BIOMEDICAL_SAFETY', 'IT_DATA_SECURITY'] as (PolicyCategory | 'ALL')[]).map(cat => (
               <button
                 key={cat}
@@ -329,8 +339,8 @@ export default function PoliciesPage() {
                 onClick={() => setSelectedCategory(cat)}
                 className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
                   selectedCategory === cat
-                    ? 'bg-slate-900 text-white shadow-xs'
-                    : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
+                    ? 'bg-blue-600 text-white shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
                 }`}
               >
                 {CATEGORY_LABELS[cat]}
@@ -584,7 +594,7 @@ export default function PoliciesPage() {
               <button
                 type="button"
                 onClick={() => setSelectedPolicyForView(null)}
-                className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl"
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-xs transition-colors cursor-pointer"
               >
                 Close Protocol Viewer
               </button>
@@ -793,7 +803,7 @@ export default function PoliciesPage() {
                 <button
                   type="submit"
                   disabled={!newTitle.trim()}
-                  className="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 disabled:opacity-50 text-white rounded-xl font-bold shadow-xs transition-colors cursor-pointer"
+                  className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-xl font-bold shadow-xs transition-colors cursor-pointer"
                 >
                   Publish to Governance Library
                 </button>

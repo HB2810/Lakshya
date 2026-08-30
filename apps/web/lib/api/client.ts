@@ -349,7 +349,42 @@ export const apiClient = {
             return { response: mockResponse, user: mapBackendUserToFrontendUser(mockResponse) };
           }
 
-          throw new Error('Invalid Staff ID / Username. Please use STAVYANS-001 (MD), STAVYANS-002 (Leader), STAVYANS-101 (Staff), or STAVYANS-000 (Admin) with password 1234.');
+          // Check 214 Hospital Staff Accounts Store
+          try {
+            const { hospitalStaffAuthStore } = require('../auth/hospitalStaffAuth');
+            const staffAccount = hospitalStaffAuthStore.authenticate(emailOrId, password);
+            if (staffAccount) {
+              const frontendUser = hospitalStaffAuthStore.toFrontendUser(staffAccount);
+              const mockResponse: CurrentUserResponse = {
+                user: {
+                  id: staffAccount.id,
+                  email: staffAccount.email,
+                  full_name: staffAccount.name,
+                  is_active: staffAccount.accessStatus !== 'SUSPENDED',
+                  organization_id: 'org-stavya-001',
+                },
+                organization_id: 'org-stavya-001',
+                organization_slug: 'stavya-spine',
+                session: {
+                  id: `sess-${staffAccount.id}`,
+                  issued_at: new Date().toISOString(),
+                  expires_at: new Date(Date.now() + 86400000).toISOString(),
+                  last_activity_at: new Date().toISOString(),
+                },
+                roles: staffAccount.roles || [staffAccount.role.toLowerCase()],
+                permissions: staffAccount.permissions,
+                department_ids: [`dept-${staffAccount.id}`],
+                must_change_password: false,
+              };
+              return { response: mockResponse, user: frontendUser };
+            }
+          } catch (staffAuthErr: any) {
+            if (staffAuthErr?.message && !staffAuthErr.message.includes('not found')) {
+              throw staffAuthErr;
+            }
+          }
+
+          throw new Error('Invalid Staff ID / Username. Please use your Employee Code (e.g. STAVYA-001 to STAVYA-214), Staff ID (e.g. e048, e069), or STAVYANS-101 with password Stavya@2026 or 1234.');
         }
         throw err;
       }
@@ -827,7 +862,16 @@ export const apiClient = {
         }));
       } catch (err) {
         console.warn('Users API offline, using verified Stavya hospital personnel directory:', err);
-        return getAllVerifiedHospitalUsers();
+        return getAllVerifiedHospitalUsers().map(s => ({
+          id: s.id,
+          name: s.name,
+          email: s.email,
+          role: (s.id === 'e069' ? 'MD' : s.desig?.toLowerCase().includes('director') ? 'DEPARTMENT_HEAD' : s.desig?.toLowerCase().includes('incharge') || s.desig?.toLowerCase().includes('lead') ? 'LEADER' : 'EMPLOYEE') as Persona,
+          roleTitle: s.desig || 'Hospital Staff',
+          departmentId: s.dept_master || 'GENERAL',
+          departmentName: s.unit || 'Stavya Spine Hospital',
+          organizationId: 'org-stavya-001',
+        }));
       }
     },
     async tree() {

@@ -12,6 +12,7 @@ import { ScopedOrgTree } from '../../../components/leader/ScopedOrgTree';
 import { PositionDetailDrawer } from '../../../components/leader/PositionDetailDrawer';
 import { DynamicHospitalOrgChart } from '../../../components/organization/DynamicHospitalOrgChart';
 import { UserCredentialModal } from '../../../components/organization/UserCredentialModal';
+import { HospitalStaffPrivilegeManager } from '../../../components/organization/HospitalStaffPrivilegeManager';
 import { apiClient } from '../../../lib/api/client';
 import { Department, RoleDefinition, OrgTreeResponse, CanonicalOrgNode } from '../../../types/organization';
 import { User, Persona } from '../../../types/auth';
@@ -93,7 +94,8 @@ export default function OrganizationPage() {
 
   // Tab definitions - Org Chart ONLY visible to MD & Leader
   const tabs = [
-    ...(isLeaderOrMD ? [{ id: 'org_chart', label: 'Hospital Org Chart (211 Staff)' }] : []),
+    ...(isLeaderOrMD ? [{ id: 'org_chart', label: 'Hospital Org Chart (214 Staff)' }] : []),
+    ...(isLeaderOrMD ? [{ id: 'privileges', label: 'Staff Privileges & Access (Master Admin)' }] : []),
     { id: 'departments', label: 'Departments', count: departments.length },
     { id: 'users', label: 'User Directory', count: users.length },
     ...(isLeaderOrMD ? [{ id: 'rbac', label: 'RBAC & Roles Matrix', count: roles.length }] : []),
@@ -230,6 +232,10 @@ export default function OrganizationPage() {
         <DynamicHospitalOrgChart
           workItems={workItems}
         />
+      )}
+
+      {activeTab === 'privileges' && isLeaderOrMD && (
+        <HospitalStaffPrivilegeManager />
       )}
 
       {activeTab === 'departments' && (

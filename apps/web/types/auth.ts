@@ -5,6 +5,7 @@ export type Persona =
   | 'STAVYAN'
   // Existing system & organizational aliases:
   | 'MANAGING_DIRECTOR'
+  | 'DIRECTOR_QUALITY'
   | 'STAVYANS'
   | 'ADMIN'
   | 'HR'
@@ -19,7 +20,7 @@ export function normalizeV1Role(role: Persona | string): StandardV1Role {
   const upper = (role || '').toUpperCase();
   if (upper === 'MASTER' || upper === 'ADMIN') return 'MASTER';
   if (upper === 'MD' || upper === 'MANAGING_DIRECTOR' || upper === 'MD_OFFICE') return 'MD';
-  if (upper === 'LEADER' || upper === 'LEADERS' || upper === 'DEPARTMENT_HEAD' || upper === 'MANAGER') return 'LEADER';
+  if (upper === 'LEADER' || upper === 'LEADERS' || upper === 'DEPARTMENT_HEAD' || upper === 'MANAGER' || upper === 'DIRECTOR_QUALITY') return 'LEADER';
   return 'STAVYAN';
 }
 
@@ -69,6 +70,7 @@ export interface User {
   avatarUrl?: string;
   roles?: string[];
   permissions?: string[];
+  capabilities?: string[];
   organizationId?: string;
   organizationSlug?: string;
   mustChangePassword?: boolean;

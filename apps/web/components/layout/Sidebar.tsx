@@ -13,10 +13,12 @@ import {
   ChevronLeft,
   ChevronRight,
   Shield,
+  ShieldCheck,
   BookOpen,
   X,
 } from 'lucide-react';
 import { useAuth } from '../../lib/auth/AuthContext';
+import { isQualityCommandAuthorized } from '../../lib/auth/rbacPolicies';
 
 interface SidebarProps {
   isMobileOpen?: boolean;
@@ -72,6 +74,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen = false, onCloseM
       href: '/rca',
       icon: Shield,
       show: true,
+    },
+    {
+      label: 'Quality Command Centre',
+      href: '/quality',
+      icon: ShieldCheck,
+      show: isQualityCommandAuthorized(user),
     },
     {
       label: 'Organization',

@@ -21,10 +21,12 @@ import {
 } from 'lucide-react';
 import { FiveWhyAnalysis, FishboneDiagram, FMEADocument, FMEARow } from '../../../types/rca';
 import { rcaStore } from '../../../lib/mocks/rcaMock';
+import { workItemStore } from '../../../lib/mocks/workItemMock';
 import { FishboneMindMap } from '../../../components/rca/FishboneMindMap';
 
 export default function RCAPage() {
   const [activeTab, setActiveTab] = useState<'5why' | 'fishbone' | 'fmea'>('5why');
+  const [kaizenToast, setKaizenToast] = useState<string | null>(null);
 
   // Stores state
   const [fiveWhyList, setFiveWhyList] = useState<FiveWhyAnalysis[]>([]);
@@ -150,6 +152,13 @@ export default function RCAPage() {
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
+      {kaizenToast && (
+        <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 px-4 py-3 rounded-xl flex items-center gap-3 animate-in fade-in shadow-xs">
+          <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+          <span className="text-xs font-bold">{kaizenToast}</span>
+        </div>
+      )}
+
       {/* 1. QUALITY & RCA EXECUTIVE HEADER */}
       <div className="bg-white border border-slate-200 rounded-2xl p-4 sm:p-6 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
@@ -334,6 +343,7 @@ export default function RCAPage() {
                         <th className="px-4 py-2.5">Assigned Owner</th>
                         <th className="px-4 py-2.5">Target Date</th>
                         <th className="px-4 py-2.5">Status</th>
+                        <th className="px-4 py-2.5 text-right">Action</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
@@ -359,6 +369,33 @@ export default function RCAPage() {
                             <span className="text-[10px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded">
                               {capa.status}
                             </span>
+                          </td>
+                          <td className="px-4 py-3 text-right">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                workItemStore.createWorkItem({
+                                  title: `[Kaizen CAPA] ${capa.actionTitle}`,
+                                  description: `Originating from 5-Why Analysis: "${activeAnalysis.title}". Root cause: ${activeAnalysis.rootCause}`,
+                                  priority: 'high',
+                                  status: 'in_progress',
+                                  owner_name: capa.assignedTo,
+                                  due_at: `${capa.targetDate}T18:00:00.000Z`,
+                                  source_type: 'KAIZEN_RCA',
+                                  source_title: `5-Why RCA: ${activeAnalysis.title}`,
+                                  edc: {
+                                    expected_outcome: `Systemic prevention of ${activeAnalysis.title}`,
+                                    definition_of_done: 'CAPA executed, verified in clinical audit, and SOP updated.',
+                                    evidence_required: 'Revised SOP log and follow-up audit checklist',
+                                  },
+                                }, 'Quality & Safety Committee');
+                                setKaizenToast(`Deployed CAPA "${capa.actionTitle}" to active Hospital WorkItems!`);
+                                setTimeout(() => setKaizenToast(null), 3500);
+                              }}
+                              className="px-2.5 py-1 bg-cyan-50 hover:bg-cyan-100 text-cyan-700 font-bold text-[11px] rounded-lg border border-cyan-200 transition-colors"
+                            >
+                              Deploy Task
+                            </button>
                           </td>
                         </tr>
                       ))}

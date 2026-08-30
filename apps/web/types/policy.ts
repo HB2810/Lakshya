@@ -1,11 +1,16 @@
 export type PolicyCategory =
   | 'CLINICAL_PROTOCOL'
+  | 'CLINICAL_OPERATIONS'
   | 'SURGICAL_OT'
   | 'NURSING'
   | 'INFECTION_CONTROL'
   | 'BIOMEDICAL_SAFETY'
+  | 'FACILITY_SAFETY'
   | 'IT_DATA_SECURITY'
-  | 'ADMINISTRATIVE';
+  | 'ADMINISTRATIVE'
+  | 'GENERAL'
+  | 'PHARMACY'
+  | 'GOVERNANCE';
 
 export type PolicyStatus = 'ACTIVE' | 'UNDER_REVIEW' | 'DRAFT' | 'ARCHIVED';
 

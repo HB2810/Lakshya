@@ -545,7 +545,7 @@ export const DynamicHospitalOrgChart: React.FC<DynamicHospitalOrgChartProps> = (
                 }}
                 className={`px-2 py-0.5 rounded-lg text-[10px] font-bold flex items-center gap-1 transition-colors cursor-pointer ${
                   isExpanded
-                    ? 'bg-slate-900 text-white'
+                    ? 'bg-blue-600 text-white shadow-2xs'
                     : 'bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200'
                 }`}
               >
@@ -898,7 +898,7 @@ export const DynamicHospitalOrgChart: React.FC<DynamicHospitalOrgChartProps> = (
                   type="button"
                   onClick={() => setActiveTier(t.id as any)}
                   className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                    activeTier === t.id ? 'bg-slate-900 text-white shadow-xs' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                    activeTier === t.id ? 'bg-blue-600 text-white shadow-xs' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                   }`}
                 >
                   {t.label}
