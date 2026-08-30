@@ -24,6 +24,7 @@ import {
 import { nabhReadinessStore } from '../../lib/mocks/nabhReadinessStore';
 import { NabhChecklistItem, NabhChapterChampionProfile } from '../../lib/data/nabhReadinessChecklistData';
 import { useAuth } from '../../lib/auth/AuthContext';
+import { isQualityCommandAuthorized } from '../../lib/auth/rbacPolicies';
 import { NabhTaskAutoGeneratorModal } from './NabhTaskAutoGeneratorModal';
 
 interface Props {
@@ -33,6 +34,11 @@ interface Props {
 
 export const NabhChampionReadinessDashboardWidget: React.FC<Props> = ({ className = '', condensed = false }) => {
   const { user } = useAuth();
+
+  // Strict Security Gate: Only MD and Quality leadership can view hospital-wide NABH readiness engine
+  if (!isQualityCommandAuthorized(user)) {
+    return null;
+  }
 
   const [items, setItems] = useState<NabhChecklistItem[]>(() => nabhReadinessStore.getChecklist());
   const champions = useMemo(() => nabhReadinessStore.getChampions(), []);

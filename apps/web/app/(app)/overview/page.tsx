@@ -38,7 +38,7 @@ import { DynamicHospitalOrgChart } from '../../../components/organization/Dynami
 import { ExecutiveStaffTracker } from '../../../components/leader/ExecutiveStaffTracker';
 import { NeedsMDAttentionView } from '../../../components/leader/NeedsMDAttentionView';
 import { NabhChampionReadinessDashboardWidget } from '../../../components/organization/NabhChampionReadinessDashboardWidget';
-import { isMDAttentionAuthorized, isLeaderOrAbove } from '../../../lib/auth/rbacPolicies';
+import { isMDAttentionAuthorized, isLeaderOrAbove, isQualityCommandAuthorized } from '../../../lib/auth/rbacPolicies';
 
 export default function OverviewPage() {
   const { user } = useAuth();
@@ -351,8 +351,10 @@ export default function OverviewPage() {
         </div>
       )}
 
-      {/* NABH 6TH EDITION CHAPTER CHAMPION READINESS CHECKLIST & TO-DOS WIDGET */}
-      <NabhChampionReadinessDashboardWidget />
+      {/* NABH 6TH EDITION CHAPTER CHAMPION READINESS CHECKLIST & TO-DOS WIDGET (MD & Quality Only) */}
+      {isQualityCommandAuthorized(user) && (
+        <NabhChampionReadinessDashboardWidget />
+      )}
 
       {primaryNextAction ? (
         <div className="bg-white border-2 border-blue-500/30 rounded-3xl p-4 sm:p-6 shadow-xs relative overflow-hidden bg-gradient-to-br from-blue-50/50 via-white to-indigo-50/30">

@@ -288,14 +288,16 @@ export default function ExecutionPage() {
         </div>
 
         <div className="flex w-full items-center gap-2.5 md:w-auto">
-          <button
-            type="button"
-            onClick={() => setIsAutoGeneratorOpen(true)}
-            className="px-4 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-xs font-bold rounded-xl transition-all inline-flex items-center gap-1.5 shadow-xs cursor-pointer"
-          >
-            <Sparkles className="w-4 h-4" />
-            <span>Auto-Generate NABH Tasks</span>
-          </button>
+          {canAccessQuality && (
+            <button
+              type="button"
+              onClick={() => setIsAutoGeneratorOpen(true)}
+              className="px-4 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-xs font-bold rounded-xl transition-all inline-flex items-center gap-1.5 shadow-xs cursor-pointer"
+            >
+              <Sparkles className="w-4 h-4" />
+              <span>Auto-Generate NABH Tasks</span>
+            </button>
+          )}
 
           <button
             type="button"

@@ -21,6 +21,8 @@ import {
 import { nabhTaskAutoGenerator, NABH_TASK_TEMPLATES, NabhTaskCadence, NabhTaskTemplate } from '../../lib/data/nabhTaskAutoGenerator';
 import { nabhReadinessStore } from '../../lib/mocks/nabhReadinessStore';
 import { NABH_6TH_EDITION_CHAMPIONS } from '../../lib/data/nabhReadinessChecklistData';
+import { useAuth } from '../../lib/auth/AuthContext';
+import { isQualityCommandAuthorized } from '../../lib/auth/rbacPolicies';
 
 interface NabhTaskAutoGeneratorModalProps {
   isOpen: boolean;
@@ -33,13 +35,14 @@ export const NabhTaskAutoGeneratorModal: React.FC<NabhTaskAutoGeneratorModalProp
   onClose,
   onTasksGenerated,
 }) => {
+  const { user } = useAuth();
   const [selectedCadence, setSelectedCadence] = useState<NabhTaskCadence | 'ALL'>('ALL');
   const [selectedChapter, setSelectedChapter] = useState<string>('ALL');
   const [cycleName, setCycleName] = useState<string>('September 2026 Audit Cycle');
   const [isGenerating, setIsGenerating] = useState(false);
   const [generationSuccess, setGenerationSuccess] = useState<{ count: number; timestamp: string } | null>(null);
 
-  if (!isOpen) return null;
+  if (!isOpen || !isQualityCommandAuthorized(user)) return null;
 
   const stats = nabhTaskAutoGenerator.getStats();
   const allTemplates = nabhTaskAutoGenerator.getTemplates();
