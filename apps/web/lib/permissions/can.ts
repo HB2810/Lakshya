@@ -79,7 +79,6 @@ export function can(capability: Capability, user: User | null): boolean {
 
     case 'team.tasks.verify':
     case 'team.tasks.audit':
-    case 'commitment.approve':
     case 'commitment.completion.approve':
       return isMD || isLeader; // Incharges, Leaders, and Governance can verify and audit
 
