@@ -7,9 +7,11 @@ import {
   LayoutDashboard,
   Sparkles,
   CheckSquare,
+  Users,
   Heart,
   Menu,
 } from 'lucide-react';
+import { useAuth } from '../../lib/auth/AuthContext';
 
 interface MobileBottomNavProps {
   onOpenMobileMenu: () => void;
@@ -17,11 +19,16 @@ interface MobileBottomNavProps {
 
 export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({ onOpenMobileMenu }) => {
   const pathname = usePathname();
+  const { user } = useAuth();
+
+  const isLeaderOrMD = ['MD', 'MD_OFFICE', 'MANAGING_DIRECTOR', 'DEPARTMENT_HEAD', 'MANAGER', 'LEADER', 'LEADERS', 'MASTER', 'ADMIN'].includes(user?.role || '');
 
   const navItems = [
     { label: 'My Day', href: '/overview', icon: LayoutDashboard },
     { label: 'Ask One', href: '/ask-one', icon: Sparkles },
-    { label: 'My Work', href: '/execution', icon: CheckSquare },
+    ...(isLeaderOrMD
+      ? [{ label: 'Team Hub', href: '/team-execution', icon: Users }]
+      : [{ label: 'My Work', href: '/execution', icon: CheckSquare }]),
     { label: 'Health', href: '/health', icon: Heart },
   ];
 

@@ -6,6 +6,7 @@ import { MOCK_COMMITMENTS, MOCK_TASKS, MOCK_STUCK_NEEDS, MOCK_ESCALATIONS } from
 import { MOCK_MEETINGS, MOCK_DECISIONS, meetingStore } from '../mocks/meetingsMock';
 import { workItemStore } from '../mocks/workItemMock';
 import { getMDOverviewData } from '../mocks/dashboardMock';
+import { hospitalStaffAuthStore } from '../auth/hospitalStaffAuth';
 import { CurrentUserResponse, Persona, User } from '../../types/auth';
 import {
   ApprovePlanPayload,
@@ -233,7 +234,7 @@ export const apiClient = {
         'ADMIN': 'master@stavya.local',
       };
       const resolvedEmail = emailMap[idKey] || emailOrId.trim();
-      const resolvedPassword = (password === '1234' || password === '••••••••••••') ? 'password123' : (password || 'password123');
+      const resolvedPassword = (password === '1234' || password === '••••••••••••' || password === 'Stavya@2026') ? 'password123' : (password || 'password123');
 
       try {
         const body: Record<string, string> = { email: resolvedEmail, password: resolvedPassword };
@@ -246,9 +247,143 @@ export const apiClient = {
         });
         return { response: data, user: mapBackendUserToFrontendUser(data) };
       } catch (err: unknown) {
-        // Fallback for dev demo when backend is offline
-        if (process.env.NODE_ENV === 'development') {
-          const normalized = emailOrId.trim().toUpperCase();
+        // Validate password if provided in dev fallback
+        if (password && password !== '1234' && password !== 'password123' && password !== '••••••••••••' && password !== 'securepass123' && password !== 'Stavya@2026' && password !== 'stavya2026') {
+          throw new Error('Invalid password. (Expected: 1234)');
+        }
+
+        // 1. Fallback for dev demo alias when backend is offline
+        const normalized = emailOrId.trim().toUpperCase();
+
+        const aliasMap: Record<string, keyof typeof DEMO_USERS> = {
+          'STAVYANS-001': 'MD',
+          'MD': 'MD',
+          'MD@STAVYA.LOCAL': 'MD',
+          'MD@STAVYASPINE.COM': 'MD',
+          'MANAGING_DIRECTOR': 'MD',
+          'MD_OFFICE': 'MD_OFFICE',
+          'HET.BHATT@STAVYASPINE.COM': 'MD_OFFICE',
+
+          'STAVYANS-002': 'LEADER',
+          'LEADER': 'LEADER',
+          'LEADERS': 'LEADERS',
+          'LEADER@STAVYA.LOCAL': 'LEADER',
+          'LEADER@STAVYASPINE.COM': 'LEADER',
+          'DEPARTMENT_HEAD': 'DEPARTMENT_HEAD',
+          'MANAGER': 'MANAGER',
+          'ROHAN.SHARMA@STAVYASPINE.COM': 'DEPARTMENT_HEAD',
+          'ANANYA.PATEL@STAVYASPINE.COM': 'MANAGER',
+
+          'STAVYANS-101': 'EMPLOYEE',
+          'EMPLOYEE': 'EMPLOYEE',
+          'EMPLOYEE@STAVYA.LOCAL': 'EMPLOYEE',
+          'STAVYANS': 'EMPLOYEE',
+          'PRIYESH.SHAH@STAVYASPINE.COM': 'EMPLOYEE',
+          'SUNITA.RAO@STAVYA.LOCAL': 'EMPLOYEE',
+
+          'STAVYANS-000': 'MASTER',
+          'MASTER': 'MASTER',
+          'ADMIN': 'ADMIN',
+          'MASTER@STAVYA.LOCAL': 'MASTER',
+          'ADMIN@STAVYASPINE.COM': 'ADMIN',
+          'HR': 'HR',
+          'HR@STAVYASPINE.COM': 'HR',
+        };
+
+        const matchedKey = aliasMap[normalized] || (
+          Object.keys(DEMO_USERS).find(
+            k => DEMO_USERS[k].email.toUpperCase() === normalized || k.toUpperCase() === normalized
+          ) as keyof typeof DEMO_USERS | undefined
+        );
+
+        if (matchedKey && DEMO_USERS[matchedKey]) {
+          const demoUser = DEMO_USERS[matchedKey];
+          const roleLower = (demoUser.role || 'employee').toLowerCase();
+
+          let permissions: string[] = ['user.read', 'department.read', 'task.read', 'task.create', 'task.complete'];
+          let roles = [roleLower];
+
+          if (roleLower === 'md' || roleLower === 'managing_director' || roleLower === 'md_office') {
+            roles = ['md', 'managing_director'];
+            permissions = [
+              'user.read', 'department.read', 'objective.read', 'objective.create',
+              'priority.read', 'priority.create', 'milestone.read', 'milestone.create',
+              'meeting.read', 'meeting.create', 'decision.read', 'decision.create',
+              'commitment.read', 'commitment.create', 'task.read', 'task.create',
+              'task.complete', 'dashboard.md.read', 'escalation.read', 'escalation.resolve',
+              'decision.approve', 'commitment.approve', 'audit.export'
+            ];
+          } else if (roleLower === 'leader' || roleLower === 'leaders' || roleLower === 'department_head' || roleLower === 'manager') {
+            roles = ['leader', 'leaders'];
+            permissions = [
+              'user.read', 'department.read', 'task.read', 'task.create', 'task.complete',
+              'task.assign', 'meeting.read', 'priority.read', 'milestone.read', 'stuck.create',
+              'stuck.resolve', 'dashboard.department.read'
+            ];
+          } else if (roleLower === 'master' || roleLower === 'admin') {
+            roles = ['master', 'admin'];
+            permissions = ['*'];
+          } else {
+            roles = ['employee', 'stavyans'];
+          }
+
+          const mockResponse: CurrentUserResponse = {
+            user: {
+              id: demoUser.id,
+              email: demoUser.email,
+              full_name: demoUser.name,
+              is_active: true,
+              organization_id: 'org-stavya-001',
+            },
+            organization_id: 'org-stavya-001',
+            organization_slug: 'stavya-spine',
+            session: {
+              id: `sess-${demoUser.id}`,
+              issued_at: new Date().toISOString(),
+              expires_at: new Date(Date.now() + 86400000).toISOString(),
+              last_activity_at: new Date().toISOString(),
+            },
+            roles,
+            permissions,
+            department_ids: [demoUser.departmentId],
+            must_change_password: false,
+          };
+          return { response: mockResponse, user: mapBackendUserToFrontendUser(mockResponse) };
+        }
+
+        // 2. Check 214 Hospital Staff Accounts Store
+        try {
+          const staffAccount = hospitalStaffAuthStore.authenticate(emailOrId, password);
+          if (staffAccount) {
+            const frontendUser = hospitalStaffAuthStore.toFrontendUser(staffAccount);
+            const mockResponse: CurrentUserResponse = {
+              user: {
+                id: staffAccount.id,
+                email: staffAccount.email,
+                full_name: staffAccount.name,
+                is_active: staffAccount.accessStatus !== 'SUSPENDED',
+                organization_id: 'org-stavya-001',
+              },
+              organization_id: 'org-stavya-001',
+              organization_slug: 'stavya-spine',
+              session: {
+                id: `sess-${staffAccount.id}`,
+                issued_at: new Date().toISOString(),
+                expires_at: new Date(Date.now() + 86400000).toISOString(),
+                last_activity_at: new Date().toISOString(),
+              },
+              roles: [staffAccount.role.toLowerCase()],
+              permissions: staffAccount.permissions,
+              department_ids: [`dept-${staffAccount.id}`],
+              must_change_password: false,
+            };
+            return { response: mockResponse, user: frontendUser };
+          }
+        } catch (staffErr: any) {
+          if (staffErr?.message && !staffErr.message.includes('not found')) {
+            throw staffErr;
+          }
+        }
 
           // Validate password if provided in development demo
           if (password && password !== '1234' && password !== 'password123' && password !== '••••••••••••' && password !== 'securepass123') {
@@ -347,41 +482,6 @@ export const apiClient = {
               must_change_password: false,
             };
             return { response: mockResponse, user: mapBackendUserToFrontendUser(mockResponse) };
-          }
-
-          // Check 214 Hospital Staff Accounts Store
-          try {
-            const { hospitalStaffAuthStore } = require('../auth/hospitalStaffAuth');
-            const staffAccount = hospitalStaffAuthStore.authenticate(emailOrId, password);
-            if (staffAccount) {
-              const frontendUser = hospitalStaffAuthStore.toFrontendUser(staffAccount);
-              const mockResponse: CurrentUserResponse = {
-                user: {
-                  id: staffAccount.id,
-                  email: staffAccount.email,
-                  full_name: staffAccount.name,
-                  is_active: staffAccount.accessStatus !== 'SUSPENDED',
-                  organization_id: 'org-stavya-001',
-                },
-                organization_id: 'org-stavya-001',
-                organization_slug: 'stavya-spine',
-                session: {
-                  id: `sess-${staffAccount.id}`,
-                  issued_at: new Date().toISOString(),
-                  expires_at: new Date(Date.now() + 86400000).toISOString(),
-                  last_activity_at: new Date().toISOString(),
-                },
-                roles: staffAccount.roles || [staffAccount.role.toLowerCase()],
-                permissions: staffAccount.permissions,
-                department_ids: [`dept-${staffAccount.id}`],
-                must_change_password: false,
-              };
-              return { response: mockResponse, user: frontendUser };
-            }
-          } catch (staffAuthErr: any) {
-            if (staffAuthErr?.message && !staffAuthErr.message.includes('not found')) {
-              throw staffAuthErr;
-            }
           }
 
           throw new Error('Invalid Staff ID / Username. Please use your Employee Code (e.g. STAVYA-001 to STAVYA-214), Staff ID (e.g. e048, e069), or STAVYANS-101 with password Stavya@2026 or 1234.');

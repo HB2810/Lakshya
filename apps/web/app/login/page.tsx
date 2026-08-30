@@ -16,20 +16,31 @@ import {
   Sparkles,
   ShieldCheck,
   Building,
+  KeyRound,
+  Copy,
+  Check,
+  Layers,
+  ChevronRight,
+  X,
 } from 'lucide-react';
 import { useAuth } from '../../lib/auth/AuthContext';
-import { hospitalStaffAuthStore, EmployeeAccount } from '../../lib/auth/hospitalStaffAuth';
+import {
+  hospitalStaffAuthStore,
+  EmployeeAccount,
+  DEFAULT_HOSPITAL_PASSWORD,
+} from '../../lib/auth/hospitalStaffAuth';
 import { StavyaOneLogo } from '../../components/brand/StavyaOneLogo';
 
 export default function LoginPage() {
   const router = useRouter();
   const { login, isLoading: authLoading } = useAuth();
 
-  const [staffId, setStaffId] = useState('STAVYANS-101');
-  const [password, setPassword] = useState('1234');
+  const [staffId, setStaffId] = useState('STAVYA-001');
+  const [password, setPassword] = useState(DEFAULT_HOSPITAL_PASSWORD);
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [copiedField, setCopiedField] = useState<string | null>(null);
 
   // 214 Staff Directory Selector Modal
   const [isStaffDirectoryOpen, setIsStaffDirectoryOpen] = useState(false);
@@ -39,32 +50,16 @@ export default function LoginPage() {
   const allStaffAccounts = useMemo(() => hospitalStaffAuthStore.getAllAccounts(), []);
 
   const filteredStaffDirectory = useMemo(() => {
-    return allStaffAccounts.filter((acc) => {
-      if (directoryTier === 'GOVERNANCE') {
-        const isGov = acc.role === 'MANAGING_DIRECTOR' || acc.role === 'MASTER' || acc.role === 'MD_OFFICE' || acc.name.includes('Dave');
-        if (!isGov) return false;
-      } else if (directoryTier === 'CHAMPIONS') {
-        if (!acc.isChapterChampion) return false;
-      } else if (directoryTier === 'LEADERS') {
-        if (acc.role !== 'LEADER' && acc.role !== 'DIRECTOR_QUALITY') return false;
-      } else if (directoryTier === 'STAFF') {
-        if (acc.role !== 'EMPLOYEE') return false;
-      }
+    return hospitalStaffAuthStore.searchAccounts(directorySearch, directoryTier);
+  }, [directorySearch, directoryTier]);
 
-      if (directorySearch.trim()) {
-        const q = directorySearch.toLowerCase();
-        return (
-          acc.name.toLowerCase().includes(q) ||
-          acc.employeeCode.toLowerCase().includes(q) ||
-          acc.id.toLowerCase().includes(q) ||
-          acc.designation.toLowerCase().includes(q) ||
-          acc.departmentName.toLowerCase().includes(q)
-        );
-      }
-
-      return true;
-    });
-  }, [allStaffAccounts, directoryTier, directorySearch]);
+  const copyToClipboard = (text: string, fieldId: string) => {
+    if (typeof navigator !== 'undefined') {
+      navigator.clipboard.writeText(text);
+      setCopiedField(fieldId);
+      setTimeout(() => setCopiedField(null), 2000);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -94,14 +89,14 @@ export default function LoginPage() {
   };
 
   const handleSelectStaffAndLogin = async (staff: EmployeeAccount) => {
-    setStaffId(staff.employeeCode);
-    setPassword('1234');
+    setStaffId(staff.loginId || staff.employeeCode);
+    setPassword(DEFAULT_HOSPITAL_PASSWORD);
     setIsStaffDirectoryOpen(false);
     setIsSubmitting(true);
     setError('');
 
     try {
-      const loggedInUser = await login(staff.employeeCode, '1234');
+      const loggedInUser = await login(staff.loginId || staff.employeeCode, DEFAULT_HOSPITAL_PASSWORD);
       if (loggedInUser?.role === 'MASTER') {
         router.push('/settings');
       } else {
@@ -125,7 +120,7 @@ export default function LoginPage() {
       </div>
 
       {/* Main Login Card */}
-      <main className="w-full max-w-[460px] relative z-10 my-auto">
+      <main className="w-full max-w-[480px] relative z-10 my-auto space-y-4">
         <div className="bg-white rounded-3xl shadow-xl shadow-slate-200/70 border border-slate-200/90 overflow-hidden">
           {/* Card Brand Header */}
           <div className="px-5 pb-5 pt-6 text-center border-b border-slate-100 bg-gradient-to-b from-blue-50/60 to-white sm:px-8 sm:pb-6 sm:pt-8 flex flex-col items-center">
@@ -149,16 +144,34 @@ export default function LoginPage() {
               </div>
             )}
 
+            {/* Credential Hint Banner */}
+            <div className="p-3 bg-blue-50/80 border border-blue-200/80 rounded-2xl text-xs text-blue-900 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <KeyRound className="w-4 h-4 text-blue-600 shrink-0" />
+                <span>
+                  Default Password: <strong>{DEFAULT_HOSPITAL_PASSWORD}</strong> (or <strong>1234</strong>)
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => copyToClipboard(DEFAULT_HOSPITAL_PASSWORD, 'default-pass')}
+                className="p-1 text-blue-600 hover:text-blue-800 rounded hover:bg-blue-100 transition-colors cursor-pointer"
+                title="Copy password"
+              >
+                {copiedField === 'default-pass' ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+              </button>
+            </div>
+
             {/* Staff ID Input */}
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
-                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600">
-                  Staff ID / Employee Code
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
+                  Staff ID / Employee Code / Email
                 </label>
                 <button
                   type="button"
                   onClick={() => setIsStaffDirectoryOpen(true)}
-                  className="text-xs font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1 transition-colors active-press"
+                  className="text-xs font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1 transition-colors active-press cursor-pointer"
                 >
                   <Users className="w-3.5 h-3.5" />
                   <span>214 Staff Directory</span>
@@ -181,10 +194,10 @@ export default function LoginPage() {
             {/* Password Input */}
             <div className="space-y-1.5">
               <div className="flex justify-between items-center">
-                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600">
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
                   Password
                 </label>
-                <span className="text-[11px] text-slate-400">Default: 1234 or Stavya@2026</span>
+                <span className="text-[11px] text-slate-400 font-medium">Stavya@2026 or 1234</span>
               </div>
               <div className="relative">
                 <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
@@ -212,7 +225,7 @@ export default function LoginPage() {
             <button
               type="button"
               onClick={() => setIsStaffDirectoryOpen(true)}
-              className="w-full py-2.5 px-3 bg-blue-50/90 hover:bg-blue-100/90 border border-blue-200/80 text-blue-800 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 shadow-2xs active-press cursor-pointer"
+              className="w-full py-2.5 px-3 bg-blue-50/90 hover:bg-blue-100 border border-blue-200/80 text-blue-800 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 shadow-2xs active-press cursor-pointer"
             >
               <Users className="w-4 h-4 text-blue-600" />
               <span>Browse All 214 Hospital Staff Accounts (1-Click Login)</span>
@@ -235,9 +248,9 @@ export default function LoginPage() {
             </button>
 
             {/* Fast Presets */}
-            <div className="pt-2 border-t border-slate-100">
-              <p className="text-[10px] uppercase font-bold text-slate-400 mb-2 text-center">
-                Fast Role Presets
+            <div className="pt-3 border-t border-slate-100 space-y-2">
+              <p className="text-[10px] uppercase font-bold text-slate-400 text-center tracking-wider">
+                Fast Login as Key Real Hospital Roles
               </p>
               <div className="grid grid-cols-2 gap-2 text-xs">
                 <button
@@ -255,10 +268,31 @@ export default function LoginPage() {
                       setIsSubmitting(false);
                     }
                   }}
-                  className="p-2 bg-blue-50/70 hover:bg-blue-100/90 border border-blue-200/80 text-blue-900 font-bold rounded-xl text-left transition-all cursor-pointer active-press"
+                  className="p-2.5 bg-blue-50/70 hover:bg-blue-100 border border-blue-200/80 text-blue-950 font-bold rounded-xl text-left transition-all cursor-pointer active-press"
                 >
                   <span className="block text-[9px] text-blue-600 uppercase font-black">MD Office (STAVYANS-001)</span>
-                  <span className="truncate block text-xs">Dr. Mirant Dave</span>
+                  <span className="truncate block text-xs font-extrabold text-slate-900">Dr. Mirant Dave</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={async () => {
+                    setStaffId('STAVYA-048');
+                    setPassword(DEFAULT_HOSPITAL_PASSWORD);
+                    setIsSubmitting(true);
+                    try {
+                      await login('STAVYA-048', DEFAULT_HOSPITAL_PASSWORD);
+                      router.push('/overview');
+                    } catch (e: any) {
+                      setError(e.message);
+                    } finally {
+                      setIsSubmitting(false);
+                    }
+                  }}
+                  className="p-2.5 bg-purple-50/70 hover:bg-purple-100 border border-purple-200/80 text-purple-950 font-bold rounded-xl text-left transition-all cursor-pointer active-press"
+                >
+                  <span className="block text-[9px] text-purple-600 uppercase font-black">Director Quality (STAVYA-048)</span>
+                  <span className="truncate block text-xs font-extrabold text-slate-900">Dr. Akruti Mirant Dave</span>
                 </button>
 
                 <button
@@ -276,10 +310,10 @@ export default function LoginPage() {
                       setIsSubmitting(false);
                     }
                   }}
-                  className="p-2 bg-purple-50/70 hover:bg-purple-100/90 border border-purple-200/80 text-purple-900 font-bold rounded-xl text-left transition-all cursor-pointer active-press"
+                  className="p-2.5 bg-indigo-50/70 hover:bg-indigo-100 border border-indigo-200/80 text-indigo-950 font-bold rounded-xl text-left transition-all cursor-pointer active-press"
                 >
-                  <span className="block text-[9px] text-purple-600 uppercase font-black">IT / Ops Lead (STAVYANS-002)</span>
-                  <span className="truncate block text-xs">Priyesh Shah</span>
+                  <span className="block text-[9px] text-indigo-600 uppercase font-black">IT / Ops Lead (STAVYANS-002)</span>
+                  <span className="truncate block text-xs font-extrabold text-slate-900">Priyesh Shah</span>
                 </button>
 
                 <button
@@ -297,31 +331,10 @@ export default function LoginPage() {
                       setIsSubmitting(false);
                     }
                   }}
-                  className="p-2 bg-emerald-50/70 hover:bg-emerald-100/90 border border-emerald-200/80 text-emerald-900 font-bold rounded-xl text-left transition-all cursor-pointer active-press"
+                  className="p-2.5 bg-emerald-50/70 hover:bg-emerald-100 border border-emerald-200/80 text-emerald-950 font-bold rounded-xl text-left transition-all cursor-pointer active-press"
                 >
                   <span className="block text-[9px] text-emerald-600 uppercase font-black">Clinical Staff (STAVYANS-101)</span>
-                  <span className="truncate block text-xs">Hospital Staff</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={async () => {
-                    setStaffId('STAVYANS-000');
-                    setPassword('1234');
-                    setIsSubmitting(true);
-                    try {
-                      await login('STAVYANS-000', '1234');
-                      router.push('/settings');
-                    } catch (e: any) {
-                      setError(e.message);
-                    } finally {
-                      setIsSubmitting(false);
-                    }
-                  }}
-                  className="p-2 bg-slate-100 hover:bg-slate-200/90 border border-slate-300/80 text-slate-900 font-bold rounded-xl text-left transition-all cursor-pointer active-press"
-                >
-                  <span className="block text-[9px] text-slate-600 uppercase font-black">System Admin (STAVYANS-000)</span>
-                  <span className="truncate block text-xs">Master Admin</span>
+                  <span className="truncate block text-xs font-extrabold text-slate-900">Hospital Staff</span>
                 </button>
               </div>
             </div>
@@ -329,117 +342,148 @@ export default function LoginPage() {
         </div>
       </main>
 
-      {/* 214 Hospital Staff Directory Login Drawer / Modal */}
+      {/* 214 REAL HOSPITAL STAFF DIRECTORY MODAL */}
       {isStaffDirectoryOpen && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-2xl w-full p-6 shadow-2xl border border-slate-200 animate-in zoom-in-95 flex flex-col max-h-[85vh]">
-            <div className="flex items-start justify-between pb-4 border-b border-slate-100">
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4">
+          <div className="bg-white rounded-3xl max-w-4xl w-full p-5 sm:p-7 shadow-2xl border border-slate-200 animate-in zoom-in-95 space-y-4 max-h-[90vh] flex flex-col justify-between">
+            {/* Modal Header */}
+            <div className="flex items-start justify-between border-b border-slate-100 pb-3">
               <div>
-                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-blue-100 text-blue-800">
-                  Hospital Workforce Directory
-                </span>
-                <h3 className="text-lg font-black text-slate-900 mt-1">
-                  1-Click Login for All 214 Hospital Staff
-                </h3>
-                <p className="text-xs text-slate-500 font-medium">
-                  Select any employee from the Stavya Spine Org Chart to immediately log in.
+                <div className="flex items-center gap-2">
+                  <span className="px-2.5 py-0.5 bg-blue-600 text-white text-[10px] font-black rounded-full uppercase tracking-wider">
+                    STAVYA ORG DIRECTORY
+                  </span>
+                  <span className="text-xs font-bold text-slate-500">
+                    214 Real Hospital Employee Accounts
+                  </span>
+                </div>
+                <h2 className="text-xl font-black text-slate-900 mt-1">
+                  1-Click Login for All 214 Hospital Staff Accounts
+                </h2>
+                <p className="text-xs text-slate-500">
+                  Every staff member in the hospital has an active account with login ID and password.
                 </p>
               </div>
+
               <button
+                type="button"
                 onClick={() => setIsStaffDirectoryOpen(false)}
-                className="text-slate-400 hover:text-slate-600 text-xl font-bold"
+                className="p-1.5 text-slate-400 hover:text-slate-700 rounded-xl hover:bg-slate-100 transition-colors"
               >
-                ✕
+                <X className="w-5 h-5" />
               </button>
             </div>
 
             {/* Search & Tier Filters */}
-            <div className="py-3 space-y-2 border-b border-slate-100">
+            <div className="space-y-3">
               <div className="relative">
-                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                 <input
                   type="text"
                   value={directorySearch}
                   onChange={(e) => setDirectorySearch(e.target.value)}
-                  placeholder="Search by staff code, name, designation, department..."
-                  className="w-full pl-9 pr-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-hidden focus:border-blue-600 font-medium text-slate-800"
-                  autoFocus
+                  placeholder="Search 214 staff by Name, Login ID (e.g. STAVYA-113), Designation, or Unit..."
+                  className="w-full pl-10 pr-3.5 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
                 />
               </div>
 
-              <div className="flex flex-wrap items-center gap-1.5 pt-1">
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
                 {[
                   { id: 'ALL', label: `All Staff (${allStaffAccounts.length})` },
-                  { id: 'GOVERNANCE', label: 'Executive Governance' },
-                  { id: 'CHAMPIONS', label: 'NABH 6th Champions' },
-                  { id: 'LEADERS', label: 'Department Heads' },
-                  { id: 'STAFF', label: 'Clinical Staff & Ops' },
-                ].map((tier) => (
+                  { id: 'GOVERNANCE', label: `Governance (${allStaffAccounts.filter(a => a.tier === 'GOVERNANCE').length})` },
+                  { id: 'LEADERS', label: `Leaders (${allStaffAccounts.filter(a => a.tier === 'LEADERS').length})` },
+                  { id: 'INCHARGES', label: `Incharges & HODs (${allStaffAccounts.filter(a => a.tier === 'INCHARGES').length})` },
+                  { id: 'CHAMPIONS', label: `NABH Champions (${allStaffAccounts.filter(a => a.isChapterChampion).length})` },
+                  { id: 'EMPLOYEES', label: `Frontline Staff (${allStaffAccounts.filter(a => a.tier === 'EMPLOYEES').length})` },
+                ].map((t) => (
                   <button
-                    key={tier.id}
-                    onClick={() => setDirectoryTier(tier.id)}
-                    className={`px-2.5 py-1 text-[11px] font-bold rounded-lg border transition-all ${
-                      directoryTier === tier.id
-                        ? 'bg-blue-600 text-white border-blue-600'
-                        : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                    key={t.id}
+                    type="button"
+                    onClick={() => setDirectoryTier(t.id)}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
+                      directoryTier === t.id
+                        ? 'bg-blue-600 text-white shadow-xs'
+                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                     }`}
                   >
-                    {tier.label}
+                    {t.label}
                   </button>
                 ))}
               </div>
             </div>
 
-            {/* Staff List */}
-            <div className="overflow-y-auto divide-y divide-slate-100 flex-1 my-2 max-h-[380px]">
+            {/* Staff List Grid */}
+            <div className="flex-1 overflow-y-auto space-y-2.5 pr-1 max-h-[50vh]">
               {filteredStaffDirectory.length === 0 ? (
-                <div className="p-8 text-center text-xs text-slate-500">
-                  No staff members match your search criteria.
+                <div className="p-8 text-center bg-slate-50 rounded-2xl space-y-1">
+                  <Users className="w-8 h-8 text-slate-300 mx-auto" />
+                  <p className="text-xs font-bold text-slate-700">No staff members found matching search.</p>
                 </div>
               ) : (
                 filteredStaffDirectory.map((staff) => (
-                  <button
+                  <div
                     key={staff.id}
-                    onClick={() => handleSelectStaffAndLogin(staff)}
-                    className="w-full p-3 hover:bg-blue-50/70 text-left transition-all flex items-center justify-between gap-3 group"
+                    className="p-3.5 bg-slate-50/80 hover:bg-blue-50/60 border border-slate-200/90 rounded-2xl transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 group"
                   >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-8 h-8 rounded-xl bg-blue-50 border border-blue-200 text-blue-700 font-black flex items-center justify-center text-xs shrink-0 group-hover:bg-blue-600 group-hover:text-white transition-colors">
-                        {staff.name.charAt(0)}
+                    <div className="space-y-1 flex-1 min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="font-mono text-[10px] font-black text-blue-700 bg-blue-100/80 px-2 py-0.5 rounded-md">
+                          {staff.loginId}
+                        </span>
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 bg-white px-2 py-0.5 rounded border border-slate-200">
+                          {staff.tier}
+                        </span>
+                        {staff.isChapterChampion && (
+                          <span className="text-[10px] font-black text-amber-700 bg-amber-100/80 px-2 py-0.5 rounded-md">
+                            Champion: {staff.chapterAssigned}
+                          </span>
+                        )}
                       </div>
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-1.5">
-                          <p className="font-extrabold text-xs text-slate-900 truncate">{staff.name}</p>
-                          {staff.isChapterChampion && (
-                            <span className="px-1.5 py-0.2 rounded-md text-[9px] font-black bg-indigo-50 text-indigo-700 border border-indigo-200 shrink-0">
-                              {staff.chapterAssigned || 'Champion'}
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-[11px] text-slate-500 truncate">
-                          {staff.designation} • {staff.departmentName}
-                        </p>
-                      </div>
+
+                      <h4 className="text-sm font-black text-slate-900 truncate">
+                        {staff.name}
+                      </h4>
+
+                      <p className="text-xs text-slate-600 font-medium truncate">
+                        {staff.designation} • <strong className="text-slate-800">{staff.departmentName}</strong>
+                      </p>
+
+                      <p className="text-[11px] text-slate-400 font-mono truncate">
+                        Email: {staff.email} • Password: <strong className="text-slate-700">{DEFAULT_HOSPITAL_PASSWORD}</strong>
+                      </p>
                     </div>
 
                     <div className="flex items-center gap-2 shrink-0">
-                      <span className="font-mono text-[10px] font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-md">
-                        {staff.employeeCode}
-                      </span>
-                      <span className="text-xs font-bold text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity">
-                        Sign In →
-                      </span>
+                      <button
+                        type="button"
+                        onClick={() => copyToClipboard(staff.loginId, `id-${staff.id}`)}
+                        className="p-2 bg-white hover:bg-slate-100 border border-slate-200 rounded-xl text-slate-600 text-xs font-bold transition-colors cursor-pointer"
+                        title="Copy Login ID"
+                      >
+                        {copiedField === `id-${staff.id}` ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleSelectStaffAndLogin(staff)}
+                        className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer active-press"
+                      >
+                        <span>Sign In</span>
+                        <ArrowRight className="w-3.5 h-3.5" />
+                      </button>
                     </div>
-                  </button>
+                  </div>
                 ))
               )}
             </div>
 
+            {/* Modal Footer */}
             <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
-              <span>Showing {filteredStaffDirectory.length} of {allStaffAccounts.length} staff</span>
+              <span>Showing {filteredStaffDirectory.length} of {allStaffAccounts.length} Hospital Staff Accounts</span>
               <button
+                type="button"
                 onClick={() => setIsStaffDirectoryOpen(false)}
-                className="px-4 py-1.5 bg-slate-100 hover:bg-slate-200 rounded-xl text-slate-700 font-bold"
+                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl"
               >
                 Close
               </button>

@@ -271,7 +271,51 @@ export const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({
             
             {/* OVERVIEW TAB */}
             {activeTab === 'overview' && (
-              <div className="space-y-6 animate-in fade-in duration-200">
+              <div className="space-y-5 animate-in fade-in duration-200">
+                {/* Verification / Audit Outcome Banner if available */}
+                {workItem.verification && (
+                  <div
+                    className={`p-4 rounded-2xl border ${
+                      workItem.verification.decision === 'APPROVED'
+                        ? 'bg-emerald-50/70 border-emerald-200 text-emerald-950'
+                        : 'bg-amber-50/70 border-amber-200 text-amber-950'
+                    } space-y-2`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-white shadow-2xs">
+                        {workItem.verification.decision === 'APPROVED' ? 'AUDIT VERIFIED & APPROVED' : 'REVISION REQUESTED'}
+                      </span>
+                      {workItem.verification.audit_score && (
+                        <span className="text-xs font-black text-amber-600 flex items-center gap-1">
+                          {'★'.repeat(workItem.verification.audit_score)} {workItem.verification.audit_score}/5 Stars
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-xs space-y-1">
+                      <p className="font-bold">
+                        Audited by {workItem.verification.verified_by_name} ({workItem.verification.verified_by_role || 'Incharge / Leader'})
+                      </p>
+                      {workItem.verification.remarks && (
+                        <p className="text-slate-700 italic bg-white/80 p-2.5 rounded-xl border border-emerald-100">
+                          &ldquo;{workItem.verification.remarks}&rdquo;
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Submission Deliverable Note if awaiting review */}
+                {workItem.status === 'submitted_for_verification' && workItem.submission_notes && (
+                  <div className="p-4 bg-indigo-50/70 border border-indigo-200 rounded-2xl space-y-1.5">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-indigo-900">
+                      Deliverable Submitted for Verification
+                    </span>
+                    <p className="text-xs text-indigo-950 font-medium bg-white p-2.5 rounded-xl border border-indigo-100">
+                      {workItem.submission_notes}
+                    </p>
+                  </div>
+                )}
+
                 {/* Description Box */}
                 {workItem.description && (
                   <div className="p-4 bg-slate-50 border border-slate-100 rounded-2xl space-y-1">
@@ -318,7 +362,7 @@ export const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({
               </div>
             )}
 
-            {/* ACTION FORMS (INTERACTIVE MODES) - Rendered regardless of tab when active */}
+            {/* ACTION FORMS (INTERACTIVE MODES) */}
             {actionMode === 'progress' && (
               <form
                 onSubmit={handleSaveProgress}
@@ -384,16 +428,15 @@ export const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({
               </form>
             )}
 
-            {actionMode === 'blocker' && (
+            {actionMode === 'submit_verification' && (
               <form
-                onSubmit={handleReportBlocker}
-                className="p-5 bg-red-50/70 border border-red-200 rounded-2xl space-y-3.5 animate-in fade-in duration-150"
+                onSubmit={handleSubmitForVerification}
+                className="p-5 bg-indigo-50/70 border border-indigo-200 rounded-2xl space-y-4 animate-in fade-in duration-150"
               >
-                <div className="flex items-center justify-between border-b border-red-200/80 pb-2">
-                  <div className="flex items-center gap-1.5 text-red-900 font-bold text-xs">
-                    <ShieldAlert className="w-4 h-4 text-red-600" />
-                    <span>Report Blocker / Need Help</span>
-                  </div>
+                <div className="flex items-center justify-between border-b border-indigo-200/80 pb-2">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-indigo-950">
+                    Submit Deliverable for Incharge Verification
+                  </h4>
                   <button
                     type="button"
                     onClick={() => setActionMode('view')}
@@ -404,64 +447,114 @@ export const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({
                 </div>
 
                 <div className="space-y-1">
-                  <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-700">
-                    1. What is blocking you?
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-indigo-900">
+                    Deliverable & Execution Proof Summary <span className="text-red-500">*</span>
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={submissionNotes}
+                    onChange={(e) => setSubmissionNotes(e.target.value)}
+                    placeholder="e.g. Completed autoclaving of OT-2 tray sets #4-8. Temperature chart verified at 134°C. Physical register signed."
+                    required
+                    className="w-full px-3 py-2 text-xs bg-white border border-indigo-200 rounded-xl text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                  />
+                </div>
+
+                <div className="flex justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setActionMode('view')}
+                    className="px-3 py-1.5 text-xs font-bold text-slate-600 hover:bg-white rounded-lg"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={!submissionNotes.trim()}
+                    className="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-xs font-bold rounded-xl shadow-xs"
+                  >
+                    Submit for Incharge Verification
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {actionMode === 'blocker' && (
+              <form
+                onSubmit={handleReportBlocker}
+                className="p-5 bg-red-50/60 border border-red-200 rounded-2xl space-y-4 animate-in fade-in duration-150"
+              >
+                <div className="flex items-center justify-between border-b border-red-200/80 pb-2">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-red-900">
+                    Report Stuck Issue / Blocker Need
+                  </h4>
+                  <button
+                    type="button"
+                    onClick={() => setActionMode('view')}
+                    className="text-xs font-bold text-slate-400 hover:text-slate-700"
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-600">
+                    Why are you stuck? (Blocker Reason)
                   </label>
                   <input
                     type="text"
                     value={blockerReason}
                     onChange={(e) => setBlockerReason(e.target.value)}
-                    placeholder="e.g. Missing vendor firmware download credentials..."
+                    placeholder="e.g. Sensor calibration software key expired on vendor server"
                     required
                     className="w-full px-3 py-2 text-xs bg-white border border-red-200 rounded-xl text-slate-900 focus:outline-none"
                   />
                 </div>
 
                 <div className="space-y-1">
-                  <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-700">
-                    2. What is needed to proceed?
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-600">
+                    What specific assistance / decision is needed?
                   </label>
-                  <textarea
-                    rows={2}
+                  <input
+                    type="text"
                     value={blockerNeed}
                     onChange={(e) => setBlockerNeed(e.target.value)}
-                    placeholder="e.g. Need OEM unlock key or approval from Biomedical Lead..."
+                    placeholder="e.g. Need IT / MD Office approval for emergency license renewal"
                     required
                     className="w-full px-3 py-2 text-xs bg-white border border-red-200 rounded-xl text-slate-900 focus:outline-none"
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
-                    <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-700">
-                      3. Who can help? (Optional)
+                    <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-600">
+                      Who can help? (Person or Dept)
                     </label>
                     <input
                       type="text"
                       value={blockerHelper}
                       onChange={(e) => setBlockerHelper(e.target.value)}
-                      placeholder="e.g. Amit Patel / IT Lead"
-                      className="w-full px-3 py-1.5 text-xs bg-white border border-red-200 rounded-xl text-slate-900 focus:outline-none"
+                      placeholder="e.g. IT Department Head / MD Office"
+                      className="w-full px-3 py-2 text-xs bg-white border border-red-200 rounded-xl text-slate-900 focus:outline-none"
                     />
                   </div>
-
                   <div className="space-y-1">
-                    <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-700">
-                      4. Urgency
+                    <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-600">
+                      Urgency
                     </label>
                     <select
                       value={blockerUrgency}
                       onChange={(e) => setBlockerUrgency(e.target.value as any)}
-                      className="w-full px-3 py-1.5 text-xs bg-white border border-red-200 rounded-xl text-slate-800 focus:outline-none"
+                      className="w-full px-3 py-2 text-xs bg-white border border-red-200 rounded-xl text-slate-900 focus:outline-none"
                     >
-                      <option value="HIGH">High (Immediate)</option>
-                      <option value="URGENT">Urgent (OT Critical)</option>
-                      <option value="MEDIUM">Medium (Within 24h)</option>
+                      <option value="URGENT">Urgent (Immediate Blocker)</option>
+                      <option value="HIGH">High Priority</option>
+                      <option value="MEDIUM">Medium Priority</option>
                     </select>
                   </div>
                 </div>
 
-                <div className="flex justify-end gap-2 pt-1">
+                <div className="flex justify-end gap-2">
                   <button
                     type="button"
                     onClick={() => setActionMode('view')}
@@ -473,7 +566,7 @@ export const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({
                     type="submit"
                     className="px-4 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-xl shadow-xs"
                   >
-                    Submit Blocker
+                    Log Blocker
                   </button>
                 </div>
               </form>
@@ -604,35 +697,35 @@ export const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({
           </div>
 
           {/* 4. DRAWER FOOTER PRIMARY ACTIONS */}
-          <div className="p-6 border-t border-slate-100 bg-slate-50/50 flex flex-wrap items-center justify-between gap-3">
+          <div className="p-4 sm:p-6 border-t border-slate-100 bg-slate-50/70 flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-2">
               {workItem.status === 'todo' && (
                 <button
                   type="button"
                   onClick={handleStartWork}
-                  className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer"
+                  className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer active-press"
                 >
                   <Play className="w-3.5 h-3.5 fill-current" />
                   <span>Start Working</span>
                 </button>
               )}
 
-              {workItem.status === 'in_progress' && (
+              {(workItem.status === 'in_progress' || workItem.status === 'revision_requested') && (
                 <button
                   type="button"
                   onClick={() => setActionMode(actionMode === 'progress' ? 'view' : 'progress')}
-                  className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer"
+                  className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer active-press"
                 >
                   <Clock className="w-3.5 h-3.5" />
                   <span>Update Progress</span>
                 </button>
               )}
 
-              {workItem.status !== 'completed' && (
+              {workItem.status !== 'completed' && workItem.status !== 'verified' && (
                 <button
                   type="button"
                   onClick={() => setActionMode(actionMode === 'blocker' ? 'view' : 'blocker')}
-                  className="px-3.5 py-2.5 bg-white hover:bg-red-50 text-red-700 border border-red-200 font-bold text-xs rounded-xl transition-colors flex items-center gap-1.5 cursor-pointer"
+                  className="px-3.5 py-2.5 bg-white hover:bg-red-50 text-red-700 border border-red-200 font-bold text-xs rounded-xl transition-colors flex items-center gap-1.5 cursor-pointer active-press"
                 >
                   <ShieldAlert className="w-3.5 h-3.5" />
                   <span>Need Help / Blocker</span>
@@ -640,19 +733,27 @@ export const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({
               )}
             </div>
 
-            {workItem.status !== 'completed' ? (
-              <button
-                type="button"
-                onClick={() => setActionMode(actionMode === 'complete' ? 'view' : 'complete')}
-                className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer"
-              >
-                <CheckCircle2 className="w-3.5 h-3.5" />
-                <span>Mark Complete</span>
-              </button>
-            ) : (
-              <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-200 flex items-center gap-1">
-                <Check className="w-3.5 h-3.5" /> Completed
+            {workItem.status === 'submitted_for_verification' ? (
+              <span className="text-xs font-bold text-indigo-700 bg-indigo-50 px-3 py-2 rounded-xl border border-indigo-200 flex items-center gap-1.5">
+                <Clock className="w-3.5 h-3.5 text-indigo-600 animate-pulse" />
+                <span>Submitted for Incharge Verification</span>
               </span>
+            ) : workItem.status === 'verified' || workItem.status === 'completed' ? (
+              <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-3.5 py-2 rounded-xl border border-emerald-200 flex items-center gap-1.5 shadow-2xs">
+                <Check className="w-3.5 h-3.5" />
+                <span>Verified &amp; Completed</span>
+              </span>
+            ) : (
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setActionMode(actionMode === 'submit_verification' ? 'view' : 'submit_verification')}
+                  className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer active-press"
+                >
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  <span>Submit for Verification</span>
+                </button>
+              </div>
             )}
           </div>
         </div>

@@ -22,6 +22,7 @@ import {
   Smile,
   Lock,
   GraduationCap,
+  Users,
 } from 'lucide-react';
 import { useAuth } from '../../lib/auth/AuthContext';
 import { isQualityCommandAuthorized } from '../../lib/auth/rbacPolicies';
@@ -46,6 +47,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen = false, onCloseM
         { label: 'My Day', href: '/overview', icon: LayoutDashboard, show: true },
         { label: 'Ask One', href: '/ask-one', icon: Sparkles, show: true },
         { label: 'My Work', href: '/execution', icon: CheckSquare, show: true },
+        { label: 'Team Hub', href: '/team-execution', icon: Users, show: isLeaderOrMD },
         { label: 'Calendar', href: '/calendar', icon: Calendar, show: true },
         { label: 'Meetings', href: '/meetings', icon: Calendar, show: true },
       ],
