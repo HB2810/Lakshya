@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { AuthProvider, useAuth } from '../../lib/auth/AuthContext';
 import { Sidebar } from './Sidebar';
 import { Header } from './Header';
+import { MobileBottomNav } from './MobileBottomNav';
 import { StavyaOneLogo } from '../brand/StavyaOneLogo';
 
 export const AppShellContent: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -48,14 +49,15 @@ export const AppShellContent: React.FC<{ children: React.ReactNode }> = ({ child
         isMobileOpen={isMobileNavigationOpen}
         onCloseMobile={() => setIsMobileNavigationOpen(false)}
       />
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
         <Header onOpenNavigation={() => setIsMobileNavigationOpen(true)} />
         <main
           id="stavya-one-main-content"
-          className="app-content flex-1 min-w-0 overflow-y-auto overscroll-y-contain scroll-smooth p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] sm:p-5 sm:pb-[calc(1.25rem+env(safe-area-inset-bottom))] md:p-8 md:pb-8 space-y-5 md:space-y-6"
+          className="app-content flex-1 min-w-0 overflow-y-auto overscroll-y-contain scroll-smooth p-3.5 pb-[calc(4.75rem+env(safe-area-inset-bottom))] sm:p-5 sm:pb-[calc(4.75rem+env(safe-area-inset-bottom))] md:p-8 md:pb-8 space-y-5 md:space-y-6"
         >
           {children}
         </main>
+        <MobileBottomNav onOpenMobileMenu={() => setIsMobileNavigationOpen(true)} />
       </div>
     </div>
   );
@@ -64,3 +66,4 @@ export const AppShellContent: React.FC<{ children: React.ReactNode }> = ({ child
 export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return <AppShellContent>{children}</AppShellContent>;
 };
+

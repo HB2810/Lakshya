@@ -9,7 +9,27 @@ export function loadPrivateState(): PrivateState {
   }
   try {
     const saved = localStorage.getItem(storageKey);
-    if (saved) return { ...initialPrivateState, ...JSON.parse(saved) } as PrivateState;
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      return {
+        ...initialPrivateState,
+        ...parsed,
+        health: {
+          ...initialPrivateState.health,
+          ...(parsed.health || {}),
+          connectedDevices:
+            Array.isArray(parsed.health?.connectedDevices) && parsed.health.connectedDevices.length > 0
+              ? parsed.health.connectedDevices
+              : initialPrivateState.health.connectedDevices,
+        },
+        wealth: {
+          ...initialPrivateState.wealth,
+          ...(parsed.wealth || {}),
+        },
+        lifeGoals: Array.isArray(parsed.lifeGoals) ? parsed.lifeGoals : initialPrivateState.lifeGoals,
+        personalTasks: Array.isArray(parsed.personalTasks) ? parsed.personalTasks : initialPrivateState.personalTasks,
+      } as PrivateState;
+    }
   } catch {
     // Fail closed to a fresh private state if local storage is unavailable.
   }

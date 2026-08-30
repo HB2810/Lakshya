@@ -20,28 +20,45 @@ import {
 } from 'lucide-react';
 import { Card } from '../ui/Card';
 import { loadPrivateState, savePrivateState } from '../../lib/services/privateVault';
+import { initialPrivateState } from '../../lib/data/companionDemo';
 import { PrivateState, WealthState } from '../../types/companion';
 
 export const WealthBudgetView: React.FC = () => {
-  const [state, setState] = useState<PrivateState>(() => loadPrivateState());
+  const [isMounted, setIsMounted] = useState(false);
+  const [state, setState] = useState<PrivateState>(() => initialPrivateState);
   const [savedFeedback, setSavedFeedback] = useState(false);
   const [quickAmount, setQuickAmount] = useState<string>('');
   const [activeTab, setActiveTab] = useState<'overview' | 'quick-add' | 'calculator'>('overview');
 
   useEffect(() => {
+    setState(loadPrivateState());
+    setIsMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isMounted) return;
     savePrivateState(state);
     setSavedFeedback(true);
     const t = setTimeout(() => setSavedFeedback(false), 2000);
     return () => clearTimeout(t);
-  }, [state]);
+  }, [state, isMounted]);
 
-  const wealth = state.wealth;
+  const wealth = {
+    monthlyBudget: state.wealth?.monthlyBudget ?? 50000,
+    spent: state.wealth?.spent ?? 0,
+    savingsGoal: state.wealth?.savingsGoal ?? 200000,
+    saved: state.wealth?.saved ?? 0,
+  };
 
   const updateWealth = (key: keyof WealthState, value: number) => {
     setState((current) => ({
       ...current,
       wealth: {
-        ...current.wealth,
+        ...(current.wealth || {}),
+        monthlyBudget: current.wealth?.monthlyBudget ?? 50000,
+        spent: current.wealth?.spent ?? 0,
+        savingsGoal: current.wealth?.savingsGoal ?? 200000,
+        saved: current.wealth?.saved ?? 0,
         [key]: Math.max(0, isNaN(value) ? 0 : value),
       },
     }));

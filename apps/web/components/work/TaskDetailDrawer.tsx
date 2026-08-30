@@ -173,15 +173,15 @@ export const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({
       {/* Backdrop */}
       <div
         onClick={onClose}
-        className="absolute inset-0 bg-slate-900/40 backdrop-blur-2xs transition-opacity animate-in fade-in"
+        className="absolute inset-0 bg-slate-900/50 backdrop-blur-xs transition-opacity animate-in fade-in"
       />
 
       <div className="fixed inset-y-0 right-0 flex max-w-full pl-0 sm:pl-10">
-        <div className="w-screen max-w-xl bg-white shadow-2xl border-l border-slate-200 flex flex-col justify-between animate-in slide-in-from-right duration-200">
+        <div className="w-screen sm:w-[480px] lg:w-[540px] max-w-full bg-white shadow-2xl border-l border-slate-200 flex flex-col justify-between animate-in slide-in-from-right duration-250">
           {/* 1. DRAWER TOP HEADER */}
           <div className="px-4 pb-4 pt-[calc(1rem+env(safe-area-inset-top))] sm:p-6 border-b border-slate-100 flex items-start justify-between gap-4">
             <div className="space-y-2">
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <span
                   className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider border ${getStatusBadge(
                     workItem.status
@@ -197,14 +197,14 @@ export const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({
                   {workItem.priority} Priority
                 </span>
                 {workItem.source_title && (
-                  <span className="text-[10px] text-slate-500 font-medium flex items-center gap-1 bg-slate-50 px-2 py-0.5 rounded border border-slate-200">
-                    <Link2 className="w-3 h-3 text-slate-400" />
-                    {workItem.source_title}
+                  <span className="text-[10px] text-slate-500 font-medium flex items-center gap-1 bg-slate-50 px-2 py-0.5 rounded border border-slate-200 truncate max-w-[220px]">
+                    <Link2 className="w-3 h-3 text-slate-400 shrink-0" />
+                    <span className="truncate">{workItem.source_title}</span>
                   </span>
                 )}
               </div>
 
-              <h2 className="text-lg font-black text-slate-900 leading-snug">
+              <h2 className="text-lg sm:text-xl font-black text-slate-900 leading-snug">
                 {workItem.title}
               </h2>
             </div>
@@ -212,7 +212,7 @@ export const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="flex min-h-11 min-w-11 shrink-0 items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
+              className="flex min-h-10 min-w-10 shrink-0 items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer active-press"
               aria-label="Close task details"
             >
               <X className="w-5 h-5" />

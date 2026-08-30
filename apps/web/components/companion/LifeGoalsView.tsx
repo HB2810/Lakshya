@@ -16,23 +16,31 @@ import {
 } from 'lucide-react';
 import { Card } from '../ui/Card';
 import { loadPrivateState, savePrivateState } from '../../lib/services/privateVault';
+import { initialPrivateState } from '../../lib/data/companionDemo';
 import { PrivateState, LifeGoal, WorkTask } from '../../types/companion';
 
 export const LifeGoalsView: React.FC = () => {
-  const [state, setState] = useState<PrivateState>(() => loadPrivateState());
+  const [isMounted, setIsMounted] = useState(false);
+  const [state, setState] = useState<PrivateState>(() => initialPrivateState);
   const [newReminderTitle, setNewReminderTitle] = useState('');
   const [newGoalTitle, setNewGoalTitle] = useState('');
   const [newGoalCadence, setNewGoalCadence] = useState('Weekly');
   const [isAddGoalOpen, setIsAddGoalOpen] = useState(false);
 
   useEffect(() => {
+    setState(loadPrivateState());
+    setIsMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isMounted) return;
     savePrivateState(state);
-  }, [state]);
+  }, [state, isMounted]);
 
   const toggleGoal = (id: string) => {
     setState((current) => ({
       ...current,
-      lifeGoals: current.lifeGoals.map((g) =>
+      lifeGoals: (current.lifeGoals || []).map((g) =>
         g.id === id ? { ...g, done: !g.done } : g
       ),
     }));
@@ -51,7 +59,7 @@ export const LifeGoalsView: React.FC = () => {
 
     setState((current) => ({
       ...current,
-      lifeGoals: [newGoal, ...current.lifeGoals],
+      lifeGoals: [newGoal, ...(current.lifeGoals || [])],
     }));
 
     setNewGoalTitle('');
@@ -72,7 +80,7 @@ export const LifeGoalsView: React.FC = () => {
 
     setState((current) => ({
       ...current,
-      personalTasks: [newReminder, ...current.personalTasks],
+      personalTasks: [newReminder, ...(current.personalTasks || [])],
     }));
 
     setNewReminderTitle('');
@@ -81,14 +89,15 @@ export const LifeGoalsView: React.FC = () => {
   const toggleReminder = (id: string) => {
     setState((current) => ({
       ...current,
-      personalTasks: current.personalTasks.map((t) =>
+      personalTasks: (current.personalTasks || []).map((t) =>
         t.id === id ? { ...t, status: t.status === 'done' ? 'todo' : 'done' } : t
       ),
     }));
   };
 
-  const completedGoalsCount = state.lifeGoals.filter((g) => g.done).length;
-  const totalGoals = Math.max(1, state.lifeGoals.length);
+  const goals = state.lifeGoals || [];
+  const completedGoalsCount = goals.filter((g) => g.done).length;
+  const totalGoals = Math.max(1, goals.length);
   const goalProgressPct = Math.round((completedGoalsCount / totalGoals) * 100);
 
   return (
@@ -213,7 +222,7 @@ export const LifeGoalsView: React.FC = () => {
         )}
 
         <div className="space-y-2">
-          {state.lifeGoals.map((goal) => (
+          {(state.lifeGoals || []).map((goal) => (
             <button
               key={goal.id}
               type="button"
@@ -273,7 +282,7 @@ export const LifeGoalsView: React.FC = () => {
         </form>
 
         <div className="space-y-2">
-          {state.personalTasks.map((t) => (
+          {(state.personalTasks || []).map((t) => (
             <div
               key={t.id}
               onClick={() => toggleReminder(t.id)}

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Shield,
   ShieldCheck,
@@ -18,11 +18,18 @@ import {
 } from 'lucide-react';
 import { Card } from '../ui/Card';
 import { loadPrivateState, exportPrivateState, clearPrivateState } from '../../lib/services/privateVault';
+import { initialPrivateState } from '../../lib/data/companionDemo';
 import { PrivateState } from '../../types/companion';
 
 export const PrivacyCentreView: React.FC = () => {
-  const [state, setState] = useState<PrivateState>(() => loadPrivateState());
+  const [isMounted, setIsMounted] = useState(false);
+  const [state, setState] = useState<PrivateState>(() => initialPrivateState);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    setState(loadPrivateState());
+    setIsMounted(true);
+  }, []);
 
   const handleExport = () => {
     exportPrivateState(state);
@@ -39,7 +46,7 @@ export const PrivacyCentreView: React.FC = () => {
     }
   };
 
-  const localRecordsCount = state.lifeGoals.length + state.personalTasks.length + 2; // health + wealth
+  const localRecordsCount = (state.lifeGoals?.length || 0) + (state.personalTasks?.length || 0) + 2; // health + wealth
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">

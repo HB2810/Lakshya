@@ -34,11 +34,12 @@ type ChatItem = {
 export const AskOneView: React.FC = () => {
   const { user } = useAuth();
   const [inputMessage, setInputMessage] = useState('');
+  const userNameFirst = (user?.name || 'Stavyan').split(' ')[0];
   const [chat, setChat] = useState<ChatItem[]>([
     {
       id: 'msg-init',
       role: 'assistant',
-      text: `Good day, ${user.name.split(' ')[0]}. I am Ask One, your work and personal companion at Stavya Spine Hospital. How can I assist you with your day, priorities, or wellbeing?`,
+      text: `Good day, ${userNameFirst}. I am Ask One, your work and personal companion at Stavya Spine Hospital. How can I assist you with your day, priorities, or wellbeing?`,
       timestamp: 'Just now',
     },
   ]);
@@ -129,9 +130,9 @@ export const AskOneView: React.FC = () => {
               key={idx}
               type="button"
               onClick={() => handleSendMessage(p.prompt)}
-              className="p-3.5 bg-white hover:bg-blue-50/60 border border-slate-200 hover:border-blue-300 rounded-2xl text-left transition-all shadow-2xs group flex items-center gap-3 cursor-pointer"
+              className="p-3.5 bg-white hover:bg-blue-50/60 border border-slate-200/90 hover:border-blue-300 rounded-2xl text-left transition-all shadow-2xs group flex items-center gap-3 cursor-pointer active-press"
             >
-              <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 group-hover:bg-blue-600 group-hover:text-white flex items-center justify-center shrink-0 transition-colors">
+              <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 group-hover:bg-blue-600 group-hover:text-white flex items-center justify-center shrink-0 transition-colors shadow-2xs">
                 <Icon className="w-4 h-4" />
               </div>
               <div className="flex-1 min-w-0">
@@ -149,7 +150,7 @@ export const AskOneView: React.FC = () => {
       </div>
 
       {/* Chat Messages Stream */}
-      <Card className="p-4 sm:p-6 shadow-xs border-slate-200 bg-white rounded-3xl space-y-4 min-h-[360px] flex flex-col justify-between">
+      <Card className="p-4 sm:p-6 shadow-xs border-slate-200/90 bg-white rounded-3xl space-y-4 min-h-[360px] flex flex-col justify-between">
         <div className="space-y-4 overflow-y-auto max-h-[480px] pr-1">
           {chat.map((item) => (
             <div
@@ -163,7 +164,7 @@ export const AskOneView: React.FC = () => {
               )}
 
               <div
-                className={`max-w-[80%] rounded-2xl p-4 space-y-2 shadow-2xs ${
+                className={`max-w-[85%] sm:max-w-[80%] rounded-2xl p-4 space-y-2 shadow-2xs ${
                   item.role === 'user'
                     ? 'bg-blue-600 text-white rounded-tr-none'
                     : 'bg-slate-50 border border-slate-200/80 text-slate-900 rounded-tl-none'
@@ -174,10 +175,10 @@ export const AskOneView: React.FC = () => {
                 </p>
 
                 {item.suggestedAction && (
-                  <div className="pt-2 border-t border-slate-200/60 flex items-center justify-between">
+                  <div className="pt-2 border-t border-slate-200/60 flex items-center justify-between gap-2">
                     <a
                       href={item.suggestedAction.href}
-                      className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-700 hover:text-blue-900 bg-white px-3 py-1.5 rounded-lg border border-blue-200 shadow-2xs transition-colors"
+                      className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-700 hover:text-blue-900 bg-white px-3 py-1.5 rounded-lg border border-blue-200 shadow-2xs transition-colors active-press"
                     >
                       <span>{item.suggestedAction.label}</span>
                       <ArrowRight className="w-3 h-3" />
@@ -221,12 +222,12 @@ export const AskOneView: React.FC = () => {
             value={inputMessage}
             onChange={(e) => setInputMessage(e.target.value)}
             placeholder="Ask about hospital policies, shift schedules, health goals, or privacy..."
-            className="flex-1 px-4 py-3 text-xs bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 transition-all"
+            className="flex-1 px-4 py-3 text-base sm:text-xs bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 transition-all"
           />
           <button
             type="submit"
             disabled={!inputMessage.trim()}
-            className="px-5 py-3 bg-blue-600 hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-bold rounded-2xl transition-colors shadow-xs inline-flex items-center gap-1.5 cursor-pointer"
+            className="px-5 py-3 bg-blue-600 hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-bold rounded-2xl transition-all shadow-xs inline-flex items-center gap-1.5 cursor-pointer active-press"
           >
             <span>Send</span>
             <Send className="w-3.5 h-3.5" />

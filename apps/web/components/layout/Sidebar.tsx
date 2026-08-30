@@ -81,18 +81,18 @@ export const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen = false, onCloseM
           type="button"
           aria-label="Close navigation"
           onClick={onCloseMobile}
-          className="fixed inset-0 z-40 bg-slate-950/40 backdrop-blur-[2px] md:hidden"
+          className="fixed inset-0 z-40 bg-slate-950/50 backdrop-blur-xs md:hidden transition-opacity"
         />
       )}
       <aside
         aria-label="Primary navigation"
-        className={`fixed inset-y-0 left-0 z-50 flex w-[min(20rem,calc(100vw-3rem))] flex-col justify-between border-r border-slate-200 bg-white shadow-2xl transition-transform duration-200 ease-out md:static md:z-30 md:translate-x-0 md:shadow-none md:transition-[width] md:duration-300 ${
+        className={`fixed inset-y-0 left-0 z-50 flex w-[min(20rem,calc(100vw-3rem))] flex-col justify-between border-r border-slate-200 bg-white shadow-2xl transition-transform duration-250 ease-out md:static md:z-30 md:translate-x-0 md:shadow-none md:transition-[width] md:duration-300 ${
           isMobileOpen ? 'translate-x-0' : '-translate-x-full'
         } ${isCollapsed ? 'md:w-20' : 'md:w-64'}`}
       >
         {/* Brand Header */}
         <div className="overflow-y-auto">
-          <div className="min-h-16 px-4 pt-[env(safe-area-inset-top)] border-b border-slate-200 flex items-center justify-between">
+          <div className="min-h-16 px-4 pt-[env(safe-area-inset-top)] border-b border-slate-200/80 flex items-center justify-between">
             <Link href="/overview" onClick={onCloseMobile} className="flex min-h-16 items-center gap-3 overflow-hidden">
               {isCollapsed ? (
                 <StavyaOneLogo variant="mark" size="sm" />
@@ -104,7 +104,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen = false, onCloseM
             <button
               type="button"
               onClick={() => setIsCollapsed(!isCollapsed)}
-              className="hidden md:flex min-h-10 min-w-10 items-center justify-center text-slate-400 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
+              className="hidden md:flex min-h-9 min-w-9 items-center justify-center text-slate-400 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer active-press"
               title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
               aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
             >
@@ -113,7 +113,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen = false, onCloseM
             <button
               type="button"
               onClick={onCloseMobile}
-              className="flex min-h-11 min-w-11 items-center justify-center rounded-xl text-slate-500 hover:bg-slate-100 hover:text-slate-900 md:hidden"
+              className="flex min-h-10 min-w-10 items-center justify-center rounded-xl text-slate-500 hover:bg-slate-100 hover:text-slate-900 md:hidden active-press cursor-pointer"
               aria-label="Close navigation menu"
             >
               <X className="h-5 w-5" />
@@ -142,7 +142,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen = false, onCloseM
                   )}
 
                   {visibleItems.map((item) => {
-                    const isActive = pathname === item.href || pathname?.startsWith(`${item.href}/`);
+                    const isActive = pathname === item.href || (item.href !== '/overview' && pathname?.startsWith(`${item.href}`));
                     const Icon = item.icon;
 
                     return (
@@ -150,19 +150,19 @@ export const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen = false, onCloseM
                         key={item.href}
                         href={item.href}
                         onClick={onCloseMobile}
-                        className={`flex min-h-10 items-center gap-3 px-3 py-2 rounded-xl text-xs font-medium transition-all duration-150 ${
+                        className={`flex min-h-10 items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold transition-all duration-150 active-press ${
                           isActive
-                            ? 'bg-blue-50/90 text-blue-700 font-bold border-l-4 border-blue-600 shadow-2xs'
+                            ? 'bg-blue-50 text-blue-700 font-bold border-l-3 border-blue-600 shadow-2xs'
                             : 'text-slate-600 hover:bg-slate-100/80 hover:text-slate-900'
                         }`}
                         title={isCollapsed ? item.label : undefined}
                       >
                         <Icon
-                          className={`w-4 h-4 shrink-0 ${
+                          className={`w-4 h-4 shrink-0 transition-colors ${
                             isActive ? 'text-blue-600' : 'text-slate-400'
                           }`}
                         />
-                        <span className={isCollapsed ? 'md:hidden' : ''}>{item.label}</span>
+                        <span className={isCollapsed ? 'md:hidden' : 'truncate'}>{item.label}</span>
                       </Link>
                     );
                   })}
@@ -173,9 +173,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen = false, onCloseM
         </div>
 
         {/* User Footer Summary */}
-        <div className="p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] border-t border-slate-200 bg-slate-50/70">
+        <div className="p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] border-t border-slate-200/80 bg-slate-50/70">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-blue-600 text-white font-bold text-xs flex items-center justify-center shrink-0 shadow-sm">
+            <div className="w-8 h-8 rounded-full bg-blue-600 text-white font-bold text-xs flex items-center justify-center shrink-0 shadow-2xs">
               {user.name.charAt(0)}
             </div>
             <div className={`overflow-hidden ${isCollapsed ? 'md:hidden' : ''}`}>
@@ -191,3 +191,4 @@ export const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen = false, onCloseM
     </>
   );
 };
+

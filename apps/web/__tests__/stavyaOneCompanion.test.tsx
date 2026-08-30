@@ -162,7 +162,7 @@ describe('Stavya One Companion & Private Vault Architecture Suite', () => {
       fireEvent.click(syncBtn);
 
       await waitFor(() => {
-        expect(screen.getByText(/Synced latest biometric metrics from Apple/i)).toBeDefined();
+        expect(screen.getByText(/Synced latest biometric metrics from connected devices/i)).toBeDefined();
       });
     });
   });

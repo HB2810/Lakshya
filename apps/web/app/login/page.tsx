@@ -117,19 +117,19 @@ export default function LoginPage() {
   const isLoading = isSubmitting || authLoading;
 
   return (
-    <div className="h-[100dvh] w-full overflow-y-auto bg-[#f8fafc] flex items-start sm:items-center justify-center px-4 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-[calc(1rem+env(safe-area-inset-top))] sm:p-6 relative selection:bg-slate-200">
+    <div className="min-h-[100dvh] w-full overflow-y-auto bg-slate-50 flex items-start sm:items-center justify-center px-4 pb-[calc(1.5rem+env(safe-area-inset-bottom))] pt-[calc(1.5rem+env(safe-area-inset-top))] sm:p-6 relative selection:bg-blue-100">
       {/* Ambient Background Accents */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 left-1/2 -translate-x-1/2 w-[700px] h-[400px] bg-blue-100/50 rounded-full blur-3xl" />
-        <div className="absolute -bottom-40 left-1/2 -translate-x-1/2 w-[600px] h-[350px] bg-slate-100 rounded-full blur-3xl" />
+        <div className="absolute -top-40 left-1/2 -translate-x-1/2 w-[700px] h-[400px] bg-blue-100/60 rounded-full blur-3xl" />
+        <div className="absolute -bottom-40 left-1/2 -translate-x-1/2 w-[600px] h-[350px] bg-indigo-50/50 rounded-full blur-3xl" />
       </div>
 
       {/* Main Login Card */}
-      <main className="w-full max-w-[460px] relative z-10 my-4 sm:my-0">
-        <div className="bg-white rounded-3xl shadow-xl shadow-slate-200/60 border border-slate-200 overflow-hidden">
+      <main className="w-full max-w-[460px] relative z-10 my-auto">
+        <div className="bg-white rounded-3xl shadow-xl shadow-slate-200/70 border border-slate-200/90 overflow-hidden">
           {/* Card Brand Header */}
-          <div className="px-5 pb-5 pt-6 text-center border-b border-slate-100 bg-gradient-to-b from-blue-50/50 to-white sm:px-8 sm:pb-6 sm:pt-8 flex flex-col items-center">
-            <div className="p-3 rounded-2xl bg-white border border-slate-200 shadow-xs mb-3">
+          <div className="px-5 pb-5 pt-6 text-center border-b border-slate-100 bg-gradient-to-b from-blue-50/60 to-white sm:px-8 sm:pb-6 sm:pt-8 flex flex-col items-center">
+            <div className="p-3 rounded-2xl bg-white border border-slate-200/80 shadow-xs mb-3 hover-lift-light">
               <StavyaOneLogo size="xl" variant="full" />
             </div>
             <h1 className="text-sm font-bold text-slate-500 tracking-tight mt-1">
@@ -153,12 +153,12 @@ export default function LoginPage() {
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
                 <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600">
-                  Staff ID / Employee Code / Name
+                  Staff ID / Employee Code
                 </label>
                 <button
                   type="button"
                   onClick={() => setIsStaffDirectoryOpen(true)}
-                  className="text-xs font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1 transition-colors"
+                  className="text-xs font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1 transition-colors active-press"
                 >
                   <Users className="w-3.5 h-3.5" />
                   <span>214 Staff Directory</span>
@@ -173,7 +173,7 @@ export default function LoginPage() {
                   placeholder="e.g. STAVYANS-101 or STAVYA-001"
                   required
                   autoFocus
-                  className="w-full pl-10 pr-3 py-2.5 text-sm bg-slate-50/70 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:bg-white focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition-all font-mono"
+                  className="w-full pl-10 pr-3 py-2.5 text-base sm:text-sm bg-slate-50/70 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:bg-white focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition-all font-mono"
                 />
               </div>
             </div>
@@ -194,12 +194,12 @@ export default function LoginPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Enter password"
                   required
-                  className="w-full pl-10 pr-10 py-2.5 text-sm bg-slate-50/70 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:bg-white focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition-all font-mono"
+                  className="w-full pl-10 pr-10 py-2.5 text-base sm:text-sm bg-slate-50/70 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:bg-white focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition-all font-mono"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 transition-colors p-0.5"
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 transition-colors p-1"
                   title={showPassword ? 'Hide password' : 'Show password'}
                   aria-label={showPassword ? 'Hide password' : 'Show password'}
                 >
@@ -212,7 +212,7 @@ export default function LoginPage() {
             <button
               type="button"
               onClick={() => setIsStaffDirectoryOpen(true)}
-              className="w-full py-2.5 px-3 bg-blue-50 hover:bg-blue-100/80 border border-blue-200 text-blue-800 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 shadow-2xs"
+              className="w-full py-2.5 px-3 bg-blue-50/90 hover:bg-blue-100/90 border border-blue-200/80 text-blue-800 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 shadow-2xs active-press cursor-pointer"
             >
               <Users className="w-4 h-4 text-blue-600" />
               <span>Browse All 214 Hospital Staff Accounts (1-Click Login)</span>
@@ -222,7 +222,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full py-3 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold text-sm rounded-xl shadow-xs transition-all flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
+              className="w-full py-3 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold text-sm rounded-xl shadow-xs transition-all flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer active-press"
             >
               {isLoading ? (
                 <span>Authenticating...</span>
@@ -255,7 +255,7 @@ export default function LoginPage() {
                       setIsSubmitting(false);
                     }
                   }}
-                  className="p-2 bg-blue-50/70 hover:bg-blue-100 border border-blue-200 text-blue-900 font-bold rounded-xl text-left transition-colors cursor-pointer"
+                  className="p-2 bg-blue-50/70 hover:bg-blue-100/90 border border-blue-200/80 text-blue-900 font-bold rounded-xl text-left transition-all cursor-pointer active-press"
                 >
                   <span className="block text-[9px] text-blue-600 uppercase font-black">MD Office (STAVYANS-001)</span>
                   <span className="truncate block text-xs">Dr. Mirant Dave</span>
@@ -276,7 +276,7 @@ export default function LoginPage() {
                       setIsSubmitting(false);
                     }
                   }}
-                  className="p-2 bg-purple-50/70 hover:bg-purple-100 border border-purple-200 text-purple-900 font-bold rounded-xl text-left transition-colors cursor-pointer"
+                  className="p-2 bg-purple-50/70 hover:bg-purple-100/90 border border-purple-200/80 text-purple-900 font-bold rounded-xl text-left transition-all cursor-pointer active-press"
                 >
                   <span className="block text-[9px] text-purple-600 uppercase font-black">IT / Ops Lead (STAVYANS-002)</span>
                   <span className="truncate block text-xs">Priyesh Shah</span>
@@ -297,7 +297,7 @@ export default function LoginPage() {
                       setIsSubmitting(false);
                     }
                   }}
-                  className="p-2 bg-emerald-50/70 hover:bg-emerald-100 border border-emerald-200 text-emerald-900 font-bold rounded-xl text-left transition-colors cursor-pointer"
+                  className="p-2 bg-emerald-50/70 hover:bg-emerald-100/90 border border-emerald-200/80 text-emerald-900 font-bold rounded-xl text-left transition-all cursor-pointer active-press"
                 >
                   <span className="block text-[9px] text-emerald-600 uppercase font-black">Clinical Staff (STAVYANS-101)</span>
                   <span className="truncate block text-xs">Hospital Staff</span>
@@ -318,7 +318,7 @@ export default function LoginPage() {
                       setIsSubmitting(false);
                     }
                   }}
-                  className="p-2 bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-900 font-bold rounded-xl text-left transition-colors cursor-pointer"
+                  className="p-2 bg-slate-100 hover:bg-slate-200/90 border border-slate-300/80 text-slate-900 font-bold rounded-xl text-left transition-all cursor-pointer active-press"
                 >
                   <span className="block text-[9px] text-slate-600 uppercase font-black">System Admin (STAVYANS-000)</span>
                   <span className="truncate block text-xs">Master Admin</span>

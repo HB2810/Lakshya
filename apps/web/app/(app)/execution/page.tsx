@@ -269,17 +269,17 @@ export default function ExecutionPage() {
   return (
     <div className="max-w-6xl mx-auto space-y-6">
       {/* 1. HEADER & ACTIONS */}
-      <div className="bg-white border border-slate-200 rounded-3xl p-4 sm:p-6 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="bg-white border border-slate-200/90 rounded-3xl p-5 sm:p-6 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <span className="px-2.5 py-0.5 bg-blue-600 text-white text-[10px] font-black rounded-full uppercase tracking-wider shadow-2xs">
+            <span className="px-3 py-0.5 bg-blue-600 text-white text-[10px] font-black rounded-full uppercase tracking-wider shadow-2xs">
               MY WORK
             </span>
             <span className="text-xs text-slate-500 font-semibold">
               Unified Canonical Work Engine
             </span>
           </div>
-          <h1 className="text-2xl font-black text-slate-900 tracking-tight mt-1.5">
+          <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight mt-1.5">
             My Work &amp; Execution Queue
           </h1>
           <p className="text-xs text-slate-500 mt-0.5">
@@ -292,7 +292,7 @@ export default function ExecutionPage() {
             <button
               type="button"
               onClick={() => setIsAutoGeneratorOpen(true)}
-              className="px-4 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-xs font-bold rounded-xl transition-all inline-flex items-center gap-1.5 shadow-xs cursor-pointer"
+              className="px-4 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-xs font-bold rounded-xl transition-all inline-flex items-center gap-1.5 shadow-xs cursor-pointer active-press"
             >
               <Sparkles className="w-4 h-4" />
               <span>Auto-Generate NABH Tasks</span>
@@ -302,7 +302,7 @@ export default function ExecutionPage() {
           <button
             type="button"
             onClick={() => setIsQuickAddOpen(!isQuickAddOpen)}
-            className="w-full justify-center px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl transition-colors inline-flex items-center gap-1.5 shadow-xs cursor-pointer md:w-auto"
+            className="w-full justify-center px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl transition-all inline-flex items-center gap-1.5 shadow-xs cursor-pointer md:w-auto active-press"
           >
             <Plus className="w-4 h-4" />
             <span>Add Work Item</span>
@@ -311,11 +311,11 @@ export default function ExecutionPage() {
       </div>
 
       {/* Main Tab Switcher Bar - White & Blue Unified Design */}
-      <div className="flex items-center gap-2 bg-slate-100/90 p-1.5 rounded-2xl border border-slate-200 shadow-xs overflow-x-auto">
+      <div className="flex items-center gap-2 bg-slate-100/90 p-1.5 rounded-2xl border border-slate-200 shadow-2xs overflow-x-auto">
         <button
           type="button"
           onClick={() => setMainTab('tasks')}
-          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap active-press ${
             mainTab === 'tasks'
               ? 'bg-blue-600 text-white shadow-xs'
               : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
@@ -326,7 +326,7 @@ export default function ExecutionPage() {
         <button
           type="button"
           onClick={() => setMainTab('intake')}
-          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap active-press ${
             mainTab === 'intake'
               ? 'bg-blue-600 text-white shadow-xs'
               : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
@@ -338,7 +338,7 @@ export default function ExecutionPage() {
           <button
             type="button"
             onClick={() => setMainTab('quality')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap active-press ${
               mainTab === 'quality'
                 ? 'bg-blue-600 text-white shadow-xs'
                 : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'

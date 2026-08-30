@@ -417,7 +417,7 @@ export function OmnichannelIntakeHub({ onTaskCreated }: { onTaskCreated?: () => 
                     <p className="text-xs text-slate-600 leading-relaxed">{item.parsedDescription}</p>
 
                     <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-700 space-y-1.5">
-                      <p className="text-[11px] text-slate-500 font-mono italic">"{item.rawSnippet}"</p>
+                      <p className="text-[11px] text-slate-500 font-mono italic">{`"${item.rawSnippet}"`}</p>
                       <div className="flex flex-wrap items-center gap-4 pt-1 text-slate-600">
                         <span>Assignee: <strong className="text-blue-700 font-bold">{item.suggestedOwnerName}</strong> ({item.department})</span>
                         <span>Due: <strong className="text-slate-900">{item.targetDue.substring(0, 10)}</strong></span>

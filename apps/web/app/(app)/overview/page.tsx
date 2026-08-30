@@ -254,66 +254,74 @@ export default function OverviewPage() {
     );
   }
 
+  const getGreeting = () => {
+    const hours = now.getHours();
+    if (hours < 12) return 'Good morning';
+    if (hours < 17) return 'Good afternoon';
+    return 'Good evening';
+  };
+
   return (
     <div className="max-w-6xl mx-auto space-y-6">
-      <div className="bg-white border border-slate-200 rounded-3xl p-4 sm:p-6 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4 md:gap-6">
-        <div>
+      <div className="bg-white border border-slate-200/90 rounded-3xl p-5 sm:p-7 shadow-xs relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-5 md:gap-6">
+        <div className="relative z-10">
           <div className="flex items-center gap-2">
-            <span className="px-2.5 py-0.5 bg-blue-600 text-white text-[10px] font-black rounded-full uppercase tracking-wider shadow-2xs">
+            <span className="px-3 py-0.5 bg-blue-600 text-white text-[10px] font-black rounded-full uppercase tracking-wider shadow-2xs">
               MY DAY
             </span>
             <span className="text-xs text-slate-500 font-semibold">
               • {now.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' })}
             </span>
           </div>
-          <h1 className="text-2xl font-black text-slate-900 tracking-tight mt-1.5">
-            Good morning, {user.name}
+          <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight mt-2">
+            {getGreeting()}, {user.name}
           </h1>
-          <div className="flex flex-wrap items-center gap-2 mt-2">
+          <div className="flex flex-wrap items-center gap-2 mt-2.5">
             {highOrUrgentTasks.length > 0 && (
-              <span className="text-xs font-semibold text-amber-800 bg-amber-50 border border-amber-200 px-2.5 py-0.5 rounded-full flex items-center gap-1">
+              <span className="text-xs font-bold text-amber-800 bg-amber-50 border border-amber-200/80 px-3 py-1 rounded-full flex items-center gap-1.5 shadow-2xs">
                 <Flame className="w-3.5 h-3.5 text-amber-600" />
                 {highOrUrgentTasks.length} high priority
               </span>
             )}
             {dueTodayTasks.length > 0 && (
-              <span className="text-xs font-semibold text-blue-800 bg-blue-50 border border-blue-200 px-2.5 py-0.5 rounded-full flex items-center gap-1">
+              <span className="text-xs font-bold text-blue-800 bg-blue-50 border border-blue-200/80 px-3 py-1 rounded-full flex items-center gap-1.5 shadow-2xs">
                 <Clock className="w-3.5 h-3.5 text-blue-600" />
                 {dueTodayTasks.length} due today
               </span>
             )}
             {blockedTasks.length > 0 && (
-              <span className="text-xs font-semibold text-red-800 bg-red-50 border border-red-200 px-2.5 py-0.5 rounded-full flex items-center gap-1">
+              <span className="text-xs font-bold text-red-800 bg-red-50 border border-red-200/80 px-3 py-1 rounded-full flex items-center gap-1.5 shadow-2xs">
                 <ShieldAlert className="w-3.5 h-3.5 text-red-600" />
                 {blockedTasks.length} blocked
               </span>
             )}
             {pendingTasks.length === 0 && (
-              <span className="text-xs font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full">
-                ✓ All caught up!
+              <span className="text-xs font-bold text-emerald-800 bg-emerald-50 border border-emerald-200/80 px-3 py-1 rounded-full flex items-center gap-1.5 shadow-2xs">
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                All caught up!
               </span>
             )}
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2 shrink-0">
+        <div className="flex flex-wrap items-center gap-2.5 shrink-0 relative z-10">
           <Link
             href="/execution"
-            className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl transition-colors inline-flex items-center gap-1.5 shadow-xs"
+            className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl transition-all inline-flex items-center gap-1.5 shadow-xs active-press"
           >
             <CheckSquare className="w-4 h-4" />
             <span>My Work Board</span>
           </Link>
           <Link
             href="/rca"
-            className="px-3.5 py-2.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-xs font-bold rounded-xl transition-colors inline-flex items-center gap-1.5"
+            className="px-3.5 py-2.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-xs font-bold rounded-xl transition-all inline-flex items-center gap-1.5 active-press shadow-2xs"
           >
             <ShieldAlert className="w-4 h-4 text-brand-blue" />
             <span>Quality &amp; RCA</span>
           </Link>
           <Link
             href="/strategy"
-            className="px-3.5 py-2.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-xs font-bold rounded-xl transition-colors inline-flex items-center gap-1.5"
+            className="px-3.5 py-2.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-xs font-bold rounded-xl transition-all inline-flex items-center gap-1.5 active-press shadow-2xs"
           >
             <Sparkles className="w-4 h-4 text-purple-600" />
             <span>Quarterly Priorities</span>

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import {
   GraduationCap,
@@ -240,15 +240,18 @@ const trainingCurriculum: TrainingModule[] = [
 ];
 
 export const InteractiveTrainingView: React.FC = () => {
-  const [completedModules, setCompletedModules] = useState<string[]>(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const saved = localStorage.getItem('stavyaone-training-completed');
-        if (saved) return JSON.parse(saved);
-      } catch {}
-    }
-    return ['TR-WORK-1', 'TR-LIFE-1'];
-  });
+  const [completedModules, setCompletedModules] = useState<string[]>(['TR-WORK-1', 'TR-LIFE-1']);
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('stavyaone-training-completed');
+      if (saved) {
+        setCompletedModules(JSON.parse(saved));
+      }
+    } catch {}
+    setIsMounted(true);
+  }, []);
 
   const [activeFilter, setActiveFilter] = useState<'all' | 'work' | 'personal'>('all');
   const [expandedModuleId, setExpandedModuleId] = useState<string | null>('TR-WORK-1');
@@ -257,7 +260,9 @@ export const InteractiveTrainingView: React.FC = () => {
     setCompletedModules((prev) => {
       const next = prev.includes(id) ? prev.filter((m) => m !== id) : [...prev, id];
       if (typeof window !== 'undefined') {
-        localStorage.setItem('stavyaone-training-completed', JSON.stringify(next));
+        try {
+          localStorage.setItem('stavyaone-training-completed', JSON.stringify(next));
+        } catch {}
       }
       return next;
     });

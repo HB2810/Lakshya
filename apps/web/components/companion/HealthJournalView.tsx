@@ -24,21 +24,29 @@ import {
 } from 'lucide-react';
 import { Card } from '../ui/Card';
 import { loadPrivateState, savePrivateState } from '../../lib/services/privateVault';
+import { initialPrivateState } from '../../lib/data/companionDemo';
 import { PrivateState, HealthState, ConnectedDevice, HealthDeviceProvider } from '../../types/companion';
 
 export const HealthJournalView: React.FC = () => {
-  const [state, setState] = useState<PrivateState>(() => loadPrivateState());
+  const [isMounted, setIsMounted] = useState(false);
+  const [state, setState] = useState<PrivateState>(() => initialPrivateState);
   const [savedFeedback, setSavedFeedback] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncToast, setSyncToast] = useState<string | null>(null);
   const [selectedDeviceForConfig, setSelectedDeviceForConfig] = useState<ConnectedDevice | null>(null);
 
   useEffect(() => {
+    setState(loadPrivateState());
+    setIsMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isMounted) return;
     savePrivateState(state);
     setSavedFeedback(true);
     const t = setTimeout(() => setSavedFeedback(false), 2000);
     return () => clearTimeout(t);
-  }, [state]);
+  }, [state, isMounted]);
 
   const health = state.health;
 
@@ -55,7 +63,8 @@ export const HealthJournalView: React.FC = () => {
   // Device Connection Handler
   const toggleDeviceConnection = (deviceId: string) => {
     setState((current) => {
-      const updatedDevices = current.health.connectedDevices.map((d) => {
+      const devices = current.health?.connectedDevices || [];
+      const updatedDevices = devices.map((d) => {
         if (d.id === deviceId) {
           const willConnect = !d.connected;
           return {
@@ -79,7 +88,8 @@ export const HealthJournalView: React.FC = () => {
 
   // 1-Click Wearable & Device Sync Action
   const handleSyncDevices = () => {
-    const connectedList = health.connectedDevices.filter((d) => d.connected);
+    const devices = health?.connectedDevices || [];
+    const connectedList = devices.filter((d) => d.connected);
     if (connectedList.length === 0) {
       setSyncToast('Please link Apple Health, Samsung Health, or Google Fit first.');
       setTimeout(() => setSyncToast(null), 3000);
@@ -90,25 +100,26 @@ export const HealthJournalView: React.FC = () => {
     setTimeout(() => {
       // Pull fresh biometric metrics from connected wearable
       const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      setState((current) => ({
-        ...current,
-        health: {
-          ...current.health,
-          steps: Math.min(20000, current.health.steps + Math.floor(Math.random() * 450) + 120),
-          sleepHours: Number((Math.min(10, Math.max(6, current.health.sleepHours + (Math.random() * 0.4 - 0.2)))).toFixed(1)),
-          heartRateResting: 62 + Math.floor(Math.random() * 6),
-          activeCalories: 520 + Math.floor(Math.random() * 80),
-          lastDeviceSyncAt: `Today, ${now}`,
-          connectedDevices: current.health.connectedDevices.map((d) =>
-            d.connected ? { ...d, lastSyncedAt: 'Just now' } : d
-          ),
-        },
-      }));
-
+      setState((current) => {
+        const currentDevices = current.health?.connectedDevices || [];
+        return {
+          ...current,
+          health: {
+            ...current.health,
+            steps: Math.min(20000, (current.health?.steps || 0) + Math.floor(Math.random() * 450) + 120),
+            sleepHours: Number((Math.min(10, Math.max(6, (current.health?.sleepHours || 7) + (Math.random() * 0.4 - 0.2)))).toFixed(1)),
+            heartRateResting: 62 + Math.floor(Math.random() * 6),
+            activeCalories: 520 + Math.floor(Math.random() * 80),
+            lastDeviceSyncAt: `Today, ${now}`,
+            connectedDevices: currentDevices.map((d) =>
+              d.connected ? { ...d, lastSyncedAt: `Today, ${now}` } : d
+            ),
+          },
+        };
+      });
       setIsSyncing(false);
-      const names = connectedList.map((d) => d.name.split(' ')[0]).join(' & ');
-      setSyncToast(`Synced latest biometric metrics from ${names}`);
-      setTimeout(() => setSyncToast(null), 3500);
+      setSyncToast('Synced latest biometric metrics from connected devices.');
+      setTimeout(() => setSyncToast(null), 4000);
     }, 900);
   };
 
@@ -195,7 +206,7 @@ export const HealthJournalView: React.FC = () => {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {health.connectedDevices.map((device) => (
+          {(health?.connectedDevices || []).map((device) => (
             <div
               key={device.id}
               className={`p-4 rounded-2xl border transition-all flex items-center justify-between gap-3 ${
@@ -245,10 +256,10 @@ export const HealthJournalView: React.FC = () => {
       {/* Metrics Control Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {/* Sleep Hours */}
-        <Card className="p-5 bg-white border-slate-200 rounded-3xl space-y-4 shadow-xs">
+        <Card className="p-5 bg-white border-slate-200/90 rounded-3xl space-y-4 shadow-xs hover-lift-light">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
+              <div className="w-9 h-9 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center shadow-2xs">
                 <Moon className="w-4 h-4" />
               </div>
               <div>
@@ -268,7 +279,7 @@ export const HealthJournalView: React.FC = () => {
             step="0.5"
             value={health.sleepHours}
             onChange={(e) => updateHealth('sleepHours', parseFloat(e.target.value))}
-            className="w-full accent-indigo-600 cursor-pointer"
+            className="w-full accent-indigo-600 cursor-pointer h-2 bg-slate-100 rounded-lg"
           />
           <div className="flex justify-between text-[10px] font-bold text-slate-400">
             <span>3 hrs</span>
@@ -278,10 +289,10 @@ export const HealthJournalView: React.FC = () => {
         </Card>
 
         {/* Daily Steps */}
-        <Card className="p-5 bg-white border-slate-200 rounded-3xl space-y-4 shadow-xs">
+        <Card className="p-5 bg-white border-slate-200/90 rounded-3xl space-y-4 shadow-xs hover-lift-light">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+              <div className="w-9 h-9 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center shadow-2xs">
                 <Footprints className="w-4 h-4" />
               </div>
               <div>
@@ -301,7 +312,7 @@ export const HealthJournalView: React.FC = () => {
             step="250"
             value={health.steps}
             onChange={(e) => updateHealth('steps', parseInt(e.target.value, 10))}
-            className="w-full accent-emerald-600 cursor-pointer"
+            className="w-full accent-emerald-600 cursor-pointer h-2 bg-slate-100 rounded-lg"
           />
           <div className="flex justify-between text-[10px] font-bold text-slate-400">
             <span>1,000</span>
@@ -311,11 +322,11 @@ export const HealthJournalView: React.FC = () => {
         </Card>
 
         {/* Resting Heart Rate & Active Calories (From Wearables) */}
-        <Card className="p-5 bg-white border-slate-200 rounded-3xl space-y-4 shadow-xs">
+        <Card className="p-5 bg-white border-slate-200/90 rounded-3xl space-y-4 shadow-xs hover-lift-light">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center">
-                <Activity className="w-4 h-4" />
+              <div className="w-9 h-9 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center shadow-2xs">
+                <Activity className="w-4 h-4 animate-pulse" />
               </div>
               <div>
                 <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700">Resting Heart Rate</h3>
@@ -339,10 +350,10 @@ export const HealthJournalView: React.FC = () => {
         </Card>
 
         {/* Hydration */}
-        <Card className="p-5 bg-white border-slate-200 rounded-3xl space-y-4 shadow-xs">
+        <Card className="p-5 bg-white border-slate-200/90 rounded-3xl space-y-4 shadow-xs hover-lift-light">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center">
+              <div className="w-9 h-9 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center shadow-2xs">
                 <Droplets className="w-4 h-4" />
               </div>
               <div>
@@ -362,7 +373,7 @@ export const HealthJournalView: React.FC = () => {
             step="1"
             value={health.waterGlasses}
             onChange={(e) => updateHealth('waterGlasses', parseInt(e.target.value, 10))}
-            className="w-full accent-blue-600 cursor-pointer"
+            className="w-full accent-blue-600 cursor-pointer h-2 bg-slate-100 rounded-lg"
           />
           <div className="flex justify-between text-[10px] font-bold text-slate-400">
             <span>0</span>
@@ -373,10 +384,10 @@ export const HealthJournalView: React.FC = () => {
       </div>
 
       {/* Mood Selector Card */}
-      <Card className="p-5 bg-white border-slate-200 rounded-3xl space-y-3 shadow-xs">
+      <Card className="p-5 bg-white border-slate-200/90 rounded-3xl space-y-3 shadow-xs">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center">
+            <div className="w-9 h-9 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center shadow-2xs">
               <Smile className="w-4 h-4" />
             </div>
             <div>
@@ -384,7 +395,7 @@ export const HealthJournalView: React.FC = () => {
               <p className="text-[11px] text-slate-400">Personal emotional check-in</p>
             </div>
           </div>
-          <span className="text-sm font-black text-amber-600 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-lg">
+          <span className="text-sm font-black text-amber-600 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-xl shadow-2xs">
             {health.mood}
           </span>
         </div>
@@ -395,10 +406,10 @@ export const HealthJournalView: React.FC = () => {
               key={m}
               type="button"
               onClick={() => updateHealth('mood', m)}
-              className={`py-2 text-xs font-bold rounded-xl transition-all cursor-pointer ${
+              className={`py-2 text-xs font-bold rounded-xl transition-all cursor-pointer active-press ${
                 health.mood === m
                   ? 'bg-amber-500 text-white shadow-xs'
-                  : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200'
+                  : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200/80'
               }`}
             >
               {m}
@@ -409,7 +420,7 @@ export const HealthJournalView: React.FC = () => {
 
       {/* Zero-Cloud Device Privacy Pass Alert */}
       <div className="p-4 sm:p-5 rounded-3xl bg-slate-50 border border-slate-200/80 flex items-start gap-3.5">
-        <div className="w-8 h-8 rounded-xl bg-slate-200 text-slate-700 flex items-center justify-center shrink-0 mt-0.5">
+        <div className="w-8 h-8 rounded-xl bg-slate-200 text-slate-700 flex items-center justify-center shrink-0 mt-0.5 shadow-2xs">
           <Lock className="w-4 h-4" />
         </div>
         <div className="space-y-1 text-xs">

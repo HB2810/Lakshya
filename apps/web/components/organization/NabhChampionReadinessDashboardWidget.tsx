@@ -35,11 +35,6 @@ interface Props {
 export const NabhChampionReadinessDashboardWidget: React.FC<Props> = ({ className = '', condensed = false }) => {
   const { user } = useAuth();
 
-  // Strict Security Gate: Only MD and Quality leadership can view hospital-wide NABH readiness engine
-  if (!isQualityCommandAuthorized(user)) {
-    return null;
-  }
-
   const [items, setItems] = useState<NabhChecklistItem[]>(() => nabhReadinessStore.getChecklist());
   const champions = useMemo(() => nabhReadinessStore.getChampions(), []);
   const [selectedChapter, setSelectedChapter] = useState<string>('ALL');
@@ -148,6 +143,11 @@ export const NabhChampionReadinessDashboardWidget: React.FC<Props> = ({ classNam
       setTimeout(() => setToastMessage(null), 4000);
     }
   };
+
+  // Strict Security Gate: Only MD and Quality leadership can view hospital-wide NABH readiness engine
+  if (!isQualityCommandAuthorized(user)) {
+    return null;
+  }
 
   return (
     <div className={`bg-white border border-slate-200 rounded-3xl shadow-sm overflow-hidden ${className}`}>
