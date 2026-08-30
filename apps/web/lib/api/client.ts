@@ -538,18 +538,57 @@ export const apiClient = {
       }
     },
 
-    async verify(id: string, note?: string): Promise<WorkItem> {
+    async submitForVerification(id: string, submissionNotes: string, authorName?: string): Promise<WorkItem> {
       try {
-        const query = note ? `?note=${encodeURIComponent(note)}` : '';
-        const result = await apiFetch<any>(`/work_items/${id}/verify${query}`, {
+        const result = await apiFetch<any>(`/work_items/${id}/submit_for_verification`, {
           method: 'POST',
+          body: JSON.stringify({ submission_notes: submissionNotes }),
         });
         return mapBackendWorkItem(result);
       } catch (err) {
         if (!shouldUseLocalFallback(err)) throw err;
-        console.warn('Backend verify endpoint unavailable, updating locally:', err);
-        return workItemStore.updateStatus(id, 'completed', 'Leader', note);
+        console.warn('Backend submit_for_verification endpoint unavailable, updating locally:', err);
+        return workItemStore.submitForVerification(id, submissionNotes, authorName);
       }
+    },
+
+    async auditVerify(
+      id: string,
+      params: {
+        decision: 'APPROVED' | 'REVISION_REQUESTED';
+        auditScore?: number;
+        sopCompliance?: boolean;
+        remarks?: string;
+        verifierId?: string;
+        verifierName?: string;
+        verifierRole?: string;
+      }
+    ): Promise<WorkItem> {
+      try {
+        const result = await apiFetch<any>(`/work_items/${id}/audit_verify`, {
+          method: 'POST',
+          body: JSON.stringify({
+            decision: params.decision,
+            audit_score: params.auditScore,
+            sop_compliance: params.sopCompliance ?? true,
+            remarks: params.remarks,
+          }),
+        });
+        return mapBackendWorkItem(result);
+      } catch (err) {
+        if (!shouldUseLocalFallback(err)) throw err;
+        console.warn('Backend audit_verify endpoint unavailable, updating locally:', err);
+        return workItemStore.auditVerify(id, params);
+      }
+    },
+
+    async verify(id: string, note?: string): Promise<WorkItem> {
+      return this.auditVerify(id, {
+        decision: 'APPROVED',
+        auditScore: 5,
+        sopCompliance: true,
+        remarks: note,
+      });
     },
 
     escalations: {

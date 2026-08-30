@@ -690,6 +690,128 @@ class WorkItemService:
         return escalation
 
     @staticmethod
+    def submit_for_verification(
+        session: Session,
+        work_item_id: uuid.UUID,
+        submission_notes: str,
+        current_user: Any,
+        effective_roles: list[str],
+        user_department_ids: list[uuid.UUID],
+        subordinate_user_ids: set[uuid.UUID] | None = None,
+    ) -> WorkItem:
+        """Submit a completed work item deliverable for incharge / leader verification."""
+        item = WorkItemService.get_work_item(
+            session=session,
+            work_item_id=work_item_id,
+            current_user=current_user,
+            effective_roles=effective_roles,
+            user_department_ids=user_department_ids,
+            subordinate_user_ids=subordinate_user_ids,
+        )
+
+        now = utcnow()
+        prev_status = item.status
+        item.status = "submitted_for_verification"
+        item.submission_notes = submission_notes.strip()
+        item.submitted_for_verification_at = now
+        item.updated_at = now
+        item.version += 1
+
+        activity = WorkItemActivity(
+            work_item_id=item.id,
+            author_id=current_user.id,
+            author_name=getattr(current_user, "full_name", "Employee"),
+            activity_type="SUBMITTED_FOR_VERIFICATION",
+            note=f"Submitted deliverable for verification: {submission_notes.strip()}",
+            previous_status=prev_status,
+            new_status="submitted_for_verification",
+            progress_percent=item.progress_percent,
+            created_at=now,
+        )
+        session.add(activity)
+        session.commit()
+        session.refresh(item)
+        return item
+
+    @staticmethod
+    def audit_verify(
+        session: Session,
+        work_item_id: uuid.UUID,
+        decision: str,
+        audit_score: int | None,
+        sop_compliance: bool,
+        remarks: str | None,
+        current_user: Any,
+        effective_roles: list[str],
+        user_department_ids: list[uuid.UUID],
+        subordinate_user_ids: set[uuid.UUID] | None = None,
+    ) -> WorkItem:
+        """Audit and verify or request revision on a submitted work item."""
+        item = WorkItemService.get_work_item(
+            session=session,
+            work_item_id=work_item_id,
+            current_user=current_user,
+            effective_roles=effective_roles,
+            user_department_ids=user_department_ids,
+            subordinate_user_ids=subordinate_user_ids,
+        )
+
+        upper_roles = [r.upper() for r in effective_roles]
+        is_md = any(r in upper_roles for r in ("MD", "MANAGING_DIRECTOR", "MD_OFFICE", "MASTER"))
+        is_leader = any(r in upper_roles for r in ("LEADER", "LEADERS", "DEPARTMENT_HEAD", "MANAGER"))
+
+        if not is_md and not is_leader:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Only Incharges, Leaders, and Governance authorities can verify or audit tasks.",
+            )
+
+        now = utcnow()
+        prev_status = item.status
+        verifier_name = getattr(current_user, "full_name", "Incharge / Leader")
+
+        verification_record = {
+            "verified_by_id": str(current_user.id),
+            "verified_by_name": verifier_name,
+            "verified_at": now.isoformat(),
+            "decision": decision,
+            "audit_score": audit_score,
+            "sop_compliance": sop_compliance,
+            "remarks": remarks.strip() if remarks else None,
+        }
+
+        if decision == "APPROVED":
+            item.status = "verified"
+            item.completed_at = now
+            item.progress_percent = 100
+            act_type = "VERIFIED"
+            act_note = f"Task verified & approved by {verifier_name}. Audit Score: {audit_score or 'N/A'}/5. Remarks: {remarks or 'Approved'}"
+        else:
+            item.status = "revision_requested"
+            act_type = "REVISION_REQUESTED"
+            act_note = f"Revision requested by {verifier_name}: {remarks or 'Please revise work deliverable.'}"
+
+        item.verification_data = verification_record
+        item.updated_at = now
+        item.version += 1
+
+        activity = WorkItemActivity(
+            work_item_id=item.id,
+            author_id=current_user.id,
+            author_name=verifier_name,
+            activity_type=act_type,
+            note=act_note,
+            previous_status=prev_status,
+            new_status=item.status,
+            progress_percent=item.progress_percent,
+            created_at=now,
+        )
+        session.add(activity)
+        session.commit()
+        session.refresh(item)
+        return item
+
+    @staticmethod
     def verify_work_item(
         session: Session,
         work_item_id: uuid.UUID,
@@ -700,34 +822,18 @@ class WorkItemService:
         verification_note: str | None = None,
     ) -> WorkItem:
         """Verify EDC / completion of a formal commitment."""
-        item = WorkItemService.get_work_item(
+        return WorkItemService.audit_verify(
             session=session,
             work_item_id=work_item_id,
+            decision="APPROVED",
+            audit_score=5,
+            sop_compliance=True,
+            remarks=verification_note,
             current_user=current_user,
             effective_roles=effective_roles,
             user_department_ids=user_department_ids,
             subordinate_user_ids=subordinate_user_ids,
         )
 
-        now = datetime.now(timezone.utc)
-        item.status = "completed"
-        item.completed_at = now
-        item.progress_percent = 100
-
-        activity = WorkItemActivity(
-            work_item_id=item.id,
-            author_id=current_user.id,
-            author_name=getattr(current_user, "full_name", "Leader"),
-            activity_type="COMPLETION_VERIFIED",
-            note=verification_note or "EDC criteria confirmed and verified.",
-            previous_status="ready_for_review",
-            new_status="completed",
-            progress_percent=100,
-            created_at=now,
-        )
-        session.add(activity)
-        session.commit()
-        session.refresh(item)
-        return item
 
 

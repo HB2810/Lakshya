@@ -14,10 +14,12 @@ from sqlalchemy.orm import Session
 from app.api.deps import CurrentContext, RequestContext, get_db
 from app.modules.work_item.models import WorkItem, WorkItemActivity
 from app.modules.work_item.schemas import (
+    AuditVerificationRequest,
     EscalateRequest,
     EscalationResolveRequest,
     EscalationResponse,
     RACIReplaceRequest,
+    SubmitForVerificationRequest,
     WorkItemActivityResponse,
     WorkItemCreate,
     WorkItemResponse,
@@ -73,6 +75,9 @@ def _to_response(item: WorkItem, session: Session | None = None) -> WorkItemResp
         blocked_at=item.blocked_at,
         blocked_reason=item.blocked_reason,
         blocker_details=item.blocker_details,
+        submission_notes=getattr(item, "submission_notes", None),
+        submitted_for_verification_at=getattr(item, "submitted_for_verification_at", None),
+        verification=getattr(item, "verification_data", None),
         raci=item.raci,
         edc=item.edc,
         origin_meeting_id=item.origin_meeting_id,
@@ -273,6 +278,53 @@ def resolve_escalation(
     )
 
 
+@router.post("/{work_item_id}/submit_for_verification", response_model=WorkItemResponse)
+def submit_for_verification(
+    work_item_id: uuid.UUID,
+    payload: SubmitForVerificationRequest,
+    db: Session = Depends(get_db),
+    ctx: RequestContext = CurrentContext,
+) -> WorkItemResponse:
+    """Employee submission of completed deliverable / evidence for incharge verification."""
+    effective_roles = list(ctx.authorization.effective_roles)
+    subordinates = set(ctx.authorization.subordinate_user_ids)
+    item = WorkItemService.submit_for_verification(
+        session=db,
+        work_item_id=work_item_id,
+        submission_notes=payload.submission_notes,
+        current_user=ctx.authenticated.user,
+        effective_roles=effective_roles,
+        user_department_ids=ctx.authorization.department_ids,
+        subordinate_user_ids=subordinates,
+    )
+    return _to_response(item, session=db)
+
+
+@router.post("/{work_item_id}/audit_verify", response_model=WorkItemResponse)
+def audit_verify_work_item(
+    work_item_id: uuid.UUID,
+    payload: AuditVerificationRequest,
+    db: Session = Depends(get_db),
+    ctx: RequestContext = CurrentContext,
+) -> WorkItemResponse:
+    """Incharge / Leader formal audit verification sign-off or revision request."""
+    effective_roles = list(ctx.authorization.effective_roles)
+    subordinates = set(ctx.authorization.subordinate_user_ids)
+    item = WorkItemService.audit_verify(
+        session=db,
+        work_item_id=work_item_id,
+        decision=payload.decision,
+        audit_score=payload.audit_score,
+        sop_compliance=payload.sop_compliance,
+        remarks=payload.remarks,
+        current_user=ctx.authenticated.user,
+        effective_roles=effective_roles,
+        user_department_ids=ctx.authorization.department_ids,
+        subordinate_user_ids=subordinates,
+    )
+    return _to_response(item, session=db)
+
+
 @router.post("/{work_item_id}/verify", response_model=WorkItemResponse)
 def verify_work_item(
     work_item_id: uuid.UUID,
@@ -293,5 +345,6 @@ def verify_work_item(
         verification_note=note,
     )
     return _to_response(item, session=db)
+
 
 

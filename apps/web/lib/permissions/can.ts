@@ -60,7 +60,7 @@ export function can(capability: Capability, user: User | null): boolean {
     case 'commitment.reopen':
       return isMD;
 
-    // 4. Tasks & RACI
+    // 4. Tasks, RACI & Team Leadership Execution
     case 'task.read':
     case 'raci.read':
       return true;
@@ -71,10 +71,23 @@ export function can(capability: Capability, user: User | null): boolean {
     case 'task.assign':
     case 'task.deadline.change':
     case 'task.priority.change':
-      return !isStaff; // Staff cannot reassign others or alter official deadlines
+    case 'team.tasks.delegate':
+      return !isStaff; // Incharges, Leaders, MD, Admin can delegate tasks
 
     case 'task.complete':
       return true; // Assignee can complete normal task
+
+    case 'team.tasks.verify':
+    case 'team.tasks.audit':
+    case 'commitment.approve':
+    case 'commitment.completion.approve':
+      return isMD || isLeader; // Incharges, Leaders, and Governance can verify and audit
+
+    case 'team.tasks.view_all':
+      return isMD; // Full hospital-wide macro visibility
+
+    case 'team.tasks.realtime_progress':
+      return !isStaff; // Leaders, HODs, Incharges, Governance see real-time team progress
 
     case 'task.reopen':
     case 'raci.manage':

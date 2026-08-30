@@ -3631,6 +3631,103 @@ export const workItemStore = {
     return canonicalWorkItems.find(w => w.id === id)!;
   },
 
+  submitForVerification(id: string, submissionNotes: string, authorName = 'Staff Member'): WorkItem {
+    const item = canonicalWorkItems.find(w => w.id === id);
+    if (!item) throw new Error('WorkItem not found');
+
+    const nowIso = new Date().toISOString();
+    const activity: WorkItemActivity = {
+      id: 'act-' + Date.now(),
+      timestamp: nowIso,
+      authorId: item.owner_id || 'usr-stav-101',
+      authorName,
+      type: 'SUBMITTED_FOR_VERIFICATION',
+      newStatus: 'submitted_for_verification',
+      note: 'Deliverable submitted for incharge verification: ' + submissionNotes,
+    };
+
+    canonicalWorkItems = canonicalWorkItems.map(w => {
+      if (w.id !== id) return w;
+      return {
+        ...w,
+        status: 'submitted_for_verification',
+        submission_notes: submissionNotes,
+        submitted_for_verification_at: nowIso,
+        activity_history: [activity, ...(w.activity_history || [])],
+        updated_at: nowIso,
+        version: w.version + 1,
+      };
+    });
+
+    notify();
+    return canonicalWorkItems.find(w => w.id === id)!;
+  },
+
+  auditVerify(
+    id: string,
+    params: {
+      decision: 'APPROVED' | 'REVISION_REQUESTED';
+      auditScore?: number;
+      sopCompliance?: boolean;
+      remarks?: string;
+      verifierId?: string;
+      verifierName?: string;
+      verifierRole?: string;
+    }
+  ): WorkItem {
+    const item = canonicalWorkItems.find(w => w.id === id);
+    if (!item) throw new Error('WorkItem not found');
+
+    const nowIso = new Date().toISOString();
+    const verifierName = params.verifierName || 'Incharge / Leader';
+    const isApproved = params.decision === 'APPROVED';
+
+    const verificationRecord = {
+      verified_by_id: params.verifierId || 'usr-leader-1',
+      verified_by_name: verifierName,
+      verified_by_role: params.verifierRole || 'Incharge / Leader',
+      verified_at: nowIso,
+      decision: params.decision,
+      audit_score: params.auditScore,
+      sop_compliance: params.sopCompliance ?? true,
+      remarks: params.remarks,
+    };
+
+    const nextStatus = isApproved ? 'verified' : 'revision_requested';
+    const activityType = isApproved ? 'VERIFIED' : 'REVISION_REQUESTED';
+    const note = isApproved
+      ? `Task verified and approved by ${verifierName}. Audit Score: ${params.auditScore || 'N/A'}/5. Remarks: ${params.remarks || 'Approved'}`
+      : `Revision requested by ${verifierName}: ${params.remarks || 'Please revise deliverable.'}`;
+
+    const activity: WorkItemActivity = {
+      id: 'act-' + Date.now(),
+      timestamp: nowIso,
+      authorId: params.verifierId || 'usr-leader-1',
+      authorName: verifierName,
+      type: activityType as any,
+      newStatus: nextStatus as any,
+      note,
+      progressPercent: isApproved ? 100 : item.progressPercent,
+    };
+
+    canonicalWorkItems = canonicalWorkItems.map(w => {
+      if (w.id !== id) return w;
+      return {
+        ...w,
+        status: nextStatus as any,
+        completed_at: isApproved ? nowIso : null,
+        progressPercent: isApproved ? 100 : w.progressPercent,
+        verification: verificationRecord,
+        activity_history: [activity, ...(w.activity_history || [])],
+        updated_at: nowIso,
+        version: w.version + 1,
+      };
+    });
+
+    notify();
+    return canonicalWorkItems.find(w => w.id === id)!;
+  },
+
   resetData() {
     canonicalWorkItems = [...INITIAL_WORK_ITEMS];
     notify();

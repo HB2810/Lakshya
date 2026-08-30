@@ -27,7 +27,17 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import UTC_TIMESTAMP, UUID_PK, Base, TimestampMixin, VersionMixin, uuid_pk
 
-WORK_ITEM_STATUSES = ("todo", "in_progress", "completed", "stuck", "blocked", "cancelled")
+WORK_ITEM_STATUSES = (
+    "todo",
+    "in_progress",
+    "submitted_for_verification",
+    "revision_requested",
+    "completed",
+    "verified",
+    "stuck",
+    "blocked",
+    "cancelled",
+)
 WORK_ITEM_PRIORITIES = ("low", "medium", "high", "urgent")
 _STATUSES_SQL = ", ".join(repr(s) for s in WORK_ITEM_STATUSES)
 _PRIORITIES_SQL = ", ".join(repr(p) for p in WORK_ITEM_PRIORITIES)
@@ -94,6 +104,11 @@ class WorkItem(Base, TimestampMixin, VersionMixin):
     blocked_at: Mapped[datetime | None] = mapped_column(UTC_TIMESTAMP, nullable=True)
     blocked_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
     blocker_details: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
+
+    # Verification & Incharge Sign-off
+    submission_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    submitted_for_verification_at: Mapped[datetime | None] = mapped_column(UTC_TIMESTAMP, nullable=True)
+    verification_data: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
 
     # RACI, EDC, Dependencies, Escalations stored as structured metadata
     raci: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)

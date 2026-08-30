@@ -147,6 +147,33 @@ class EscalationResponse(BaseModel):
 
 
 
+class SubmitForVerificationRequest(BaseModel):
+    submission_notes: str = Field(min_length=2, max_length=2000)
+    evidence_url_or_ref: str | None = None
+
+
+class AuditVerificationRequest(BaseModel):
+    decision: str = Field(pattern="^(APPROVED|REVISION_REQUESTED)$")
+    audit_score: int | None = Field(default=None, ge=1, le=5)
+    sop_compliance: bool = True
+    remarks: str | None = Field(default=None, max_length=2000)
+
+
+class TeamMemberProgressSummarySchema(BaseModel):
+    employee_id: str
+    employee_code: str
+    name: str
+    designation: str
+    department_name: str
+    reporting_manager_id: str | None = None
+    active_tasks_count: int
+    in_review_count: int
+    completed_count: int
+    blocked_count: int
+    average_progress_percent: int
+    items: list[dict[str, Any]] = Field(default_factory=list)
+
+
 class WorkItemResponse(BaseModel):
     id: uuid.UUID
     organization_id: uuid.UUID
@@ -166,6 +193,9 @@ class WorkItemResponse(BaseModel):
     blocked_at: datetime | None = None
     blocked_reason: str | None = None
     blocker_details: dict[str, Any] | None = None
+    submission_notes: str | None = None
+    submitted_for_verification_at: datetime | None = None
+    verification: dict[str, Any] | None = None
     raci: dict[str, Any] | None = None
     edc: dict[str, Any] | None = None
     origin_meeting_id: uuid.UUID | None = None
@@ -180,3 +210,4 @@ class WorkItemResponse(BaseModel):
 class WorkItemListResponse(BaseModel):
     items: list[WorkItemResponse]
     total: int
+

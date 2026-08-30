@@ -41,8 +41,8 @@ export const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({
 }) => {
   const { user } = useAuth();
 
-  // Active action mode inside drawer: 'view' | 'progress' | 'blocker' | 'complete'
-  const [actionMode, setActionMode] = useState<'view' | 'progress' | 'blocker' | 'complete'>('view');
+  // Active action mode inside drawer: 'view' | 'progress' | 'blocker' | 'complete' | 'submit_verification'
+  const [actionMode, setActionMode] = useState<'view' | 'progress' | 'blocker' | 'complete' | 'submit_verification'>('view');
   
   // Tab State
   const [activeTab, setActiveTab] = useState<'overview' | 'execution' | 'dependencies' | 'activity'>('overview');
@@ -57,8 +57,9 @@ export const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({
   const [blockerHelper, setBlockerHelper] = useState<string>('');
   const [blockerUrgency, setBlockerUrgency] = useState<'URGENT' | 'HIGH' | 'MEDIUM'>('HIGH');
 
-  // Complete Form State
+  // Complete & Verification Form State
   const [completeNote, setCompleteNote] = useState<string>('');
+  const [submissionNotes, setSubmissionNotes] = useState<string>('');
 
   if (!isOpen || !workItem) return null;
 
@@ -99,10 +100,11 @@ export const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({
         blocker_details: {
           reason: blockerReason.trim(),
           needDescription: blockerNeed.trim(),
-          helpedByPersonOrDept: blockerHelper.trim() || undefined,
+          helpedByPersonOrDept: blockerHelper.trim() || 'Managing Director / Incharge',
           urgency: blockerUrgency,
           reportedAt: new Date().toISOString(),
         },
+        update_note: `Blocker reported: ${blockerReason.trim()}`,
       });
       setActionMode('view');
       setBlockerReason('');
@@ -111,6 +113,24 @@ export const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({
       onUpdated?.();
     } catch (err) {
       console.error('Failed to report blocker:', err);
+    }
+  };
+
+  const handleSubmitForVerification = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!submissionNotes.trim()) return;
+
+    try {
+      await apiClient.workItems.submitForVerification(
+        workItem.id,
+        submissionNotes.trim(),
+        user?.name || 'Staff Member'
+      );
+      setActionMode('view');
+      setSubmissionNotes('');
+      onUpdated?.();
+    } catch (err) {
+      console.error('Failed to submit for verification:', err);
     }
   };
 
@@ -156,8 +176,13 @@ export const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({
 
   const getStatusBadge = (status: WorkItemStatus) => {
     switch (status) {
+      case 'verified':
       case 'completed':
         return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+      case 'submitted_for_verification':
+        return 'bg-indigo-50 text-indigo-700 border-indigo-200';
+      case 'revision_requested':
+        return 'bg-amber-50 text-amber-700 border-amber-200';
       case 'in_progress':
         return 'bg-blue-50 text-blue-700 border-blue-200';
       case 'blocked':

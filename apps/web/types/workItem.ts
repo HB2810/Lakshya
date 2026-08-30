@@ -1,5 +1,27 @@
-export type WorkItemStatus = 'todo' | 'in_progress' | 'completed' | 'stuck' | 'blocked' | 'cancelled';
+export type WorkItemStatus =
+  | 'todo'
+  | 'in_progress'
+  | 'submitted_for_verification'
+  | 'revision_requested'
+  | 'completed'
+  | 'verified'
+  | 'stuck'
+  | 'blocked'
+  | 'cancelled';
+
 export type WorkItemPriority = 'low' | 'medium' | 'high' | 'urgent';
+
+export interface VerificationAuditRecord {
+  verified_by_id: string;
+  verified_by_name: string;
+  verified_by_role?: string;
+  verified_at: string;
+  decision: 'APPROVED' | 'REVISION_REQUESTED';
+  audit_score?: number; // 1 to 5 stars
+  sop_compliance?: boolean;
+  remarks?: string;
+  evidence_verified?: string;
+}
 
 export interface WorkItemActivity {
   id: string;
@@ -16,6 +38,10 @@ export interface WorkItemActivity {
     | 'ESCALATION_RESOLVED'
     | 'REASSIGNED'
     | 'RACI_CHANGE'
+    | 'SUBMITTED_FOR_VERIFICATION'
+    | 'REVISION_REQUESTED'
+    | 'VERIFIED'
+    | 'AUDITED'
     | 'COMPLETED';
   note?: string;
   previousStatus?: WorkItemStatus;
@@ -145,6 +171,11 @@ export interface WorkItem {
   blocked_reason?: string | null;
   blocker_details?: BlockerDetails | null;
   
+  // Verification & Audit Sign-Off
+  submission_notes?: string | null;
+  submitted_for_verification_at?: string | null;
+  verification?: VerificationAuditRecord | null;
+  
   // Execution Engineering (RACI, EDC, Dependencies, Escalations)
   raci?: WorkItemRACI | null;
   edc?: WorkItemEDC | null;
@@ -173,6 +204,8 @@ export interface WorkItemPatchPayload {
   progressPercent?: number;
   blocked_reason?: string | null;
   blocker_details?: BlockerDetails | null;
+  submission_notes?: string | null;
+  verification?: VerificationAuditRecord | null;
   raci?: WorkItemRACI | null;
   edc?: WorkItemEDC | null;
   dependencies?: WorkItemDependencyItem[];
@@ -184,3 +217,23 @@ export interface WorkItemListResponse {
   items: WorkItem[];
   total: number;
 }
+
+export interface TeamMemberProgressSummary {
+  employeeId: string;
+  employeeCode: string;
+  name: string;
+  designation: string;
+  departmentName: string;
+  reportingManagerId?: string;
+  reportingManagerName?: string;
+  activeTasksCount: number;
+  inReviewCount: number;
+  completedCount: number;
+  blockedCount: number;
+  averageProgressPercent: number;
+  latestTaskTitle?: string;
+  latestTaskStatus?: WorkItemStatus;
+  lastActiveAt?: string;
+  items: WorkItem[];
+}
+
