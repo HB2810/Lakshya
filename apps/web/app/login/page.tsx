@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../lib/auth/AuthContext';
 import { hospitalStaffAuthStore, EmployeeAccount } from '../../lib/auth/hospitalStaffAuth';
+import { StavyaOneLogo } from '../../components/brand/StavyaOneLogo';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -127,19 +128,12 @@ export default function LoginPage() {
       <main className="w-full max-w-[460px] relative z-10 my-4 sm:my-0">
         <div className="bg-white rounded-3xl shadow-xl shadow-slate-200/60 border border-slate-200 overflow-hidden">
           {/* Card Brand Header */}
-          <div className="px-5 pb-5 pt-6 text-center border-b border-slate-100 bg-gradient-to-b from-blue-50/50 to-white sm:px-8 sm:pb-6 sm:pt-8">
-            <div className="inline-flex items-center justify-center p-3 rounded-2xl bg-white border border-slate-200 shadow-xs mb-3">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="/brand/stavya-logo.png"
-                alt="Stavya Spine Hospital"
-                height="44"
-                style={{ maxHeight: '44px', height: '44px', width: 'auto' }}
-                className="h-11 w-auto object-contain"
-              />
+          <div className="px-5 pb-5 pt-6 text-center border-b border-slate-100 bg-gradient-to-b from-blue-50/50 to-white sm:px-8 sm:pb-6 sm:pt-8 flex flex-col items-center">
+            <div className="p-3 rounded-2xl bg-white border border-slate-200 shadow-xs mb-3">
+              <StavyaOneLogo size="xl" variant="full" />
             </div>
-            <h1 className="text-xl font-extrabold text-slate-900 tracking-tight">
-              Stavya One — Stavya Spine Hospital
+            <h1 className="text-sm font-bold text-slate-500 tracking-tight mt-1">
+              Stavya Spine Hospital
             </h1>
             <p className="text-xs font-semibold text-blue-600 mt-0.5">
               Management Operating System &amp; Employee Companion
@@ -234,7 +228,7 @@ export default function LoginPage() {
                 <span>Authenticating...</span>
               ) : (
                 <>
-                  <span>Sign In to Stavya One</span>
+                  <span>Sign In to StavyaOne</span>
                   <ArrowRight className="w-4 h-4" />
                 </>
               )}

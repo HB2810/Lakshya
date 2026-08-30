@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 60" fill="none">
+  <!-- Minimalist Apple-Style Mark -->
+  <g transform="translate(4, 5)" fill="#0F172A">
+    <circle cx="28" cy="10" r="2.8" />
+    <path d="M 20 15 C 17.5 15, 15 16.5, 13 19 C 11.5 21, 12 23.5, 14.5 25 C 18.5 27, 24.5 25, 27 22 L 27 43 C 27 45.5, 25 47, 22.5 47 L 18 47 C 16.8 47, 15.8 48, 15.8 49.2 C 15.8 50.4, 16.8 51.4, 18 51.4 L 34 51.4 C 35.2 51.4, 36.2 50.4, 36.2 49.2 C 36.2 48, 35.2 47, 34 47 L 31.5 47 C 29 47, 27 45.5, 27 43 L 27 15 Z" />
+    <rect x="7" y="28" width="10" height="3.4" rx="1.7" />
+    <rect x="5.5" y="35" width="11.5" height="3.4" rx="1.7" />
+    <rect x="7.5" y="42" width="9.5" height="3.4" rx="1.7" />
+  </g>
+
+  <!-- Typography: StavyaOne as ONE word -->
+  <g transform="translate(54, 39)">
+    <text font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', 'Segoe UI', sans-serif" font-size="27" letter-spacing="-0.8">
+      <tspan font-weight="400" fill="#0F172A">Stavya</tspan>
+      <tspan font-weight="800" fill="#0F172A">One</tspan>
+    </text>
+  </g>
+</svg>

@@ -26,11 +26,33 @@ export type WorkSnapshot = {
   lastSyncedAt: string;
 };
 
+export type HealthDeviceProvider =
+  | 'apple_health'
+  | 'samsung_health'
+  | 'google_fit'
+  | 'garmin'
+  | 'fitbit';
+
+export type ConnectedDevice = {
+  id: string;
+  provider: HealthDeviceProvider;
+  name: string;
+  connected: boolean;
+  lastSyncedAt?: string;
+  deviceModel?: string;
+  syncMetrics: ('steps' | 'sleep' | 'heart_rate' | 'water')[];
+};
+
 export type HealthState = {
   sleepHours: number;
   steps: number;
   waterGlasses: number;
   mood: "Low" | "Steady" | "Good" | "Excellent";
+  heartRateResting?: number;
+  activeCalories?: number;
+  connectedDevices: ConnectedDevice[];
+  autoSyncEnabled: boolean;
+  lastDeviceSyncAt?: string;
 };
 
 export type WealthState = {

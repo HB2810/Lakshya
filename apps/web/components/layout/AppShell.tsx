@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { AuthProvider, useAuth } from '../../lib/auth/AuthContext';
 import { Sidebar } from './Sidebar';
 import { Header } from './Header';
+import { StavyaOneLogo } from '../brand/StavyaOneLogo';
 
 export const AppShellContent: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isAuthenticated, isLoading } = useAuth();
@@ -20,9 +21,12 @@ export const AppShellContent: React.FC<{ children: React.ReactNode }> = ({ child
   if (isLoading) {
     return (
       <div className="flex h-[100dvh] w-full items-center justify-center bg-[#f8fafc]">
-        <div className="text-xs font-bold text-slate-600 flex items-center gap-2.5 bg-white px-5 py-3 rounded-2xl border border-slate-200 shadow-sm">
-          <div className="w-4 h-4 border-2 border-slate-900 border-t-transparent rounded-full animate-spin" />
-          <span>Restoring Stavya One Session...</span>
+        <div className="flex flex-col items-center gap-4 bg-white p-6 rounded-3xl border border-slate-200 shadow-md animate-in fade-in">
+          <StavyaOneLogo size="lg" variant="full" />
+          <div className="text-xs font-bold text-slate-500 flex items-center gap-2">
+            <div className="w-3.5 h-3.5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+            <span>Restoring Secure Session...</span>
+          </div>
         </div>
       </div>
     );

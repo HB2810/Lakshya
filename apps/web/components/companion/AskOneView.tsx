@@ -103,7 +103,7 @@ export const AskOneView: React.FC = () => {
           <div className="flex items-center gap-2.5">
             <span className="px-3 py-1 bg-blue-500/30 border border-blue-400/40 text-blue-200 text-xs font-black rounded-full uppercase tracking-wider flex items-center gap-1.5 shadow-2xs">
               <Sparkles className="w-3.5 h-3.5 text-blue-300" />
-              STAVYA ONE COMPANION
+              STAVYAONE COMPANION
             </span>
             <span className="px-2.5 py-0.5 bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[10px] font-bold rounded-md flex items-center gap-1">
               <Lock className="w-3 h-3" />

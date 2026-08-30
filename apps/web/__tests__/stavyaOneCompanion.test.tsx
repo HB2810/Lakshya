@@ -15,6 +15,8 @@ import { LifeGoalsView } from '../components/companion/LifeGoalsView';
 import { PrivacyCentreView } from '../components/companion/PrivacyCentreView';
 import { Sidebar } from '../components/layout/Sidebar';
 import { AuthProvider } from '../lib/auth/AuthContext';
+import { StavyaOneLogo } from '../components/brand/StavyaOneLogo';
+import { InteractiveTrainingView } from '../components/training/InteractiveTrainingView';
 
 // Mock next/navigation
 vi.mock('next/navigation', () => ({
@@ -123,39 +125,65 @@ describe('Stavya One Companion & Private Vault Architecture Suite', () => {
     });
   });
 
-  describe('4. Health Journal Component', () => {
-    it('renders wellbeing sliders and health boundary safety disclaimer', () => {
+  describe('4. Health Journal & Wearable Device Sync Component', () => {
+    it('renders wellbeing sliders, device integrations, and health privacy disclaimer', () => {
       render(<HealthJournalView />);
 
       expect(screen.getByText(/Everyday Wellbeing/i)).toBeDefined();
-      expect(screen.getByText(/Sleep Duration/i)).toBeDefined();
-      expect(screen.getByText(/Daily Steps/i)).toBeDefined();
-      expect(screen.getByText(/Water Intake/i)).toBeDefined();
-      expect(screen.getByText(/Daily State of Mind/i)).toBeDefined();
-      expect(screen.getByText(/Health Boundary Contract/i)).toBeDefined();
+      expect(screen.getByText(/Link Smart Devices & Wearables/i)).toBeDefined();
+      expect(screen.getAllByText(/Apple Health/i).length).toBeGreaterThan(0);
+      expect(screen.getAllByText(/Samsung Health/i).length).toBeGreaterThan(0);
+      expect(screen.getAllByText(/Google Health Connect/i).length).toBeGreaterThan(0);
+      expect(screen.getByText(/Resting Heart Rate/i)).toBeDefined();
+      expect(screen.getByText(/Zero-Cloud Wearable Privacy Pass/i)).toBeDefined();
 
       // Change mood
       fireEvent.click(screen.getByRole('button', { name: 'Excellent' }));
       const updatedState = loadPrivateState();
       expect(updatedState.health.mood).toBe('Excellent');
     });
+
+    it('connects and disconnects wearable device providers', () => {
+      render(<HealthJournalView />);
+
+      const connectBtns = screen.getAllByRole('button', { name: /Connect|Linked/i });
+      expect(connectBtns.length).toBeGreaterThanOrEqual(4);
+
+      // Toggle Samsung Health connect
+      fireEvent.click(connectBtns[1]);
+      const updated = loadPrivateState();
+      expect(updated.health.connectedDevices[1].connected).toBe(true);
+    });
+
+    it('triggers wearable device sync action and updates metrics in local vault', async () => {
+      render(<HealthJournalView />);
+
+      const syncBtn = screen.getByRole('button', { name: /Sync Devices/i });
+      fireEvent.click(syncBtn);
+
+      await waitFor(() => {
+        expect(screen.getByText(/Synced latest biometric metrics from Apple/i)).toBeDefined();
+      });
+    });
   });
 
   describe('5. Wealth & Budget Clarity Component', () => {
-    it('renders budget remaining, savings progress, and number inputs', () => {
+    it('renders budget remaining, savings progress, 1-tap loggers and 50/30/20 guide', () => {
       render(<WealthBudgetView />);
 
-      expect(screen.getByText(/Money Clarity/i)).toBeDefined();
+      expect(screen.getByText(/Simple Personal Budget/i)).toBeDefined();
+      expect(screen.getByText(/1-Tap Quick Expense Logger/i)).toBeDefined();
       expect(screen.getByText(/Monthly Budget Left/i)).toBeDefined();
-      expect(screen.getByText(/Annual Savings Target/i)).toBeDefined();
-      expect(screen.getByText(/Financial Boundary Notice/i)).toBeDefined();
+      expect(screen.getAllByText(/Annual Savings Goal/i).length).toBeGreaterThan(0);
+      expect(screen.getByText(/50 \/ 30 \/ 20 Simplified Rhythm Guide/i)).toBeDefined();
+      expect(screen.getByText(/Zero-Bank-Link Financial Privacy/i)).toBeDefined();
 
-      // Update budget input
-      const budgetInputs = screen.getAllByRole('spinbutton');
-      fireEvent.change(budgetInputs[0], { target: { value: '60000' } });
+      // Tap quick expense button
+      const snackBtn = screen.getByRole('button', { name: /\+₹100 \(Snack\/Tea\)/i });
+      fireEvent.click(snackBtn);
 
-      const updatedState = loadPrivateState();
-      expect(updatedState.wealth.monthlyBudget).toBe(60000);
+      const updated = loadPrivateState();
+      expect(updated.wealth.spent).toBeGreaterThan(19800);
     });
   });
 
@@ -191,14 +219,15 @@ describe('Stavya One Companion & Private Vault Architecture Suite', () => {
   });
 
   describe('8. Sidebar Navigation & Branding', () => {
-    it('renders Stavya One brand and 3-tier navigation sections', () => {
+    it('renders StavyaOne brand logo and 3-tier navigation sections', () => {
       render(
         <AuthProvider>
           <Sidebar />
         </AuthProvider>
       );
 
-      expect(screen.getByText(/Stavya One/i)).toBeDefined();
+      expect(screen.getByText('Stavya')).toBeDefined();
+      expect(screen.getByText('One')).toBeDefined();
       expect(screen.getByText(/YOUR DAY/i)).toBeDefined();
       expect(screen.getByText(/PRIVATE SPACE/i)).toBeDefined();
       expect(screen.getByText(/HOSPITAL & GOVERNANCE/i)).toBeDefined();
@@ -209,6 +238,51 @@ describe('Stavya One Companion & Private Vault Architecture Suite', () => {
       expect(screen.getByText('Wealth')).toBeDefined();
       expect(screen.getByText('Life')).toBeDefined();
       expect(screen.getByText('Privacy')).toBeDefined();
+      expect(screen.getByText('Training & Guide')).toBeDefined();
+    });
+  });
+
+  describe('9. StavyaOneLogo Component Variants', () => {
+    it('renders full, compact, and mark logo variants with custom sizes', () => {
+      const { rerender } = render(<StavyaOneLogo variant="full" size="xl" showSubtitle={true} />);
+      expect(screen.getByText('Stavya')).toBeDefined();
+      expect(screen.getByText('One')).toBeDefined();
+      expect(screen.getByText(/Operating System/i)).toBeDefined();
+
+      rerender(<StavyaOneLogo variant="compact" size="sm" showSubtitle={false} />);
+      expect(screen.getByText('Stavya')).toBeDefined();
+      expect(screen.getByText('One')).toBeDefined();
+      expect(screen.queryByText(/Operating System/i)).toBeNull();
+
+      rerender(<StavyaOneLogo variant="mark" size="md" />);
+      expect(screen.queryByText('Stavya')).toBeNull();
+    });
+  });
+
+  describe('10. Interactive Training & Platform Tutorial Hub', () => {
+    it('renders StavyaOne Academy with Two-Track curriculum and progress tracker', () => {
+      render(<InteractiveTrainingView />);
+
+      expect(screen.getByText(/STAVYAONE ACADEMY/i)).toBeDefined();
+      expect(screen.getByText(/Platform Training & Tutorial/i)).toBeDefined();
+      expect(screen.getByText(/Track 1: Stavya Work/i)).toBeDefined();
+      expect(screen.getByText(/Track 2: Personal Life/i)).toBeDefined();
+
+      // Verify module rendering
+      expect(screen.getByText(/1. Navigating My Day & Next Action Spotlight/i)).toBeDefined();
+      expect(screen.getByText(/6. Ask One AI Companion for Work & Life/i)).toBeDefined();
+      expect(screen.getByText(/7. Everyday Wellbeing & Wearable Device Sync/i)).toBeDefined();
+      expect(screen.getByText(/8. Money Clarity & 1-Click Budgeting/i)).toBeDefined();
+    });
+
+    it('filters curriculum by work and personal tracks', () => {
+      render(<InteractiveTrainingView />);
+
+      const workTab = screen.getByRole('button', { name: /Track 1: Stavya Work/i });
+      fireEvent.click(workTab);
+
+      expect(screen.getByText(/1. Navigating My Day/i)).toBeDefined();
+      expect(screen.queryByText(/6. Ask One AI Companion for Work & Life/i)).toBeNull();
     });
   });
 });

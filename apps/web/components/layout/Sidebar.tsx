@@ -21,9 +21,11 @@ import {
   TrendingUp,
   Smile,
   Lock,
+  GraduationCap,
 } from 'lucide-react';
 import { useAuth } from '../../lib/auth/AuthContext';
 import { isQualityCommandAuthorized } from '../../lib/auth/rbacPolicies';
+import { StavyaOneLogo } from '../brand/StavyaOneLogo';
 
 interface SidebarProps {
   isMobileOpen?: boolean;
@@ -66,6 +68,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen = false, onCloseM
         { label: 'Quality & RCA / FMEA', href: '/rca', icon: Shield, show: true },
         { label: 'Quality Command Centre', href: '/quality', icon: ShieldCheck, show: isQualityCommandAuthorized(user) },
         { label: 'Organization', href: '/organization', icon: Building2, show: isLeaderOrMD },
+        { label: 'Training & Guide', href: '/training', icon: GraduationCap, show: true },
         { label: 'Settings', href: '/settings', icon: Settings, show: true },
       ],
     },
@@ -92,33 +95,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen = false, onCloseM
           <div className="min-h-16 px-4 pt-[env(safe-area-inset-top)] border-b border-slate-200 flex items-center justify-between">
             <Link href="/overview" onClick={onCloseMobile} className="flex min-h-16 items-center gap-3 overflow-hidden">
               {isCollapsed ? (
-                <div className="w-8 h-8 rounded-xl bg-blue-600 text-white font-black text-xs flex items-center justify-center shadow-xs">
-                  S1
-                </div>
+                <StavyaOneLogo variant="mark" size="sm" />
               ) : (
-                <div className="flex items-center gap-2.5">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src="/brand/stavya-logo.png"
-                    alt="Stavya Spine Hospital"
-                    height="36"
-                    style={{ maxHeight: '36px', height: '36px', width: 'auto' }}
-                    className="h-9 w-auto shrink-0 object-contain"
-                  />
-                  <div className="flex flex-col">
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-base font-black tracking-tight text-slate-900 leading-none">
-                        Stavya One
-                      </span>
-                      <span className="px-1 py-0.2 bg-blue-100 text-blue-800 text-[9px] font-black rounded uppercase">
-                        OS
-                      </span>
-                    </div>
-                    <span className="text-[10px] font-semibold tracking-wider text-slate-400 uppercase mt-0.5">
-                      Stavya Hospital
-                    </span>
-                  </div>
-                </div>
+                <StavyaOneLogo variant="full" size="md" />
               )}
             </Link>
 

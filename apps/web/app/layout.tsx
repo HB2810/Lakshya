@@ -2,12 +2,12 @@ import type { Metadata, Viewport } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Stavya One — Hospital Management & Employee Companion Operating System',
+  title: 'StavyaOne — Hospital Management & Employee Companion Operating System',
   description: 'Privacy-first Management Operating System & Employee Work/Life Companion for Stavya Spine Hospital',
   icons: {
-    icon: '/brand/stavya-logo.png',
-    shortcut: '/brand/stavya-logo.png',
-    apple: '/brand/stavya-logo.png',
+    icon: '/brand/stavya-one-mark.svg',
+    shortcut: '/brand/stavya-one-mark.svg',
+    apple: '/brand/stavya-one-mark.svg',
   },
 };
 

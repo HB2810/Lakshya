@@ -41,8 +41,9 @@ export const Header: React.FC<HeaderProps> = ({ onOpenNavigation = () => {} }) =
     if (path.includes('/quality')) return 'Stavya Quality Command Centre (QCC)';
     if (path.includes('/rca')) return 'Root Cause Analysis (RCA) & FMEA Tools';
     if (path.includes('/organization')) return 'Organization Directory';
+    if (path.includes('/training')) return 'Platform Training & Tutorial Hub';
     if (path.includes('/settings')) return 'System Settings';
-    return 'Stavya One';
+    return 'StavyaOne';
   };
 
   return (
@@ -117,7 +118,7 @@ export const Header: React.FC<HeaderProps> = ({ onOpenNavigation = () => {} }) =
               </div>
               <div className="space-y-2 text-xs">
                 <div className="p-2.5 bg-slate-50 rounded-lg border border-slate-100">
-                  <p className="font-semibold text-slate-900">Welcome to Stavya One</p>
+                  <p className="font-semibold text-slate-900">Welcome to StavyaOne</p>
                   <p className="text-slate-600 text-[11px] mt-0.5">Your hospital workspace and companion are active.</p>
                   <span className="text-[10px] text-slate-400 mt-1 block">Just now</span>
                 </div>
