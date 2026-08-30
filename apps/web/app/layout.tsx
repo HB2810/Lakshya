@@ -2,8 +2,8 @@ import type { Metadata, Viewport } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'LAKSHYA — MD Office Management Operating System',
-  description: 'Automation-first Management Operating System for Stavya Spine Hospital MD Office',
+  title: 'Stavya One — Hospital Management & Employee Companion Operating System',
+  description: 'Privacy-first Management Operating System & Employee Work/Life Companion for Stavya Spine Hospital',
   icons: {
     icon: '/brand/stavya-logo.png',
     shortcut: '/brand/stavya-logo.png',

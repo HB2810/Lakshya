@@ -215,7 +215,8 @@ describe('NABH 6th Edition Readiness Checklist & 214 Staff Privilege Suite', () 
     it('renders Login Page with 214 Staff Directory 1-Click Login modal', () => {
       render(<LoginPage />);
 
-      expect(screen.getByText(/Hospital Operating System & NABH 6th Edition Command/i)).toBeDefined();
+      expect(screen.getByText(/Stavya One — Stavya Spine Hospital/i)).toBeDefined();
+      expect(screen.getByText(/Management Operating System & Employee Companion/i)).toBeDefined();
       expect(screen.getByText(/214 Staff Directory/i)).toBeDefined();
 
       // Open Directory modal

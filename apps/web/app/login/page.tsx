@@ -139,10 +139,10 @@ export default function LoginPage() {
               />
             </div>
             <h1 className="text-xl font-extrabold text-slate-900 tracking-tight">
-              LAKSHYA — Stavya Spine
+              Stavya One — Stavya Spine Hospital
             </h1>
             <p className="text-xs font-semibold text-blue-600 mt-0.5">
-              Hospital Operating System &amp; NABH 6th Edition Command
+              Management Operating System &amp; Employee Companion
             </p>
           </div>
 
@@ -234,7 +234,7 @@ export default function LoginPage() {
                 <span>Authenticating...</span>
               ) : (
                 <>
-                  <span>Sign In to LAKSHYA</span>
+                  <span>Sign In to Stavya One</span>
                   <ArrowRight className="w-4 h-4" />
                 </>
               )}

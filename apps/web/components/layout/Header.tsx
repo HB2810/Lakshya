@@ -28,15 +28,21 @@ export const Header: React.FC<HeaderProps> = ({ onOpenNavigation = () => {} }) =
 
   const getPageTitle = (path: string) => {
     if (path.includes('/overview')) return 'My Day';
+    if (path.includes('/ask-one')) return 'Ask One — AI Companion';
+    if (path.includes('/health')) return 'Everyday Wellbeing — Health Journal';
+    if (path.includes('/wealth')) return 'Money Clarity — Budget & Savings Plan';
+    if (path.includes('/life')) return 'Life Beyond Work — Goals & Habits';
+    if (path.includes('/privacy')) return 'Privacy Control Centre';
     if (path.includes('/execution')) return 'My Work';
     if (path.includes('/calendar')) return 'Hospital Calendar';
     if (path.includes('/meetings')) return 'Meetings & Action Register';
     if (path.includes('/policies')) return 'Hospital Policies & Standard Operating Procedures (SOPs)';
     if (path.includes('/strategy')) return 'Quarterly Priorities & 10-Milestone Engine';
+    if (path.includes('/quality')) return 'Stavya Quality Command Centre (QCC)';
     if (path.includes('/rca')) return 'Root Cause Analysis (RCA) & FMEA Tools';
     if (path.includes('/organization')) return 'Organization Directory';
     if (path.includes('/settings')) return 'System Settings';
-    return 'LAKSHYA';
+    return 'Stavya One';
   };
 
   return (
@@ -111,8 +117,8 @@ export const Header: React.FC<HeaderProps> = ({ onOpenNavigation = () => {} }) =
               </div>
               <div className="space-y-2 text-xs">
                 <div className="p-2.5 bg-slate-50 rounded-lg border border-slate-100">
-                  <p className="font-semibold text-slate-900">Welcome to LAKSHYA</p>
-                  <p className="text-slate-600 text-[11px] mt-0.5">Your hospital workspace is active and up to date.</p>
+                  <p className="font-semibold text-slate-900">Welcome to Stavya One</p>
+                  <p className="text-slate-600 text-[11px] mt-0.5">Your hospital workspace and companion are active.</p>
                   <span className="text-[10px] text-slate-400 mt-1 block">Just now</span>
                 </div>
               </div>

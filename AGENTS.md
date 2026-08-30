@@ -1,18 +1,18 @@
-# LAKSHYA — Agent Instructions
+# STAVYA ONE — Agent Instructions
 
 ## 1. Project Identity
 
-**Project:** LAKSHYA
-**Full Name:** LAKSHYA — MD Office Management Operating System
+**Project:** STAVYA ONE
+**Full Name:** STAVYA ONE — Hospital Management & Employee Companion Operating System
 **Organization:** Stavya Spine
 **Primary Environment:** Stavya Spine Hospital, MD Office
 **Project Owner:** Het Bhatt
 
-LAKSHYA is an automation-first Management Operating System designed initially for the MD Office and progressively for organizational management across Stavya Spine.
+STAVYA ONE is an automation-first Management Operating System & Employee Companion designed initially for the MD Office and progressively for organizational management & personal wellbeing across Stavya Spine Hospital.
 
-LAKSHYA is not intended to be a generic task-management application.
+STAVYA ONE is not intended to be a generic task-management application.
 
-Its purpose is to convert organizational objectives, priorities, meetings, decisions, instructions, issues, and commitments into structured execution, accountability, automated follow-up, escalation, and management intelligence.
+Its purpose is to convert organizational objectives, priorities, meetings, decisions, instructions, issues, and commitments into structured execution, accountability, automated follow-up, escalation, and management intelligence, alongside providing an employee-owned private wellbeing space.
 
 ---
 
