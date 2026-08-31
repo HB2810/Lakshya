@@ -226,8 +226,7 @@ describe('Stavya One Companion & Private Vault Architecture Suite', () => {
         </AuthProvider>
       );
 
-      expect(screen.getByText('Stavya')).toBeDefined();
-      expect(screen.getByText('One')).toBeDefined();
+      expect(screen.getByAltText('Stavya Spine Hospital Logo')).toBeDefined();
       expect(screen.getByText(/YOUR DAY/i)).toBeDefined();
       expect(screen.getByText(/PRIVATE SPACE/i)).toBeDefined();
       expect(screen.getByText(/HOSPITAL & GOVERNANCE/i)).toBeDefined();
@@ -245,13 +244,10 @@ describe('Stavya One Companion & Private Vault Architecture Suite', () => {
   describe('9. StavyaOneLogo Component Variants', () => {
     it('renders full, compact, and mark logo variants with custom sizes', () => {
       const { rerender } = render(<StavyaOneLogo variant="full" size="xl" showSubtitle={true} />);
-      expect(screen.getByText('Stavya')).toBeDefined();
-      expect(screen.getByText('One')).toBeDefined();
-      expect(screen.getByText(/Operating System/i)).toBeDefined();
+      expect(screen.getByAltText('Stavya Spine Hospital Logo')).toBeDefined();
 
       rerender(<StavyaOneLogo variant="compact" size="sm" showSubtitle={false} />);
-      expect(screen.getByText('Stavya')).toBeDefined();
-      expect(screen.getByText('One')).toBeDefined();
+      expect(screen.getByAltText('Stavya Spine Hospital Logo')).toBeDefined();
       expect(screen.queryByText(/Operating System/i)).toBeNull();
 
       rerender(<StavyaOneLogo variant="mark" size="md" />);

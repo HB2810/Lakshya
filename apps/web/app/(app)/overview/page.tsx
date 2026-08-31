@@ -24,6 +24,7 @@ import { QuarterlyPriority } from '../../../types/strategy';
 import { apiClient } from '../../../lib/api/client';
 import { strategyStore } from '../../../lib/mocks/strategyMock';
 import { TaskDetailDrawer } from '../../../components/work/TaskDetailDrawer';
+import { ZomatoTaskStepper } from '../../../components/work/ZomatoTaskStepper';
 import { ZomatoDeliveryStepper } from '../../../components/strategy/ZomatoDeliveryStepper';
 import { SmartIntakeBox } from '../../../components/intake/SmartIntakeBox';
 import { AttentionRequiredCard } from '../../../components/leader/AttentionRequiredCard';
@@ -498,29 +499,22 @@ export default function OverviewPage() {
             </div>
 
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-3 border-t border-blue-100/80">
-              <div className="flex flex-wrap items-center gap-4 text-xs text-slate-500">
-                <span>
-                  Target Due: <strong className="text-slate-800 font-bold font-mono">{primaryNextAction.due_at ? primaryNextAction.due_at.substring(0, 10) : 'Today'}</strong>
-                </span>
-                {primaryNextAction.source_title && (
-                  <span className="flex items-center gap-1 text-slate-600 bg-white px-2 py-0.5 rounded border border-slate-200 font-medium">
-                    <Link2 className="w-3 h-3 text-slate-400 shrink-0" />
-                    {primaryNextAction.source_title}
+              <div className="flex flex-col gap-2 w-full sm:w-1/2">
+                <div className="flex flex-wrap items-center gap-4 text-xs text-slate-500">
+                  <span>
+                    Target Due: <strong className="text-slate-800 font-bold font-mono">{primaryNextAction.due_at ? primaryNextAction.due_at.substring(0, 10) : 'Today'}</strong>
                   </span>
-                )}
-                <div className="flex items-center gap-2">
-                  <span>Progress:</span>
-                  <div className="w-20 bg-slate-100 h-2 rounded-full overflow-hidden border border-slate-200/60">
-                    <div
-                      className="bg-blue-600 h-full rounded-full transition-all"
-                      style={{ width: `${primaryNextAction.progressPercent || 0}%` }}
-                    />
-                  </div>
-                  <strong className="text-slate-900 font-bold">{primaryNextAction.progressPercent || 0}%</strong>
+                  {primaryNextAction.source_title && (
+                    <span className="flex items-center gap-1 text-slate-600 bg-white px-2 py-0.5 rounded border border-slate-200 font-medium">
+                      <Link2 className="w-3 h-3 text-slate-400 shrink-0" />
+                      {primaryNextAction.source_title}
+                    </span>
+                  )}
                 </div>
+                <ZomatoTaskStepper status={primaryNextAction.status} compact={false} className="mt-2 w-full max-w-sm" />
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 mt-4 sm:mt-0">
                 <button
                   type="button"
                   onClick={(e) => handleQuickCompleteTask(primaryNextAction.id, primaryNextAction.title, e)}
@@ -581,7 +575,7 @@ export default function OverviewPage() {
                     onClick={() => openTaskDetail(item)}
                     className="p-3.5 bg-slate-50/60 hover:bg-slate-100/60 border border-slate-200/80 rounded-2xl flex items-center justify-between gap-3 transition-colors cursor-pointer"
                   >
-                    <div className="space-y-1 flex-1 min-w-0">
+                    <div className="space-y-2.5 flex-1 min-w-0">
                       <div className="flex items-center gap-2">
                         <span
                           className={`text-[9px] font-bold px-2 py-0.5 rounded uppercase tracking-wider border ${getPriorityBadge(
@@ -598,6 +592,7 @@ export default function OverviewPage() {
                         )}
                       </div>
                       <p className="text-xs font-bold text-slate-900 truncate">{item.title}</p>
+                      <ZomatoTaskStepper status={item.status} compact={true} className="mt-1 w-full max-w-[200px]" />
                     </div>
 
                     <div className="flex items-center gap-2 shrink-0">

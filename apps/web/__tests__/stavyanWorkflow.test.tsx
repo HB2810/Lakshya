@@ -165,7 +165,7 @@ describe('LAKSHYA Stavyan Execution Workspace Suite', () => {
     expect(screen.getByText('Today')).toBeDefined();
     expect(screen.getByText('Upcoming')).toBeDefined();
     expect(screen.getByText('Overdue')).toBeDefined();
-    expect(screen.getByText('Blocked')).toBeDefined();
+    expect(screen.getAllByText('Blocked').length).toBeGreaterThan(0);
     expect(screen.getByText('Completed')).toBeDefined();
   });
 

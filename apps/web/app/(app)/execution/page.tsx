@@ -22,6 +22,7 @@ import { User } from '../../../types/auth';
 import { apiClient } from '../../../lib/api/client';
 import { useAuth } from '../../../lib/auth/AuthContext';
 import { TaskDetailDrawer } from '../../../components/work/TaskDetailDrawer';
+import { ZomatoTaskStepper } from '../../../components/work/ZomatoTaskStepper';
 import { evaluateRaciGovernance } from '../../../lib/raci/governance';
 import { OmnichannelIntakeHub } from '../../../components/intake/OmnichannelIntakeHub';
 import { StavyaQualityCommandCentre } from '../../../components/organization/NabhCommandCentreView';
@@ -603,8 +604,10 @@ export default function ExecutionPage() {
                   {item.title}
                 </h3>
 
+                <ZomatoTaskStepper status={item.status} compact={true} className="w-full max-w-sm mt-1" />
+
                 {item.description && (
-                  <p className="text-xs text-slate-500 line-clamp-1 font-medium">
+                  <p className="text-xs text-slate-500 line-clamp-1 font-medium mt-1">
                     {item.description}
                   </p>
                 )}

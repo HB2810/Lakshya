@@ -25,6 +25,7 @@ import { RaciSection } from './sections/RaciSection';
 import { EdcSection } from './sections/EdcSection';
 import { DependenciesSection } from './sections/DependenciesSection';
 import { EscalationSection } from './sections/EscalationSection';
+import { ZomatoTaskStepper } from './ZomatoTaskStepper';
 
 interface TaskDetailDrawerProps {
   workItem: WorkItem | null;
@@ -242,6 +243,9 @@ export const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({
             >
               <X className="w-5 h-5" />
             </button>
+          </div>
+          <div className="px-4 pb-4 sm:px-6">
+            <ZomatoTaskStepper status={workItem.status} compact={false} />
           </div>
 
           {/* 2. TAB NAVIGATION */}

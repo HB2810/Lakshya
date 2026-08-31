@@ -33,6 +33,16 @@ interface HeaderProps {
   onOpenNavigation?: () => void;
 }
 
+const KAIZEN_WISDOMS = [
+  { title: 'Continuous Refinement', text: 'Small daily improvements create compound clinical excellence.' },
+  { title: 'Patient First', text: 'Every interaction is an opportunity to heal, comfort, and care.' },
+  { title: 'Excellence', text: 'Quality is not an act, it is a habit in our daily practice.' },
+  { title: 'Team Synergy', text: 'Great healthcare is built on seamless, ego-free communication.' },
+  { title: 'Ownership', text: 'Take full responsibility for the outcome, not just the task.' },
+  { title: 'Attention to Detail', text: 'The smallest detail can make the biggest difference in surgery.' },
+  { title: 'Empathy', text: 'Listen to understand your patients, not just to respond.' },
+];
+
 export const Header: React.FC<HeaderProps> = ({ onOpenNavigation = () => {} }) => {
   const pathname = usePathname();
   const router = useRouter();
@@ -42,6 +52,7 @@ export const Header: React.FC<HeaderProps> = ({ onOpenNavigation = () => {} }) =
   const [showShiftPicker, setShowShiftPicker] = useState(false);
   const [currentShift, setCurrentShift] = useState('Morning Duty (08:00 – 16:00)');
   const [timeString, setTimeString] = useState('');
+  const [dailyWisdom, setDailyWisdom] = useState(KAIZEN_WISDOMS[0]);
   const userMenuRef = useRef<HTMLDivElement>(null);
   const notifRef = useRef<HTMLDivElement>(null);
 
@@ -49,6 +60,10 @@ export const Header: React.FC<HeaderProps> = ({ onOpenNavigation = () => {} }) =
     const updateTime = () => {
       const now = new Date();
       setTimeString(now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+      
+      // Update daily wisdom based on current day so it refreshes at midnight
+      const dayIndex = Math.floor(now.getTime() / (1000 * 60 * 60 * 24));
+      setDailyWisdom(KAIZEN_WISDOMS[dayIndex % KAIZEN_WISDOMS.length]);
     };
     updateTime();
     const interval = setInterval(updateTime, 1000);
@@ -87,7 +102,7 @@ export const Header: React.FC<HeaderProps> = ({ onOpenNavigation = () => {} }) =
     if (path.includes('/organization')) return 'Organization Directory';
     if (path.includes('/training')) return 'Training & Guide Hub';
     if (path.includes('/settings')) return 'System Settings';
-    return 'StavyaOne';
+    return 'Stavya One';
   };
 
   const handleQuickSwitchPersona = async (loginId: string, pass = DEFAULT_HOSPITAL_PASSWORD) => {
@@ -117,9 +132,7 @@ export const Header: React.FC<HeaderProps> = ({ onOpenNavigation = () => {} }) =
             {getPageTitle(pathname)}
           </h1>
           <div className="hidden items-center gap-1.5 text-xs text-slate-500 mt-0.5 sm:flex">
-            <span>Stavya Spine Hospital</span>
-            <span className="text-slate-300">/</span>
-            <span className="max-w-44 truncate font-semibold text-slate-700">{user.departmentName || 'Spine Surgery & OT'}</span>
+            <span className="max-w-44 truncate font-semibold text-slate-700">{user.departmentName || 'Stavya Spine Hospital'}</span>
           </div>
         </div>
       </div>
@@ -139,9 +152,8 @@ export const Header: React.FC<HeaderProps> = ({ onOpenNavigation = () => {} }) =
 
         {/* Kaizen Tip */}
         <div className="flex items-center gap-2 px-3.5 py-1 bg-gradient-to-r from-amber-50/90 to-orange-50/60 border border-amber-200/80 rounded-full text-xs text-amber-900 shadow-2xs">
-          <span className="px-1.5 py-0.5 bg-amber-600 text-white text-[9px] font-black rounded uppercase tracking-wider">KAIZEN</span>
-          <span className="font-semibold text-[11px]">Continuous Refinement:</span>
-          <span className="text-amber-800 text-[11px] truncate max-w-xs">Small daily improvements create compound clinical excellence.</span>
+          <span className="px-1.5 py-0.5 bg-amber-600 text-white text-[9px] font-black rounded uppercase tracking-wider">{dailyWisdom.title}</span>
+          <span className="text-amber-800 font-semibold text-[11px] truncate max-w-xs">{dailyWisdom.text}</span>
         </div>
       </div>
 
@@ -322,7 +334,7 @@ export const Header: React.FC<HeaderProps> = ({ onOpenNavigation = () => {} }) =
                   className="w-full py-2.5 px-3 bg-red-50 hover:bg-red-100 text-red-700 rounded-xl text-xs font-bold transition-colors flex items-center justify-center gap-2 cursor-pointer"
                 >
                   <LogOut className="w-4 h-4" />
-                  <span>Sign Out of StavyaOne</span>
+                  <span>Sign Out of Stavya One</span>
                 </button>
               </div>
             </div>
