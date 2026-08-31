@@ -7528,7 +7528,6 @@ export const STAVYA_STAFF_DATABASE: Record<string, HospitalStaffMember> = {
     "skill": "SKILLED",
     "branch": "Ahmedabad"
   }
->>>>>>> cfb7e39 (feat: integrate NABH 6th Edition readiness engine with automated task generation and dashboard tracking)
 };
 
 export const STAVYA_ORG_STRUCTURE: HospitalOrgStructure = {

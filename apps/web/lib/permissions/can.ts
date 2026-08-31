@@ -13,7 +13,7 @@ export function can(capability: Capability, user: User | null): boolean {
   const isAdmin = role === 'ADMIN' || role === 'MASTER';
   const isLeader = role === 'LEADER' || role === 'LEADERS' || role === 'DEPARTMENT_HEAD' || role === 'MANAGER';
   const isHR = role === 'HR';
-  const isStaff = role === 'STAVYANS' || role === 'STAVYAN';
+  const isStaff = role === 'STAVYANS' || role === 'STAVYAN' || role === 'EMPLOYEE';
 
   if (isAdmin) return true; // Master Admin has full platform access
 
@@ -79,7 +79,6 @@ export function can(capability: Capability, user: User | null): boolean {
 
     case 'team.tasks.verify':
     case 'team.tasks.audit':
-    case 'commitment.completion.approve':
       return isMD || isLeader; // Incharges, Leaders, and Governance can verify and audit
 
     case 'team.tasks.view_all':

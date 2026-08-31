@@ -3,6 +3,7 @@ export type Persona =
   | 'MD'
   | 'LEADER'
   | 'STAVYAN'
+  | 'EMPLOYEE'
   // Existing system & organizational aliases:
   | 'MANAGING_DIRECTOR'
   | 'DIRECTOR_QUALITY'

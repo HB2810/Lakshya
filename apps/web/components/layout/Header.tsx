@@ -244,7 +244,7 @@ export const Header: React.FC<HeaderProps> = ({ onOpenNavigation = () => {} }) =
                       <span className="text-[9px] font-black text-blue-600 uppercase block">Clinical Staff</span>
                       <span className="font-bold text-slate-900">Hospital Staff (STAVYANS-101)</span>
                     </div>
-                    {user.role === 'EMPLOYEE' || user.role === 'STAVYANS' ? (
+                    {user.role === 'STAVYAN' || user.role === 'STAVYANS' || user.role === 'EMPLOYEE' ? (
                       <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
                     ) : (
                       <ArrowRight className="w-3.5 h-3.5 text-slate-300 shrink-0" />

@@ -72,7 +72,7 @@ class HospitalStaffAuthStore {
       const name = staff.name;
 
       // Determine Canonical Role & Authority Tier
-      let role: Persona = 'EMPLOYEE';
+      let role: Persona = 'STAVYAN';
       let tier: AuthorityTier = 'EMPLOYEES';
 
       if (name.includes('Dr. Mirant') || name.includes('Mirant Bharat Dave') || staffId === 'e071') {
@@ -109,13 +109,13 @@ class HospitalStaffAuthStore {
         role = 'DEPARTMENT_HEAD';
         tier = 'INCHARGES';
       } else {
-        role = 'EMPLOYEE';
+        role = 'STAVYAN';
         tier = 'EMPLOYEES';
       }
 
       // Determine Capabilities
-      const capabilities: string[] = ['TASK_READ', 'TASK_COMPLETE'];
-      const permissions: string[] = ['user.read', 'department.read', 'task.read', 'task.complete'];
+      const capabilities: string[] = ['TASK_READ', 'TASK_CREATE', 'TASK_COMPLETE'];
+      const permissions: string[] = ['user.read', 'department.read', 'task.read', 'task.create', 'task.complete'];
 
       // Quality Command Centre Access Grant
       const isQualityPerson =
@@ -327,8 +327,8 @@ class HospitalStaffAuthStore {
       account = accountsList.find(a => a.role === 'MASTER' || a.id === 'e000' || a.id === 'e057');
     } else if (cleanId === 'STAVYA-002' || cleanId === 'STAVYANS-002' || cleanId === 'LEADER' || cleanId === 'LEADERS') {
       account = accountsList.find(a => a.role === 'LEADER') || this.accounts['e048'];
-    } else if (cleanId === 'STAVYA-101' || cleanId === 'STAVYANS-101' || cleanId === 'EMPLOYEE' || cleanId === 'STAVYANS') {
-      account = this.accounts['e101'] || accountsList[10];
+    } else if (cleanId === 'STAVYA-101' || cleanId === 'STAVYANS-101' || cleanId === 'EMPLOYEE' || cleanId === 'STAVYANS' || cleanId === 'STAVYAN') {
+      account = accountsList.find(a => a.role === 'STAVYAN' || a.role === 'EMPLOYEE') || accountsList[10];
     }
 
     // 2. Direct Match by Raw ID (e.g. e000, e048, e071)
