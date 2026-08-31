@@ -27,8 +27,8 @@ describe('LAKSHYA RBAC Permission Helper Tests', () => {
     expect(can('milestone.complete', dh)).toBe(true);
   });
 
-  it('Employee persona should NOT be allowed to reassign tasks, change deadlines, or approve commitments', () => {
-    const emp = DEMO_USERS.EMPLOYEE;
+  it('Stavyan persona should NOT be allowed to reassign tasks, change deadlines, or approve commitments', () => {
+    const emp = DEMO_USERS.STAVYAN;
     expect(can('dashboard.md.read', emp)).toBe(false);
     expect(can('task.assign', emp)).toBe(false);
     expect(can('task.deadline.change', emp)).toBe(false);

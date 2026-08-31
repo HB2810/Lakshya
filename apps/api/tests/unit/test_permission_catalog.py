@@ -4,7 +4,7 @@ ADR-006: "Phase 2 may implement identity/organization/RBAC foundations, but
 unresolved role grants must not be invented or broadly seeded."
 
 RBAC.md §3 still marks every identity/access capability for MD, MD Office,
-Department Head, Manager and Employee as ``TBD``/``REQUIRES BUSINESS DECISION``.
+Department Head, Manager and Stavyan as ``TBD``/``REQUIRES BUSINESS DECISION``.
 These tests are the mechanical guard: they fail if a future change attaches a
 permission to a persona template, or advertises a permission key that nothing in
 the codebase enforces.
@@ -50,7 +50,7 @@ class TestRoleTemplates:
             "md_office",
             "department_head",
             "manager",
-            "employee",
+            "stavyan",
         }
 
     def test_no_unrestricted_administrator_template(self) -> None:

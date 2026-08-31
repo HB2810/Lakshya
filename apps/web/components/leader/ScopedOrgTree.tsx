@@ -285,7 +285,7 @@ export const ScopedOrgTree: React.FC<ScopedOrgTreeProps> = ({
       </div>
       
       <div className="text-[11px] text-slate-400 border-t border-slate-100 pt-3 flex items-center justify-between">
-        <span>💡 Click any position card to view details or initiate an employee transfer.</span>
+        <span>💡 Click any position card to view details or initiate an stavyan transfer.</span>
         <span className="font-semibold text-slate-500">{treeData.organization_name}</span>
       </div>
     </div>

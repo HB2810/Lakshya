@@ -7,9 +7,9 @@ LAKSHYA V1 successfully functions as an organization-first Management Operating 
 
 ---
 
-## 2. Employee Flow
+## 2. Stavyan Flow
 **Verdict: PASS (No Blockers)**
-- **Role Routing:** Employees are correctly routed to `/overview` and the `Employee Workspace`.
+- **Role Routing:** Stavyans are correctly routed to `/overview` and the `Stavyan Workspace`.
 - **Visibility:** Can see their own work and tasks where they are explicitly included in the RACI matrix.
 - **Actions:** Capable of status updates, flagging blockers, checking EDC, and triggering escalations.
 - **Isolation:** Explicitly blocked from viewing unrelated organizational tasks, department-wide workloads, or private leader tasks. Enforced rigorously by the backend `WorkItemService`.
@@ -28,8 +28,8 @@ LAKSHYA V1 successfully functions as an organization-first Management Operating 
 ## 4. MD Flow
 **Verdict: PASS (No Blockers)**
 - **Role Routing:** The MD leverages the unified `/overview` route but receives a global data context. 
-- **Visibility:** `DepartmentWorkloadGrid` successfully aggregates hospital-wide execution health without overwhelming the UI with individual employee listings.
-- **Actions:** Can bypass standard ownership restrictions to reassign work, shift priorities, edit RACI mappings, perform employee transfers, and resolve Tier 3 escalations.
+- **Visibility:** `DepartmentWorkloadGrid` successfully aggregates hospital-wide execution health without overwhelming the UI with individual stavyan listings.
+- **Actions:** Can bypass standard ownership restrictions to reassign work, shift priorities, edit RACI mappings, perform stavyan transfers, and resolve Tier 3 escalations.
 - **Boundaries:** Does not pollute the application with HR/Analytics bloat. Remains an operational command center.
 
 ---
@@ -44,7 +44,7 @@ LAKSHYA V1 successfully functions as an organization-first Management Operating 
 ## 6. Organization/Task Consistency
 **Verdict: PASS (No Blockers)**
 - **Graph Truth:** The application fundamentally respects the rule "A person is not a post." Task ownership is tied to the `user_id`, while visibility and escalation paths are strictly derived from the `PositionAssignment` and reporting graph.
-- **Transfer Resiliency:** Transferring an employee from one department to another correctly shifts leader visibility and escalation routing dynamically, without requiring any manual duplication or migration of legacy task records.
+- **Transfer Resiliency:** Transferring an stavyan from one department to another correctly shifts leader visibility and escalation routing dynamically, without requiring any manual duplication or migration of legacy task records.
 
 ---
 
@@ -73,7 +73,7 @@ A comprehensive scan of the frontend `client.ts` was performed.
 
 ## 10. UI Consistency
 **Verdict: PASS (No Blockers)**
-- Terminology (RACI, EDC, Escalations) is consistent across Employee, Leader, and MD views.
+- Terminology (RACI, EDC, Escalations) is consistent across Stavyan, Leader, and MD views.
 - The `Wisdom of the Day` component reliably renders in the header for all personas in a subtle, non-intrusive manner.
 
 ---

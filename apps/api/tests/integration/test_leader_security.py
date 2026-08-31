@@ -133,7 +133,7 @@ class TestLeaderSecurityAndIsolation:
             work_item_id=task.id,
             payload=EscalateRequest(level="DIRECT_LEADER", reason="Cylinder valve defective"),
             current_user=staff,
-            effective_roles=["EMPLOYEE"],
+            effective_roles=["STAVYAN"],
             user_department_ids=[dept.id],
         )
         assert esc.escalated_to_id == leader.id

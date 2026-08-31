@@ -469,7 +469,7 @@ POSITION_TRANSFERRED = "organization.position.transferred"
 
 
 class PositionService:
-    """Canonical position management, employee transfer, reporting line & tree queries."""
+    """Canonical position management, stavyan transfer, reporting line & tree queries."""
 
     def __init__(self, session: Session, audit: AuditRecorder) -> None:
         self._session = session
@@ -610,7 +610,7 @@ class PositionService:
         transfer_reason: str | None = None,
         actor: AuditActor,
     ) -> PositionAssignment:
-        """Transfer an employee to a new position.
+        """Transfer an stavyan to a new position.
 
         Single unified mutation:
         1. Closes current active position assignment for user (ended_on = started_on).

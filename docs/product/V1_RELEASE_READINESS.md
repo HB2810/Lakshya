@@ -9,18 +9,18 @@
 The following modules constitute the verified V1 unified operating system:
 - Organization-first Foundation (Departments, Positions, Assignments)
 - Authentication & RBAC (Role-based Persona Routing)
-- Employee Workspace
+- Stavyan Workspace
 - Leader Workspace (Team Workload, Attention Required)
 - MD Command Center (Department Workload, Global Scope)
 - Master Foundation (System Administration)
 - Work Items (RACI, EDC, Dependencies)
 - Escalation Engine (Contextual Tier Routing & Inbox)
-- Dynamic Org Chart & Employee Transfers
+- Dynamic Org Chart & Stavyan Transfers
 - Smart Intake & Meeting Extraction
 - Wisdom of the Day
 
-## 3. Employee Status: VERIFIED
-Employees safely authenticate and are restricted exclusively to their permitted tasks (assigned, RACI-included). The system successfully hides sideways and upward organizational data. Status updates, blocker flagging, and escalations trigger correctly.
+## 3. Stavyan Status: VERIFIED
+Stavyans safely authenticate and are restricted exclusively to their permitted tasks (assigned, RACI-included). The system successfully hides sideways and upward organizational data. Status updates, blocker flagging, and escalations trigger correctly.
 
 ## 4. Leader Status: VERIFIED
 Leaders access their direct and indirect reports dynamically via the backend reporting tree (`AuthorizationService`). They do not see parallel departments. `TeamWorkloadGrid` and `EscalationInbox` accurately reflect the structural span of control.
@@ -35,7 +35,7 @@ Master accounts operate within the system administration boundary and do not acc
 The architecture strictly enforces "A person is not a post." All Leader visibility, team scopes, and escalation pathways are dynamically resolved in real-time from the backend canonical graph (`PositionAssignment`). Duplicate user arrays have been eradicated.
 
 ## 8. Task Integrity: VERIFIED
-Executing the primary employee transfer scenario proves that historical task ownership (`user_id`) remains intact while the surrounding management context (who sees the task, who it escalates to) updates instantly upon a position change. Manual task reassignment is entirely decoupled from organizational reporting.
+Executing the primary stavyan transfer scenario proves that historical task ownership (`user_id`) remains intact while the surrounding management context (who sees the task, who it escalates to) updates instantly upon a position change. Manual task reassignment is entirely decoupled from organizational reporting.
 
 ## 9. Security Verification: VERIFIED
 Backend API endpoints (`/work-items`, `/organizations/tree`, `/work-items/escalations/inbox`) strictly enforce multi-tenant isolation, IDOR protection, and cross-department gating. Frontend hiding is treated as UX, not security.

@@ -164,10 +164,10 @@ describe('FastAPI Authentication Client Integration (Vertical Slice 01)', () => 
       expect(response.permissions).toContain('task.assign');
     });
 
-    it('authenticates Employee persona with STAVYANS-101 and password 1234', async () => {
+    it('authenticates Stavyan persona with STAVYANS-101 and password 1234', async () => {
       const { user, response } = await apiClient.auth.login('STAVYANS-101', '1234');
-      expect(user.role).toBe('EMPLOYEE');
-      expect(response.roles).toContain('employee');
+      expect(user.role).toBe('STAVYAN');
+      expect(response.roles).toContain('stavyan');
       expect(response.permissions).toContain('task.create');
     });
 

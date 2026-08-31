@@ -203,7 +203,7 @@ Needs:
 
 ---
 
-## Employee
+## Stavyan
 
 Needs:
 
@@ -678,9 +678,9 @@ Department-level users should see:
 
 ---
 
-# 21. Employee Dashboard
+# 21. Stavyan Dashboard
 
-Employees should see:
+Stavyans should see:
 
 * My tasks
 * My commitments

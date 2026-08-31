@@ -86,17 +86,17 @@ The **Leader** (Department Head, Unit Incharge, or Team Manager) is the operatio
 ---
 
 ## 9. Transfer Behaviour & Invariants
-- **Dynamic Scope Cut:** When Employee A transfers from Leader A to Leader B:
-  1. Leader B immediately gains visibility over Employee A's tasks.
+- **Dynamic Scope Cut:** When Stavyan A transfers from Leader A to Leader B:
+  1. Leader B immediately gains visibility over Stavyan A's tasks.
   2. Leader A immediately loses current management visibility unless Leader A is retained in the RACI matrix.
-  3. Employee A retains ownership of their active/completed tasks (no silent task reassignments).
+  3. Stavyan A retains ownership of their active/completed tasks (no silent task reassignments).
   4. Future escalations and approvals automatically route to Leader B.
 
 ---
 
 ## 10. Org Chart Interaction in Leader Experience
 - **Interactive Scope Visualizer:** The Org Chart displays the Leader's reporting subtree, showing occupied vs. vacant posts, active reportees, and direct dependencies.
-- **Clear Scope Explanation:** Shows exactly *why* a task or employee is in the Leader's workspace.
+- **Clear Scope Explanation:** Shows exactly *why* a task or stavyan is in the Leader's workspace.
 - **Strict Boundary:** No recruitment, payroll, appraisal, or HR management features.
 
 ---
@@ -186,9 +186,9 @@ The Task Detail Drawer provides:
 - **MASTER / ADMIN:** Full CRUD on departments, positions, reporting lines, and user assignments.
 - **MD / MD Office:** Full authority to modify positions, reporting lines, and execute transfers.
 - **LEADER:** View-only access to scoped reporting subtree; can request personnel transfers through MD Office.
-- **EMPLOYEE:** View-only access to direct reporting chain.
+- **STAVYAN:** View-only access to direct reporting chain.
 
-### 15.8 Roles Authorized to Transfer Employees
+### 15.8 Roles Authorized to Transfer Stavyans
 - Strictly restricted to `MD`, `MD_OFFICE`, `MASTER`, and `ADMIN`.
 - Executed via `POST /api/v1/organizations/transfer`.
 - Atomic database mutation: closes prior `PositionAssignment`, updates `DepartmentMembership`, and preserves task history.
@@ -201,7 +201,7 @@ The Task Detail Drawer provides:
 - Leader A **cannot** see private notes, attachments, internal discussions, or audit trails of Team B's task.
 
 ### 15.10 Behaviour of Active Tasks After Transfer
-- When Employee Carol transfers from Leader A to Leader B:
+- When Stavyan Carol transfers from Leader A to Leader B:
   - Carol **retains ownership** of all active, pending, and completed tasks.
   - Leader B **immediately gains management visibility** over Carol's tasks.
   - Leader A **immediately loses visibility**, unless Leader A was explicitly added as `A`, `C`, or `I` in the task's RACI matrix.
@@ -209,7 +209,7 @@ The Task Detail Drawer provides:
 
 ### 15.11 Behaviour of RACI Relationships After Transfer
 - Named RACI user IDs remain intact on historical and active records.
-- If transferred employee was Accountable (`A`), they remain Accountable unless the new Leader reassigns `A`.
+- If transferred stavyan was Accountable (`A`), they remain Accountable unless the new Leader reassigns `A`.
 - If former Leader was explicitly in RACI as `C` or `I`, their read access is preserved through the RACI grant.
 
 ### 15.12 Behaviour of Existing Escalations After Transfer
@@ -235,7 +235,7 @@ The Task Detail Drawer provides:
 1. Full end-to-end task lifecycle (Create $\rightarrow$ In Progress $\rightarrow$ Blocker $\rightarrow$ Escalate $\rightarrow$ Leader Resolve $\rightarrow$ Verify $\rightarrow$ Complete) operates against the live PostgreSQL database.
 2. 0 mock fallbacks in execution and organization flows.
 3. IDOR and unauthorized cross-department access blocked with `403 Forbidden` / `404 Not Found`.
-4. Automated employee transfer dynamically switches Leader visibility without manual data patching.
+4. Automated stavyan transfer dynamically switches Leader visibility without manual data patching.
 5. All backend pytest tests (457+) and frontend test suites pass with 0 errors.
 
 
@@ -266,13 +266,13 @@ The MD Workspace (anchored on the /overview route conditionally rendering full-s
 4. **Department Workload:**
    - A simplified operational overview per department (active, overdue, blocked, completed). No speculative complex BI platforms.
 5. **Organization-wide Escalations:**
-   - Full visibility into the escalation engine showing originating employee, current leader, reason, age, and state.
+   - Full visibility into the escalation engine showing originating stavyan, current leader, reason, age, and state.
 6. **Smart Intake (Execution):**
    - Retain the NLP Smart Intake system. Converts natural language instructions ("Anita should coordinate with Quality...") into a reviewable plan before committing as structured WorkItems respecting RACI. No autonomous AI execution.
 
 ### 16.3 Organizational Graph as the Source of Truth
 - The canonical organization chart continues to dictate visibility and authority dynamically.
-- When the MD executes an employee transfer (POST /api/v1/organizations/transfer), it automatically adjusts the downstream reporting subtree, escalation paths, and department visibility without manual synchronization.
+- When the MD executes an stavyan transfer (POST /api/v1/organizations/transfer), it automatically adjusts the downstream reporting subtree, escalation paths, and department visibility without manual synchronization.
 - Historical WorkItem ownership remains intact post-transfer.
 
 ### 16.4 MD Scope & Authority Rules
@@ -282,12 +282,12 @@ The MD Workspace (anchored on the /overview route conditionally rendering full-s
 | **View All Operational Work** | ALLOW | Full read visibility across all departments. |
 | **Create/Assign Operational Work** | ALLOW | Can assign work anywhere in the organization. |
 | **Modify Priority / Deadline** | ALLOW | Authority to mutate constraints on any operational task. |
-| **Transfer Employees** | ALLOW | Can execute atomic organizational transfers. |
+| **Transfer Stavyans** | ALLOW | Can execute atomic organizational transfers. |
 | **Bypass Audit Logging** | DENY | Every mutation strictly audited (WorkItemActivity, AuditLog). |
 | **Bypass RACI / EDC Rules** | DENY | Must respect formal commitment verification and accountability logic. |
 
 ### 16.5 Consistency & UI Re-Use
-- The Employee, Leader, and MD experiences are identical in design language, sharing the Header, Wisdom of the Day (Kaizen) banner, Task Detail Drawer, RACI displays, and Escalation modales.
+- The Stavyan, Leader, and MD experiences are identical in design language, sharing the Header, Wisdom of the Day (Kaizen) banner, Task Detail Drawer, RACI displays, and Escalation modales.
 - The distinction lies entirely in **Scope, Authority, and Actions**, securely governed by the backend.
 - HR modules (payroll, appraisal, recruitment) and speculative AI agents are explicitly out of scope for Phase 3.
 

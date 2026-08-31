@@ -219,7 +219,7 @@ class PositionAssignmentResponse(BaseModel):
 
 
 class PositionTransferRequest(BaseModel):
-    """Single transfer mutation: Move an employee to a new position."""
+    """Single transfer mutation: Move an stavyan to a new position."""
 
     model_config = _REQUEST_CONFIG
 

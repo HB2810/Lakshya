@@ -2,7 +2,7 @@
 
 Verifies:
 1. Server-derived calculation of executive attention items with 6 required categories.
-2. Strict server-side RBAC: Allowed only for MD/MD Office, 403 Forbidden for employee/department head/manager.
+2. Strict server-side RBAC: Allowed only for MD/MD Office, 403 Forbidden for stavyan/department head/manager.
 3. Cockpit executive actions:
    - Executive Override on blockers
    - Evidence Verification (Approve / Reject)
@@ -67,8 +67,8 @@ def test_md_attention_rbac_allow_deny_matrix() -> None:
         "leader",
         "LEADERS",
         "leaders",
-        "EMPLOYEE",
-        "employee",
+        "STAVYAN",
+        "stavyan",
         "STAVYAN",
         "stavyan",
         "NURSE",
@@ -161,11 +161,11 @@ def test_md_attention_api_endpoint_with_testclient() -> None:
 
 
 def test_md_attention_api_forbids_employee_via_testclient() -> None:
-    """Verifies live FastAPI /api/v1/md-attention endpoint rejects employee with HTTP 403."""
+    """Verifies live FastAPI /api/v1/md-attention endpoint rejects stavyan with HTTP 403."""
     with TestClient(api_test_app) as client:
         login_res = client.post(
             "/api/v1/auth/login",
-            json={"email": "employee@stavya.local", "password": "password123"},
+            json={"email": "stavyan@stavya.local", "password": "password123"},
             headers={"Origin": "http://localhost:3000"},
         )
         if login_res.status_code == 200:
@@ -178,7 +178,7 @@ def test_md_attention_api_forbids_employee_via_testclient() -> None:
             }
 
             res = client.get("/api/v1/md-attention", headers=headers)
-            assert res.status_code == 403, f"Expected 403 for employee, got {res.status_code}"
+            assert res.status_code == 403, f"Expected 403 for stavyan, got {res.status_code}"
             problem = res.json()
             assert problem["status"] == 403
             assert "Access Denied" in problem["detail"]
@@ -332,10 +332,10 @@ def test_cockpit_actions_live_execution() -> None:
 def test_cockpit_actions_reject_non_md_mutations() -> None:
     """Verifies that mutation endpoints return 403 Forbidden when called by non-MD roles."""
     with TestClient(api_test_app) as client:
-        # Login as employee
+        # Login as stavyan
         login_res = client.post(
             "/api/v1/auth/login",
-            json={"email": "employee@stavya.local", "password": "password123"},
+            json={"email": "stavyan@stavya.local", "password": "password123"},
             headers={"Origin": "http://localhost:3000"},
         )
         assert login_res.status_code == 200
@@ -353,7 +353,7 @@ def test_cockpit_actions_reject_non_md_mutations() -> None:
             "/api/v1/md-attention/executive-override",
             json={
                 "work_item_id": fake_id,
-                "override_reason": "Employee attempting executive action.",
+                "override_reason": "Stavyan attempting executive action.",
                 "clear_blocker": True,
             },
             headers=headers,

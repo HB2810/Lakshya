@@ -146,7 +146,7 @@ def test_role_templates_are_seeded_without_permissions(engine: Engine) -> None:
             )
         ).scalar_one()
 
-    assert set(templates) == {"md", "md_office", "department_head", "manager", "employee"}
+    assert set(templates) == {"md", "md_office", "department_head", "manager", "stavyan"}
     assert granted == 0, "a persona template has seeded permissions (ADR-006 forbids this)"
 
 

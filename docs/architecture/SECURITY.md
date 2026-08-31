@@ -27,7 +27,7 @@ A formal deployment-specific threat model is required before production.
 
 Server-side RBAC with organization, department and relationship scope is mandatory. Every read, list, aggregate, update and export is scoped. Field/transition permissions separate owner, deadline, priority, RACI, approval, reopen and escalation actions. Administrative access is not implied by the MD persona.
 
-Approved minimum denies are enforced explicitly: Employees cannot assign another user, directly change official organizational deadlines, independently change organizational priority, complete a formal Commitment without Accountable/authorized approval, or directly reopen a completed formal Commitment. Manager, Department Head and MD Office assignment is constrained to authorized team, department and organization scope respectively.
+Approved minimum denies are enforced explicitly: Stavyans cannot assign another user, directly change official organizational deadlines, independently change organizational priority, complete a formal Commitment without Accountable/authorized approval, or directly reopen a completed formal Commitment. Manager, Department Head and MD Office assignment is constrained to authorized team, department and organization scope respectively.
 
 Prevent privilege escalation by requiring grantors to possess grantable permission/scope, invalidating authorization state promptly, auditing all grants and testing object-ID substitution. Consider maker-checker approval for high-impact role and escalation-rule changes.
 

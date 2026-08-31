@@ -13,7 +13,7 @@ Use database-backed RBAC permissions and role assignments combined with organiza
 
 Keep sensitive field/transition capabilities separate, including assignment, owner, deadline, priority, RACI, decision approval, escalation resolution, audit export and role administration. Deny by default and prevent grantors from delegating beyond their own authority.
 
-ADR-006 adds approved Stavya boundaries: an Employee may create/assign a Task only to themself and complete a normal assigned Task; Manager, Department Head and MD Office assignment is limited to authorized team, department and organization scope respectively. Employees cannot directly change official deadlines or organizational priority, complete a formal Commitment without Accountable/authorized approval, or directly reopen a completed formal Commitment. The remaining detailed matrix is unresolved.
+ADR-006 adds approved Stavya boundaries: an Stavyan may create/assign a Task only to themself and complete a normal assigned Task; Manager, Department Head and MD Office assignment is limited to authorized team, department and organization scope respectively. Stavyans cannot directly change official deadlines or organizational priority, complete a formal Commitment without Accountable/authorized approval, or directly reopen a completed formal Commitment. The remaining detailed matrix is unresolved.
 
 ## Alternatives
 

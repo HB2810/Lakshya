@@ -169,9 +169,9 @@ Vitest frontend test suite verifying component rendering, escalation resolution 
 Implement comprehensive end-to-end security and authorization tests in `tests/integration/test_leader_security.py`:
 1. Leader A accessing Leader B's task (Expect 404/403).
 2. Leader modifying tasks in another department (Expect 403).
-3. Leader assigning task to an employee outside authorized subtree/department (Expect 403/422).
-4. Employee attempting Leader actions (Expect 403).
-5. Employee transfer from Leader A to Leader B: Leader B immediately gains visibility; Leader A loses visibility.
+3. Leader assigning task to an stavyan outside authorized subtree/department (Expect 403/422).
+4. Stavyan attempting Leader actions (Expect 403).
+5. Stavyan transfer from Leader A to Leader B: Leader B immediately gains visibility; Leader A loses visibility.
 6. Multi-tier dynamic escalation resolution with vacant intermediate position handling.
 </description>
 <affected_files>
@@ -221,5 +221,5 @@ All automated linters, typecheckers, test suites, and build scripts pass without
 - [ ] Backend Model D scope and 3-Tier escalation fully implemented and tested.
 - [ ] Zero IDOR vulnerabilities across all work item and escalation endpoints.
 - [ ] Dedicated Leader Workspace UI rendered with Action-First hierarchy.
-- [ ] Transfer invariant verified: Employee transfer dynamically updates Leader visibility without task re-writing.
+- [ ] Transfer invariant verified: Stavyan transfer dynamically updates Leader visibility without task re-writing.
 - [ ] All automated quality gates (`pytest`, `mypy`, `ruff`, `npm test`, `npm run build`) passing 100%.

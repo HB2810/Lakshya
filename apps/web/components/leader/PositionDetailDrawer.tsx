@@ -157,7 +157,7 @@ export const PositionDetailDrawer: React.FC<PositionDetailDrawerProps> = ({
                   <form onSubmit={handleTransfer} className="space-y-4 p-4 bg-blue-50/50 border border-blue-100 rounded-2xl">
                     <div className="flex items-center gap-2 text-blue-800 mb-2">
                       <ArrowRightLeft className="w-4 h-4" />
-                      <h3 className="text-xs font-bold">Transfer Employee (MD Authority)</h3>
+                      <h3 className="text-xs font-bold">Transfer Stavyan (MD Authority)</h3>
                     </div>
 
                     <div className="space-y-1.5">

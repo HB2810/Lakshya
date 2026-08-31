@@ -33,7 +33,7 @@ export default function LoginPage() {
       if (loggedInUser?.role === 'MASTER') {
         router.push('/settings'); // System Admin Workspace
       } else {
-        router.push('/overview'); // MD, LEADER, EMPLOYEE workspaces
+        router.push('/overview'); // MD, LEADER, STAVYAN workspaces
       }
     } catch (err: unknown) {
       const errorMsg = (err as Error)?.message || 'Authentication failed. Please verify your credentials.';

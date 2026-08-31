@@ -11,7 +11,7 @@ RBAC.md §3 marks essentially every identity/access capability as
 ``REQUIRES BUSINESS DECISION``:
 
 * "Manage users and role grants" — TBD for MD and MD Office, denied for
-  Department Head, Manager and Employee.
+  Department Head, Manager and Stavyan.
 * "View/export audit" — TBD for MD, MD Office and Department Head.
 * "View other departments" — TBD.
 
@@ -457,8 +457,8 @@ ROLE_TEMPLATES: tuple[RoleTemplate, ...] = (
         ),
     ),
     RoleTemplate(
-        key="employee",
-        name="Employee",
+        key="stavyan",
+        name="Stavyan",
         description=(
             "May create/assign a Task only to themself and complete a normal "
             "assigned Task (ADR-006). Those capabilities belong to the execution "

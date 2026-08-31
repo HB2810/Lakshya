@@ -13,7 +13,7 @@ RACI reassignments, evidence sign-off/rejection, escalation resolution,
 and deadline extensions.
 
 Strictly organization-isolated and RBAC-gated to MD & MD Office personas.
-Standard employees and unauthorized roles are forbidden with HTTP 403.
+Standard stavyans and unauthorized roles are forbidden with HTTP 403.
 """
 
 from __future__ import annotations
@@ -57,7 +57,7 @@ from app.modules.work_item.models import WorkItem, WorkItemActivity, WorkItemEsc
 #: Includes documented MD leadership roles (MD, MD_OFFICE, MANAGING_DIRECTOR)
 #: and administrative/bootstrap superusers (ADMIN, MASTER, LOCAL_BOOTSTRAP_ADMIN).
 #: Generic leaders (DEPARTMENT_HEAD, MANAGER, LEADER, LEADERS) and
-#: standard employees (EMPLOYEE, STAVYAN, NURSE, DOCTOR, GUEST) are strictly excluded.
+#: standard stavyans (STAVYAN, STAVYAN, NURSE, DOCTOR, GUEST) are strictly excluded.
 MD_ATTENTION_AUTHORIZED_ROLES: frozenset[str] = frozenset(
     {
         "md",

@@ -1,6 +1,6 @@
 """FastAPI router for LAKSHYA Canonical WorkItem API.
 
-Enforces server-side task isolation across MASTER, MD, LEADER, and EMPLOYEE roles.
+Enforces server-side task isolation across MASTER, MD, LEADER, and STAVYAN roles.
 """
 
 from __future__ import annotations

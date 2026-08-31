@@ -75,7 +75,7 @@ def seed_database() -> None:
             ("master", "Master Administrator"),
             ("md", "Managing Director"),
             ("leader", "Operational Leader"),
-            ("employee", "Stavya Staff / Employee"),
+            ("stavyan", "Stavya Staff / Stavyan"),
             ("local_bootstrap_admin", "Local Bootstrap Admin"),
         ]
         roles_map: dict[str, Role] = {}
@@ -103,7 +103,7 @@ def seed_database() -> None:
         demo_users_data = [
             ("md@stavya.local", "Dr. Rohan Sharma (MD)", "md", dept_mdoffice),
             ("leader@stavya.local", "Priyesh Shah (IT & Digital Health Lead)", "leader", dept_it),
-            ("employee@stavya.local", "Sister Sunita Rao (Senior Spine Nurse)", "employee", dept_spine),
+            ("stavyan@stavya.local", "Sister Sunita Rao (Senior Spine Nurse)", "stavyan", dept_spine),
             ("master@stavya.local", "Master System Admin", "master", dept_mdoffice),
             ("md@stavyaspine.com", "Managing Director", "md", dept_mdoffice),
         ]

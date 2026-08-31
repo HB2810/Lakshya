@@ -32,9 +32,9 @@ RACI applies to commitments and tasks in V0.1. It does not replace the operation
 | Activate official Commitment | at least one R and exactly one A; source and approval valid |
 | Ready/start task | assignee exists and is Responsible; required Accountable exists |
 | Change assignee | new assignee valid; synchronize Responsible only through explicit approved operation |
-| Complete normal Task | assigned Employee or authorized actor; no invalid active assignments; outcome supplied per policy |
+| Complete normal Task | assigned Stavyan or authorized actor; no invalid active assignments; outcome supplied per policy |
 | Complete formal Commitment | Accountable or authorized alternate approver confirms outcome; child Task completion alone is insufficient |
-| Reopen formal Commitment | Employee denied; explicit authorized transition and audit required |
+| Reopen formal Commitment | Stavyan denied; explicit authorized transition and audit required |
 
 Backend enforcement is mandatory. Database constraints enforce target/tuple integrity; the application transaction enforces conditional counts and transition rules.
 

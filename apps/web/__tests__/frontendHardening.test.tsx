@@ -50,8 +50,8 @@ describe('LAKSHYA Frontend Hardening & Security Audit Suite', () => {
       expect(can('task.assign', DEMO_USERS.MANAGER)).toBe(true);
     });
 
-    it('Employee persona is strictly denied reassignment, deadline change, and commitment approval', () => {
-      const emp = DEMO_USERS.EMPLOYEE;
+    it('Stavyan persona is strictly denied reassignment, deadline change, and commitment approval', () => {
+      const emp = DEMO_USERS.STAVYAN;
       expect(can('dashboard.md.read', emp)).toBe(false);
       expect(can('task.assign', emp)).toBe(false);
       expect(can('task.deadline.change', emp)).toBe(false);
@@ -93,7 +93,7 @@ describe('LAKSHYA Frontend Hardening & Security Audit Suite', () => {
           <Header />
         </AuthProvider>
       );
-      expect(screen.getByText(/EMPLOYEE|STAVYANS/i)).toBeDefined();
+      expect(screen.getByText(/STAVYAN|STAVYANS/i)).toBeDefined();
     });
   });
 

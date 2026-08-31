@@ -13,7 +13,7 @@ export function can(capability: Capability, user: User | null): boolean {
   const isAdmin = role === 'ADMIN' || role === 'MASTER';
   const isLeader = role === 'LEADER' || role === 'LEADERS' || role === 'DEPARTMENT_HEAD' || role === 'MANAGER';
   const isHR = role === 'HR';
-  const isStaff = role === 'STAVYANS' || role === 'EMPLOYEE';
+  const isStaff = role === 'STAVYANS' || role === 'STAVYAN';
 
   if (isAdmin) return true; // Master Admin has full platform access
 

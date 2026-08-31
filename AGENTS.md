@@ -61,7 +61,7 @@ The initial system should support:
 2. MD Office
 3. Department Heads
 4. Managers
-5. Employees
+5. Stavyans
 
 The same organizational data may be visible differently depending on role and responsibility.
 
@@ -131,7 +131,7 @@ AI must NOT silently:
 * Change deadlines
 * Change priority
 * Change RACI
-* Escalate employees
+* Escalate stavyans
 * Close organizational tasks
 * Delete important records
 * Make management decisions

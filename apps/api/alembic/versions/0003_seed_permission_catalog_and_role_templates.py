@@ -8,7 +8,7 @@ application-managed data, not hard-coded seeds."
 
 It inserts the stable permission keys (identifiers — they confer no authority)
 and the five Stavya persona templates (MD, MD Office, Department Head, Manager,
-Employee) **with no permissions attached**, because RBAC.md §3 still marks the
+Stavyan) **with no permissions attached**, because RBAC.md §3 still marks the
 identity/access matrix ``REQUIRES BUSINESS DECISION`` and ADR-006 states that
 "unresolved role grants must not be invented or broadly seeded".
 

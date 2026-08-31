@@ -127,7 +127,7 @@ Suggested technical states are deliberately minimal and require product review:
 
 `overdue`, `approaching_deadline` and `at_risk` are derived conditions, not lifecycle states. Transitions are allow-listed in domain policy and audited. Reopen is a transition event, not a permanent state.
 
-An assigned Employee may complete a normal Task. Commitment completion moves through `pending_completion -> completed` only after Accountable/authorized approval. An Employee cannot directly reopen a completed Commitment. Exact alternate approval, reopen and cancellation authorities remain `REQUIRES BUSINESS DECISION`.
+An assigned Stavyan may complete a normal Task. Commitment completion moves through `pending_completion -> completed` only after Accountable/authorized approval. An Stavyan cannot directly reopen a completed Commitment. Exact alternate approval, reopen and cancellation authorities remain `REQUIRES BUSINESS DECISION`.
 
 ## 5. Constraints
 
@@ -140,7 +140,7 @@ An assigned Employee may complete a normal Task. Commitment completion moves thr
 - One RACI tuple per target/user/type. Active official Commitments require at least one R and exactly one A, enforced transactionally on activation and RACI replacement.
 - Completed/cancelled items cannot accept ordinary progress mutations.
 - Owner, deadline, priority, RACI, status, completion, reopening, escalation, Decision and Commitment mutations always create audit events. Deadline and priority mutations record previous/new values and authorized actor; exact required reason/evidence remains `REQUIRES BUSINESS DECISION`.
-- Employees may set themself as assignee when creating a self-Task but cannot assign another user. Manager, Department Head and MD Office assignment is constrained by team, department and organization authorization scope respectively.
+- Stavyans may set themself as assignee when creating a self-Task but cannot assign another user. Manager, Department Head and MD Office assignment is constrained by team, department and organization authorization scope respectively.
 
 ## 6. Important indexes
 
@@ -168,7 +168,7 @@ Dashboard aggregation may begin with indexed SQL queries. Add materialized/read 
 
 Do not use blanket soft deletion. Lifecycle-bearing records (decisions, commitments, tasks, escalations) are cancelled/archived, not deleted. Identity/configuration records may use `archived_at` where references must remain. Draft records with no downstream references may be hard-deleted only by an authorized policy and with audit evidence.
 
-Audit events and automation execution evidence are append-only. Retention durations, legal holds, employee-data retention, backup retention and right-to-erasure handling are `REQUIRES BUSINESS DECISION` with legal/security input.
+Audit events and automation execution evidence are append-only. Retention durations, legal holds, stavyan-data retention, backup retention and right-to-erasure handling are `REQUIRES BUSINESS DECISION` with legal/security input.
 
 ## 8. Audit integrity
 

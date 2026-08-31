@@ -222,7 +222,7 @@ class AuditQueryService:
                     )
                 )
             else:
-                # Employee strictly sees events they initiated or where they are the entity
+                # Stavyan strictly sees events they initiated or where they are the entity
                 stmt = stmt.where(
                     or_(
                         AuditEvent.actor_user_id == current_user.id,

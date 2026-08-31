@@ -57,11 +57,11 @@ export const DEMO_USERS: Record<string, User> = {
     departmentName: 'Spine Surgery Leadership',
   },
   // Compatibility Aliases for tests & roles
-  EMPLOYEE: {
+  STAVYAN: {
     id: 'usr-stav-101',
     name: 'Priyesh Shah',
     email: 'priyesh.shah@stavyaspine.com',
-    role: 'EMPLOYEE',
+    role: 'STAVYAN',
     roleTitle: 'Systems Engineer & IT Lead',
     departmentId: 'dept-it',
     departmentName: 'Facilities & IT Engineering',
@@ -510,8 +510,8 @@ export const MOCK_ROLES: RoleDefinition[] = [
     allowedCapabilities: ['dashboard.department.read', 'task.assign', 'task.complete', 'stuck.create'],
   },
   {
-    name: 'EMPLOYEE',
-    title: 'Employee / Individual Contributor',
+    name: 'STAVYAN',
+    title: 'Stavyan / Individual Contributor',
     description: 'Self-task creation, task execution, progress updates, stuck/need reporting for assigned work.',
     allowedCapabilities: ['task.create', 'task.complete', 'stuck.create'],
   },

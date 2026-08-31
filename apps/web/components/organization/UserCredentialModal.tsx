@@ -30,7 +30,7 @@ export const UserCredentialModal: React.FC<UserCredentialModalProps> = ({
   const [name, setName] = useState(editUser?.name || '');
   const [email, setEmail] = useState(editUser?.email || '');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState<Persona>(editUser?.role || 'EMPLOYEE');
+  const [role, setRole] = useState<Persona>(editUser?.role || 'STAVYAN');
   const [deptId, setDeptId] = useState(editUser?.departmentId || (departments[0]?.id ?? ''));
 
   if (!isOpen) return null;
@@ -133,7 +133,7 @@ export const UserCredentialModal: React.FC<UserCredentialModalProps> = ({
                   onChange={(e) => setRole(e.target.value as Persona)}
                   className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:bg-white focus:outline-none"
                 >
-                  <option value="EMPLOYEE">EMPLOYEE (Standard Staff)</option>
+                  <option value="STAVYAN">STAVYAN (Standard Staff)</option>
                   <option value="LEADER">LEADER (Department Head)</option>
                   <option value="MD">MD (Managing Director)</option>
                   <option value="ADMIN">ADMIN (System Administrator)</option>

@@ -569,7 +569,7 @@ class TestRoleTemplates:
             "md_office",
             "department_head",
             "manager",
-            "employee",
+            "stavyan",
         }
         for template in templates:
             assert template["permissions"] == [], f"{template['key']} seeds permissions"

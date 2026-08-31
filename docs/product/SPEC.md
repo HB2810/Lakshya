@@ -36,9 +36,9 @@ Organization
 ### 2.2 Invariants: "A Person is NOT a Post"
 1. **Vacant vs. Occupied:** A `Position` can exist without an active occupant.
 2. **Effective Dating:** `PositionAssignment` records start date (`started_on`) and end date (`ended_on`).
-3. **Single Transfer Mutation:** An employee transfer terminates the previous assignment, creates the new assignment, updates primary department membership, and logs an append-only audit event in a single atomic transaction.
+3. **Single Transfer Mutation:** An stavyan transfer terminates the previous assignment, creates the new assignment, updates primary department membership, and logs an append-only audit event in a single atomic transaction.
 4. **Historical Immutability & Dynamic Scoping:**
-   - Transferred employees retain ownership of their existing tasks (tasks are **not** silently reassigned).
+   - Transferred stavyans retain ownership of their existing tasks (tasks are **not** silently reassigned).
    - Historical RACI entries remain intact.
    - Current leader visibility, MD dashboards, and future escalations dynamically follow the **current organization graph**, not stale snapshot tables.
 
@@ -50,7 +50,7 @@ LAKSHYA enforces strict server-side access control. A user sees only what their 
 
 | Persona | Primary Visibility Scope | Task Management Capabilities | Administrative Authority |
 | :--- | :--- | :--- | :--- |
-| **EMPLOYEE** | Strictly own assigned/created tasks + tasks where user is in RACI. | Can create tasks for self, update own progress, report Stuck/Need, and initiate 3-tier escalation. | None. Cannot view other employees' tasks or reassign peers. |
+| **STAVYAN** | Strictly own assigned/created tasks + tasks where user is in RACI. | Can create tasks for self, update own progress, report Stuck/Need, and initiate 3-tier escalation. | None. Cannot view other stavyans' tasks or reassign peers. |
 | **LEADER** (Dept Head / Manager) | Own tasks + direct/indirect reporting subordinates + assigned department work. | Can assign tasks to team members, update priorities within department, resolve subordinate escalations, and approve task completions. | Department-level operational coordination. |
 | **MD** (Medical Director / MD Office) | Full organization-wide operational visibility across all departments and units. | Full operational intervention: reassign across departments, adjust organizational priority/deadlines, resolve top-tier escalations. | Organizational executive authority. |
 | **MASTER** | System administration & user/credential management. | Hybrid model: Emergency root access to operational data with mandatory append-only audit logging. | IAM, permission catalogs, tenant configuration, cryptographic lifecycle. |
@@ -65,7 +65,7 @@ LAKSHYA enforces strict server-side access control. A user sees only what their 
   - **A (Accountable):** Exactly one single person with final ownership and sign-off authority.
   - **C (Consulted):** Subject-matter contributors (grants read/comment visibility).
   - **I (Informed):** Stakeholders updated on milestones (grants read visibility).
-- If RACI is defined, completion requires sign-off from `A`, `R`, the direct reporting leader, or the `MD`. Unilateral unauthorized employee closure is rejected.
+- If RACI is defined, completion requires sign-off from `A`, `R`, the direct reporting leader, or the `MD`. Unilateral unauthorized stavyan closure is rejected.
 
 ### 4.2 Stuck / Need & Contextual Escalation Engine
 - Delayed or blocked tasks must specify **Why it is stuck** and **What is needed**.

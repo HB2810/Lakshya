@@ -20,7 +20,7 @@ Permission families include `*.read`, `*.create`, `*.update`, `*.assign`, `*.dea
 - **MD Office:** may create and assign work organization-wide within authorized scope; access administration and audit export remain separately unresolved.
 - **Department Head:** may assign work within authorized department scope.
 - **Manager:** may assign work within authorized team scope.
-- **Employee:** may create/assign a Task only to themself and complete a normal assigned Task. They cannot assign others, directly change official deadlines, independently change organizational priority, complete a formal Commitment without Accountable/authorized approval, or directly reopen a completed formal Commitment.
+- **Stavyan:** may create/assign a Task only to themself and complete a normal assigned Task. They cannot assign others, directly change official deadlines, independently change organizational priority, complete a formal Commitment without Accountable/authorized approval, or directly reopen a completed formal Commitment.
 
 The exact permission matrix remains unresolved beyond these approved boundaries.
 
@@ -28,22 +28,22 @@ The exact permission matrix remains unresolved beyond these approved boundaries.
 
 Legend: `A` approved, `S` approved within stated scope, `—` explicitly denied, `TBD` unresolved. Approved cells still require server-side relationship/scope validation.
 
-| Capability | MD | MD Office | Dept Head | Manager | Employee | Decision status |
+| Capability | MD | MD Office | Dept Head | Manager | Stavyan | Decision status |
 |---|---:|---:|---:|---:|---:|---|
 | View organization exception dashboard | TBD | TBD | — | — | — | `REQUIRES BUSINESS DECISION` |
 | View department dashboard | TBD | TBD | TBD | TBD | — | `REQUIRES BUSINESS DECISION` |
 | View own/related tasks | TBD | TBD | TBD | TBD | TBD | `REQUIRES BUSINESS DECISION` visibility matrix |
 | View all organization tasks | TBD | TBD | — | — | — | `REQUIRES BUSINESS DECISION` |
 | View other departments | TBD | TBD | TBD | — | — | `REQUIRES BUSINESS DECISION` |
-| Create normal Task for self | TBD | S | S | S | A | Employee self-task approved; other roles by assignment scope |
+| Create normal Task for self | TBD | S | S | S | A | Stavyan self-task approved; other roles by assignment scope |
 | Assign Task to another user | TBD | S organization | S department | S team | — | Approved scope boundaries; hierarchy source unresolved |
 | Change Task owner | TBD | S organization | S department | S team | — | Same approved assignment boundaries |
-| Change official deadline | TBD | TBD | TBD | TBD | — | Employee denial approved; formal authority unresolved |
+| Change official deadline | TBD | TBD | TBD | TBD | — | Stavyan denial approved; formal authority unresolved |
 | Change organizational priority | TBD | TBD | TBD | TBD | — | Authorized management only; exact grants unresolved |
 | Update own Task progress | TBD | TBD | TBD | TBD | TBD | `REQUIRES BUSINESS DECISION` |
-| Complete assigned normal Task | TBD | TBD | TBD | TBD | A | Employee completion approved |
+| Complete assigned normal Task | TBD | TBD | TBD | TBD | A | Stavyan completion approved |
 | Approve formal Commitment completion | TBD | TBD | TBD | TBD | S only if Accountable | Accountable or authorized approver; alternate authority unresolved |
-| Reopen completed formal Commitment | TBD | TBD | TBD | TBD | — | Employee denial approved; authority unresolved |
+| Reopen completed formal Commitment | TBD | TBD | TBD | TBD | — | Stavyan denial approved; authority unresolved |
 | Create/approve official Commitment | TBD | TBD | TBD | TBD | — | `REQUIRES BUSINESS DECISION` |
 | Create/change Monthly Priority | TBD | TBD | TBD | — | — | Authorized management only; exact grants unresolved |
 | Create meeting / record draft Decision | TBD | TBD | TBD | TBD | TBD | `REQUIRES BUSINESS DECISION` |
@@ -59,7 +59,7 @@ Legend: `A` approved, `S` approved within stated scope, `—` explicitly denied,
 
 - Task update is not one broad permission. Title/description, progress, owner, deadline, priority, status, completion, reopen and cancellation are distinct commands.
 - Owner, deadline, priority, RACI, status, completion, reopening, approved Decision, Commitment and escalation changes are always audited with previous/new values where applicable.
-- Formal Commitment activation requires at least one R and exactly one A. Completion requires the Accountable user or another authorized approver; an Employee cannot reopen a completed Commitment directly.
+- Formal Commitment activation requires at least one R and exactly one A. Completion requires the Accountable user or another authorized approver; an Stavyan cannot reopen a completed Commitment directly.
 - A user cannot grant a permission or scope they do not possess. Privileged role changes should require recent authentication and optionally dual approval.
 - Department Head/Manager authority applies only to defined managed scope; hierarchy inference requires an authoritative reporting structure.
 - Meeting participation grants access to the meeting context, not automatic access to every linked organizational record.
@@ -75,7 +75,7 @@ Tests must cover positive and negative cases across role, organization, departme
 ## 6. Business decisions required before implementation
 
 1. Who administers users, roles and permissions, and is MD Office administration separate from coordination?
-2. Can MD and MD Office read all task details, 1:1 records and employee remarks, or only summaries/exceptions?
+2. Can MD and MD Office read all task details, 1:1 records and stavyan remarks, or only summaries/exceptions?
 3. What defines a Manager's team and a Department Head's departments?
 4. Which users may create/approve official Commitments and approve meeting-derived work?
 5. Which management roles may change official deadlines and organizational priorities, and when is assignee consent required?

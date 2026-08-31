@@ -58,7 +58,7 @@ Case states are `open -> acknowledged -> resolved`, with `cancelled` for invalid
 
 ## 5. Manual escalation
 
-Authorized users may raise a manual case with target, requested level, reason, impact and evidence. Manual escalation bypasses threshold matching but not authorization, scope, duplication control or audit. It must be distinguishable from rule-generated cases. Whether employees can escalate, and to what audience, is `REQUIRES BUSINESS DECISION`.
+Authorized users may raise a manual case with target, requested level, reason, impact and evidence. Manual escalation bypasses threshold matching but not authorization, scope, duplication control or audit. It must be distinguishable from rule-generated cases. Whether stavyans can escalate, and to what audience, is `REQUIRES BUSINESS DECISION`.
 
 ## 6. Acknowledgment and resolution
 

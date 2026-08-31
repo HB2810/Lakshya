@@ -98,7 +98,7 @@ allow = permission granted by active role
 
 Permissions are stable action strings such as `task.create`, `task.assign`, and `audit.read`. Roles map permissions to a scope. Record-level checks account for participant, RACI, assignee, creator and department relationships. Every protected use case checks authorization server-side; list queries apply scope in SQL to prevent data leakage. See [RBAC.md](../business-rules/RBAC.md).
 
-Approved boundaries are enforced independently of the unresolved full matrix: an Employee may create/assign a Task only to themself; a Manager may assign within authorized team scope; a Department Head may assign within authorized department scope; and MD Office may create/assign organization-wide within authorized scope. Employees cannot change official organizational deadlines or organizational priority, cannot directly reopen a formally completed Commitment, and may complete only normal assigned Tasks. Formal Commitment completion requires its Accountable person or another authorized approver.
+Approved boundaries are enforced independently of the unresolved full matrix: an Stavyan may create/assign a Task only to themself; a Manager may assign within authorized team scope; a Department Head may assign within authorized department scope; and MD Office may create/assign organization-wide within authorized scope. Stavyans cannot change official organizational deadlines or organizational priority, cannot directly reopen a formally completed Commitment, and may complete only normal assigned Tasks. Formal Commitment completion requires its Accountable person or another authorized approver.
 
 ## 9. Automation
 

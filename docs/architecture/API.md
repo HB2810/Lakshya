@@ -102,17 +102,17 @@ All meeting types and scheduling modes may produce Decisions or proposed work. D
 | `POST /commitments/{id}:approve` | Approve/activate official Commitment | `commitment.approve`; at least one R and exactly one A; approver policy |
 | `POST /commitments/{id}:request-completion` | Submit outcome for completion approval | permitted R/owner; outcome required; idempotent |
 | `POST /commitments/{id}:approve-completion` | Complete formal Commitment | Accountable or `commitment.completion.approve`; audit outcome |
-| `POST /commitments/{id}:reopen` | Reopen completed Commitment | `commitment.reopen`; Employee denied; reason/evidence and audit required |
+| `POST /commitments/{id}:reopen` | Reopen completed Commitment | `commitment.reopen`; Stavyan denied; reason/evidence and audit required |
 | `POST /commitments/{id}:change-owner` | Change coordinating owner | `commitment.owner.change`; authorized scope; previous/new values audited |
-| `POST /commitments/{id}:change-deadline` | Change official deadline | `commitment.deadline.change`; Employee denied; previous/new values audited |
-| `POST /commitments/{id}:change-priority` | Change organizational priority | `commitment.priority.change`; Employee denied; management scope and audit |
-| `GET/POST /tasks` | Scoped list/create Task | Employee may create only self-assigned Task; managers follow assignment scope |
+| `POST /commitments/{id}:change-deadline` | Change official deadline | `commitment.deadline.change`; Stavyan denied; previous/new values audited |
+| `POST /commitments/{id}:change-priority` | Change organizational priority | `commitment.priority.change`; Stavyan denied; management scope and audit |
+| `GET/POST /tasks` | Scoped list/create Task | Stavyan may create only self-assigned Task; managers follow assignment scope |
 | `GET/PATCH /tasks/{id}` | Read/update allowed fields | field-level capabilities; `If-Match`; transition checks |
-| `POST /tasks/{id}:assign` | Initial assignment or owner change | self only for Employee; Manager team, Dept Head department, MD Office authorized organization scope |
-| `POST /tasks/{id}:change-deadline` | Change official Task deadline | `task.deadline.change`; Employee denied for official deadline; before/after audit |
-| `POST /tasks/{id}:change-priority` | Change organizational Task priority | `task.priority.change`; Employee denied; management scope and before/after audit |
+| `POST /tasks/{id}:assign` | Initial assignment or owner change | self only for Stavyan; Manager team, Dept Head department, MD Office authorized organization scope |
+| `POST /tasks/{id}:change-deadline` | Change official Task deadline | `task.deadline.change`; Stavyan denied for official deadline; before/after audit |
+| `POST /tasks/{id}:change-priority` | Change organizational Task priority | `task.priority.change`; Stavyan denied; management scope and before/after audit |
 | `POST /tasks/{id}:start` | Start work | `task.start`; assignee/authorized manager and dependencies policy |
-| `POST /tasks/{id}:complete` | Complete normal Task with outcome | assigned Employee or authorized actor; blockers/evidence policy; audited |
+| `POST /tasks/{id}:complete` | Complete normal Task with outcome | assigned Stavyan or authorized actor; blockers/evidence policy; audited |
 | `POST /tasks/{id}:reopen` | Reopen completed task | `task.reopen`; reason required |
 | `POST /tasks/{id}:cancel` | Cancel task | `task.cancel`; reason and downstream checks |
 | `GET/PUT /tasks/{id}/raci` | Read/replace complete RACI set atomically | `raci.read/manage`; users visible; uniqueness/accountability rules |
@@ -178,7 +178,7 @@ Dashboard response fields must have written definitions (denominator, timezone, 
 
 The API validates relationship visibility, same-organization membership, assignment authority, RACI uniqueness/accountability, deadline policy and idempotency. It returns `201` with the canonical task, version, links and authorized available actions.
 
-For an Employee, `assignee_user_id` must equal the authenticated user. A Manager, Department Head or MD Office actor may select another assignee only when the target is inside the approved team, department or organization scope. Official Commitment creation uses its own endpoint and cannot be smuggled through Task creation.
+For an Stavyan, `assignee_user_id` must equal the authenticated user. A Manager, Department Head or MD Office actor may select another assignee only when the target is inside the approved team, department or organization scope. Official Commitment creation uses its own endpoint and cannot be smuggled through Task creation.
 
 ### Approve Commitment completion
 
@@ -189,7 +189,7 @@ For an Employee, `assignee_user_id` must equal the authenticated user. A Manager
 }
 ```
 
-The actor must be the Commitment's Accountable user or hold the unresolved alternate approval capability. The command requires an active/pending-completion Commitment, mandatory R+A, an outcome and an `If-Match` version. It writes completion, audit and outbox records atomically. An Employee acting only as Responsible cannot use this command.
+The actor must be the Commitment's Accountable user or hold the unresolved alternate approval capability. The command requires an active/pending-completion Commitment, mandatory R+A, an outcome and an `If-Match` version. It writes completion, audit and outbox records atomically. An Stavyan acting only as Responsible cannot use this command.
 
 ### Resolve escalation
 
@@ -210,7 +210,7 @@ Resolution requires an open/acknowledged case, resolution capability within scop
 ## 6. Unresolved API decisions
 
 - `REQUIRES BUSINESS DECISION`: identity provider, self-service reset and MFA requirements.
-- `REQUIRES BUSINESS DECISION`: role grants beyond approved Employee self-task, Manager team, Department Head department and MD Office authorized organization assignment boundaries; cross-department visibility remains unresolved.
+- `REQUIRES BUSINESS DECISION`: role grants beyond approved Stavyan self-task, Manager team, Department Head department and MD Office authorized organization assignment boundaries; cross-department visibility remains unresolved.
 - `REQUIRES BUSINESS DECISION`: exact decision/meeting-work approvers and alternate Commitment completion/reopen authorities.
 - `REQUIRES BUSINESS DECISION`: required reasons/evidence for each sensitive transition.
 - `REQUIRES BUSINESS DECISION`: dashboard metric definitions and freshness.

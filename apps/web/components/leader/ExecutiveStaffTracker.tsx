@@ -120,7 +120,7 @@ export const ExecutiveStaffTracker: React.FC<ExecutiveStaffTrackerProps> = ({
             Personnel Execution &amp; Workload Command
           </h3>
           <p className="text-xs text-slate-500">
-            Real-time tracking of all 211 hospital employees, department heads, active commitments, and blockers.
+            Real-time tracking of all 211 hospital stavyans, department heads, active commitments, and blockers.
           </p>
         </div>
 

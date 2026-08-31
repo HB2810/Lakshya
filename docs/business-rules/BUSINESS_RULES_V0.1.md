@@ -66,17 +66,17 @@ A Commitment may have multiple Tasks. Completing every Task does not automatical
 
 A Task is executable work. It may support a Commitment or exist as an authorized standalone operational task.
 
-A normal Task may be completed by the assigned Employee. Task completion and any later reopening must be auditable.
+A normal Task may be completed by the assigned Stavyan. Task completion and any later reopening must be auditable.
 
 Task ownership, deadline and priority are separate controlled attributes and cannot be changed through a generic update that bypasses authorization.
 
 ---
 
-# 5. Employee Work Creation
+# 5. Stavyan Work Creation
 
-An Employee may create a Task for themself. An Employee cannot assign a Task to another Employee.
+An Stavyan may create a Task for themself. An Stavyan cannot assign a Task to another Stavyan.
 
-Creating a self-task does not authorize the Employee to create or approve an official Commitment, change an organizational priority, or establish an official organizational deadline outside approved policy.
+Creating a self-task does not authorize the Stavyan to create or approve an official Commitment, change an organizational priority, or establish an official organizational deadline outside approved policy.
 
 ---
 
@@ -118,7 +118,7 @@ Whether the same person may hold both R and A, and the rules for multiple Respon
 
 # 10. Deadline Rules
 
-Employees cannot directly change official organizational deadlines.
+Stavyans cannot directly change official organizational deadlines.
 
 Deadline changes must be performed by an authorized user within scope and must be audited with previous and new values. The formal approval authority and required reason/evidence remain `REQUIRES BUSINESS DECISION`.
 
@@ -126,7 +126,7 @@ Deadline changes must be performed by an authorized user within scope and must b
 
 # 11. Priority Rules
 
-Employees cannot independently change organizational priority.
+Stavyans cannot independently change organizational priority.
 
 Authorized management users may change priority within their scope. Every priority change, including a Monthly Priority change during the active month, must preserve previous and new values in the audit history.
 
@@ -136,7 +136,7 @@ Formal priority-change authority remains `REQUIRES BUSINESS DECISION`.
 
 # 12. Completion Rules
 
-An assigned Employee may complete a normal Task.
+An assigned Stavyan may complete a normal Task.
 
 A formal Commitment requires completion approval by its Accountable person or another authorized approver. Task completion alone does not prove that the Commitment outcome was achieved.
 
@@ -146,7 +146,7 @@ The exact alternate Commitment completion approval authority remains `REQUIRES B
 
 # 13. Reopen Rules
 
-An Employee cannot directly reopen a formally completed Commitment.
+An Stavyan cannot directly reopen a formally completed Commitment.
 
 Reopening a completed Commitment requires an authorized transition and must be audited. Authority and any required reason/evidence remain `REQUIRES BUSINESS DECISION`.
 

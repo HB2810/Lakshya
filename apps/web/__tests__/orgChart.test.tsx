@@ -83,7 +83,7 @@ describe('LAKSHYA Dynamic Org Chart & Hierarchy Suite', () => {
     expect(screen.getByText('Head of Spine Surgery Department')).toBeDefined();
   });
 
-  it('restricts Organization access for standard Employee role', async () => {
+  it('restricts Organization access for standard Stavyan role', async () => {
     render(
       <AuthProvider>
         <OrganizationPage />

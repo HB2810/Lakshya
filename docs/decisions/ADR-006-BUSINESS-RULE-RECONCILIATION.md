@@ -12,12 +12,12 @@ The Phase 1 architecture intentionally marked organizational policy as `REQUIRES
 
 - Planning follows `Quarterly Direction -> Monthly Priority -> Weekly Milestone -> Commitment -> Task -> Outcome`.
 - A Commitment is a formal organizational result/obligation; a Task is executable work. They remain separate entities.
-- An Employee may create/assign a Task only to themself and may complete a normal assigned Task.
+- An Stavyan may create/assign a Task only to themself and may complete a normal assigned Task.
 - A Manager may assign within authorized team scope; a Department Head within authorized department scope; MD Office organization-wide within authorized scope.
 - Every active official Commitment requires at least one Responsible and exactly one Accountable; C and I are optional.
-- Employees cannot directly change official organizational deadlines or independently change organizational priority.
+- Stavyans cannot directly change official organizational deadlines or independently change organizational priority.
 - Formal Commitment completion requires the Accountable person or another authorized approver; child Task completion is insufficient.
-- An Employee cannot directly reopen a completed formal Commitment.
+- An Stavyan cannot directly reopen a completed formal Commitment.
 - Every supported meeting type/scheduling mode may generate proposed work, but discussion/action does not become an official Commitment without required human approval.
 - Monthly Priorities may change during the month, with history preserved.
 - O&O is an approved execution source for Objectives, Priorities, Milestones, Commitments, Tasks and future Improvement Actions; its full workflow remains out of V0.1.
@@ -29,7 +29,7 @@ The Phase 1 architecture intentionally marked organizational policy as `REQUIRES
 - Added Quarterly Direction and lightweight O&O source provenance to the domain/database architecture.
 - Made mandatory Commitment R+A an activation invariant and separated Commitment completion approval from Task completion.
 - Added explicit API command boundaries for Task assignment/owner, deadline, priority, Commitment submit/approve/completion/reopen and meeting-derived draft work.
-- Replaced generic RBAC assumptions with approved Employee, Manager, Department Head and MD Office assignment boundaries.
+- Replaced generic RBAC assumptions with approved Stavyan, Manager, Department Head and MD Office assignment boundaries.
 - Required auditable before/after history for Monthly Priority and other sensitive mutations.
 - Extended deterministic automation to model recommendation/action, required approval, execution and audit while retaining outbox idempotency.
 - Added a future Execution Intelligence port using existing entity IDs and events, without microservices, AI infrastructure, vector storage or an analytics warehouse.
@@ -51,7 +51,7 @@ The Phase 1 architecture intentionally marked organizational policy as `REQUIRES
 ## Assumptions
 
 - "Official Commitment" means a Commitment that has passed approval and activation; drafts/proposals do not yet carry official execution authority.
-- "Official organizational deadline" means a deadline on formal organizational work, not a personal reminder on an Employee's self-Task.
+- "Official organizational deadline" means a deadline on formal organizational work, not a personal reminder on an Stavyan's self-Task.
 - Team/department/organization assignment permissions cannot be implemented until authoritative scope membership is available.
 - O&O provenance can be stored without implementing O&O stages or Improvement Action lifecycle.
 - Accountable may approve Commitment completion; any alternate approver requires a later approved permission.

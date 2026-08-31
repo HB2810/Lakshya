@@ -121,11 +121,11 @@ def bootstrap_seed_data(session: Session, settings: Settings) -> None:
     for d in depts:
         session.add(d)
 
-    # 4. Seed Roles: MASTER, MD, LEADER, EMPLOYEE
+    # 4. Seed Roles: MASTER, MD, LEADER, STAVYAN
     role_master = Role(id=uuid.uuid4(), organization_id=org.id, key="master", name="Master Administrator", is_active=True, created_at=now, updated_at=now)
     role_md = Role(id=uuid.uuid4(), organization_id=org.id, key="md", name="Managing Director", is_active=True, created_at=now, updated_at=now)
     role_leader = Role(id=uuid.uuid4(), organization_id=org.id, key="leader", name="Operational Leader", is_active=True, created_at=now, updated_at=now)
-    role_employee = Role(id=uuid.uuid4(), organization_id=org.id, key="employee", name="Stavya Staff / Employee", is_active=True, created_at=now, updated_at=now)
+    role_employee = Role(id=uuid.uuid4(), organization_id=org.id, key="stavyan", name="Stavya Staff / Stavyan", is_active=True, created_at=now, updated_at=now)
 
     roles = [role_master, role_md, role_leader, role_employee]
     for r in roles:
@@ -149,7 +149,7 @@ def bootstrap_seed_data(session: Session, settings: Settings) -> None:
         ("master@stavya.local", "Master System Admin", role_master, dept_mdoffice),
         ("md@stavya.local", "Dr. Mirant Dave (MD)", role_md, dept_mdoffice),
         ("leader@stavya.local", "Priyesh Shah (IT & Digital Health Lead)", role_leader, dept_it),
-        ("employee@stavya.local", "Sister Sunita Rao (Senior Spine Nurse)", role_employee, dept_spine),
+        ("stavyan@stavya.local", "Sister Sunita Rao (Senior Spine Nurse)", role_employee, dept_spine),
     ]
 
     created_users: dict[str, User] = {}
@@ -283,7 +283,7 @@ def bootstrap_seed_data(session: Session, settings: Settings) -> None:
     pos_assignments = [
         (created_users["md@stavya.local"].id, pos_md.id),
         (created_users["leader@stavya.local"].id, pos_it_lead.id),
-        (created_users["employee@stavya.local"].id, pos_nurse.id),
+        (created_users["stavyan@stavya.local"].id, pos_nurse.id),
         (created_users["master@stavya.local"].id, pos_admin.id),
     ]
 
@@ -300,7 +300,7 @@ def bootstrap_seed_data(session: Session, settings: Settings) -> None:
         session.add(asg)
 
     # 7. Seed Canonical WorkItems with RACI, EDC, Dependencies, Escalation
-    emp_user = created_users["employee@stavya.local"]
+    emp_user = created_users["stavyan@stavya.local"]
     ldr_user = created_users["leader@stavya.local"]
     md_user = created_users["md@stavya.local"]
 

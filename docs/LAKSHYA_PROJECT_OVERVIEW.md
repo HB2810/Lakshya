@@ -178,7 +178,7 @@ Focuses on departmental priorities, milestones, team execution, dependencies, de
 
 Focuses on team execution, assignment, progress, blockers and deadlines.
 
-### Employee
+### Stavyan
 
 Uses LAKSHYA for personal tasks, commitments, meetings, deadlines and Stuck/Need reporting.
 
@@ -195,7 +195,7 @@ LAKSHYA uses the standard RACI model:
 
 RACI is attached to meaningful commitments and tasks instead of being maintained as an isolated organizational matrix.
 
-A formally approved Commitment requires at least one Responsible person and exactly one Accountable person under the V0.1 architecture. Formal completion follows an approval boundary and cannot be treated as an unrestricted employee status update.
+A formally approved Commitment requires at least one Responsible person and exactly one Accountable person under the V0.1 architecture. Formal completion follows an approval boundary and cannot be treated as an unrestricted stavyan status update.
 
 ---
 

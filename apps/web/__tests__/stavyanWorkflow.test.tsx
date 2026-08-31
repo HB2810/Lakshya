@@ -52,7 +52,7 @@ vi.mock('../lib/api/client', async () => {
   };
 });
 
-describe('LAKSHYA Employee Execution Workspace Suite', () => {
+describe('LAKSHYA Stavyan Execution Workspace Suite', () => {
   beforeEach(() => {
     // Reset work items to initial state
     const items = workItemStore.getWorkItems();
@@ -61,7 +61,7 @@ describe('LAKSHYA Employee Execution Workspace Suite', () => {
     }
   });
 
-  it('1. Loads canonical WorkItems for STAVYAN employee with meeting-originated tasks', () => {
+  it('1. Loads canonical WorkItems for STAVYAN stavyan with meeting-originated tasks', () => {
     workItemStore.createWorkItem({
       title: 'Verify OPD Network Stability & PACS Gateway Sync',
       source_type: 'MEETING',
@@ -169,7 +169,7 @@ describe('LAKSHYA Employee Execution Workspace Suite', () => {
     expect(screen.getByText('Completed')).toBeDefined();
   });
 
-  it('8. Sidebar navigation shows clean employee items for standard STAVYAN role', () => {
+  it('8. Sidebar navigation shows clean stavyan items for standard STAVYAN role', () => {
     render(
       <AuthProvider>
         <Sidebar />
@@ -183,14 +183,14 @@ describe('LAKSHYA Employee Execution Workspace Suite', () => {
     expect(screen.getByText('Policies & SOPs')).toBeDefined();
   });
 
-  it('9. Gating in Policies & SOPs hides authoring button for standard employee', () => {
+  it('9. Gating in Policies & SOPs hides authoring button for standard stavyan', () => {
     render(
       <AuthProvider>
         <PoliciesPage />
       </AuthProvider>
     );
 
-    // Standard employee does NOT see '+ Upload / Author New SOP'
+    // Standard stavyan does NOT see '+ Upload / Author New SOP'
     expect(screen.queryByText('+ Upload / Author New SOP')).toBeNull();
     // But sees the searchable approved protocol catalog
     expect(screen.getByText(/Clinical Governance & NABH Protocols/i)).toBeDefined();

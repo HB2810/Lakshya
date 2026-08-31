@@ -120,8 +120,8 @@ const mockEmployeeAuth = {
   user: {
     id: 'usr-emp-01',
     name: 'Sister Sunita Rao',
-    email: 'employee@stavya.local',
-    role: 'EMPLOYEE' as const,
+    email: 'stavyan@stavya.local',
+    role: 'STAVYAN' as const,
     roleTitle: 'Staff Nurse',
     departmentId: 'dept-nursing-01',
     departmentName: 'Nursing',
@@ -130,7 +130,7 @@ const mockEmployeeAuth = {
   },
   isAuthenticated: true,
   isLoading: false,
-  activePersona: 'EMPLOYEE' as const,
+  activePersona: 'STAVYAN' as const,
   mustChangePassword: false,
   login: vi.fn(),
   logout: vi.fn(),
@@ -204,12 +204,12 @@ describe('Needs MD Attention Executive Engine Suite', () => {
     expect(screen.getByRole('button', { name: /Retry/i })).toBeDefined();
   });
 
-  it('5. Strictly gates against standard employees and renders unauthorized message', async () => {
+  it('5. Strictly gates against standard stavyans and renders unauthorized message', async () => {
     vi.spyOn(AuthContextModule, 'useAuth').mockReturnValue(mockEmployeeAuth);
 
     render(<NeedsMDAttentionView />);
 
-    // Should immediately render access restriction banner for employee persona
+    // Should immediately render access restriction banner for stavyan persona
     expect(await screen.findByText(/Access Restricted — MD \/ MD Office Only/i)).toBeDefined();
   });
 });

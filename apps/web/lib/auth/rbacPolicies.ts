@@ -10,7 +10,7 @@
  * administrative/bootstrap superusers (ADMIN, MASTER).
  *
  * NOTE: Generic leaders (DEPARTMENT_HEAD, MANAGER, LEADER, LEADERS) and
- * standard employees (EMPLOYEE, STAVYAN, NURSE, DOCTOR, GUEST) are strictly excluded.
+ * standard stavyans (STAVYAN, STAVYAN, NURSE, DOCTOR, GUEST) are strictly excluded.
  */
 export const MD_ATTENTION_AUTHORIZED_ROLES: readonly string[] = [
   'MD',

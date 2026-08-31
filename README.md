@@ -56,7 +56,7 @@ lakshya-md-office/
 | :--- | :--- | :--- |
 | **MD (Managing Director)** | Executive Command | Full Hospital Command Center, 211 Staff Tracker, Strategic Milestone Stepper, Pure-White Interactive Org Chart, Department Transfers, Meeting Conversions, RCA Engine |
 | **LEADER (Dept. Heads & Managers)** | Department Operations | Department Workload Grid, Scoped Team Org Tree, Milestone Stepper, Task Assignment, Exception Resolution |
-| **EMPLOYEE (Hospital Staff)** | Personal Execution | Clean "My Day" Queue, Personal Tasks & Schedule, Stuck/Need Flagging, Task Completion (No administrative distractions) |
+| **STAVYAN (Hospital Staff)** | Personal Execution | Clean "My Day" Queue, Personal Tasks & Schedule, Stuck/Need Flagging, Task Completion (No administrative distractions) |
 | **ADMIN / MASTER** | System Security | User Credential Management, Role Assignments, System Password Reset, Security Audits |
 
 ---
@@ -98,7 +98,7 @@ python -m uvicorn app.main:app --reload --port 8000
 ## 🔒 Engineering & Quality Standards
 
 - **Single Main Branch:** Continuous integration directly on `main`.
-- **Zero Mock Clutter in Production:** Strict gating of executive dashboards away from standard employee views.
+- **Zero Mock Clutter in Production:** Strict gating of executive dashboards away from standard stavyan views.
 - **RACI Validation:** Server-side and client-side enforcement of Responsible, Accountable, Consulted, and Informed ownership.
 - **Sequential Delivery Gate:** Zomato-style milestone progression preventing unearned status advances.
 

@@ -58,7 +58,7 @@ V0.1 actions are limited to:
 
 Rules cannot execute arbitrary code, SQL, HTTP requests or mutate ownership/RACI/organizational priority/official deadline. They cannot approve formal Commitment completion or reopen a formal Commitment. Integrations use separately reviewed adapters.
 
-Each action declares its authority class: `low_risk_deterministic` may execute when its rule is approved; `approval_required` creates a recommendation/proposal and waits for an authorized human command. Employees' assignment, deadline, priority, completion and reopen restrictions are enforced by the same application use cases regardless of trigger source.
+Each action declares its authority class: `low_risk_deterministic` may execute when its rule is approved; `approval_required` creates a recommendation/proposal and waits for an authorized human command. Stavyans' assignment, deadline, priority, completion and reopen restrictions are enforced by the same application use cases regardless of trigger source.
 
 ## 5. Time-based automation
 

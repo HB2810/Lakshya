@@ -58,7 +58,7 @@ An authenticated or provisioned person. User identity is organization-wide. Depa
 
 ### Role, Permission and assignments
 
-`Permission` is a stable action identifier. `Role` is an organization-defined bundle. `RoleAssignment` connects a user to a role at organization or department scope with effective dates. `RolePermission` is the many-to-many mapping. Named personas (MD, MD Office, Department Head, Manager, Employee) are seeded role templates, not hard-coded authorization branches.
+`Permission` is a stable action identifier. `Role` is an organization-defined bundle. `RoleAssignment` connects a user to a role at organization or department scope with effective dates. `RolePermission` is the many-to-many mapping. Named personas (MD, MD Office, Department Head, Manager, Stavyan) are seeded role templates, not hard-coded authorization branches.
 
 ## 4. Strategy
 
@@ -104,7 +104,7 @@ For V0.1, implement explicit foreign keys for approved source types that exist (
 
 ### Task
 
-An executable unit of work. It has an owner (operational assignee), status, deadline, progress, priority/criticality, optional Commitment and milestone context, and outcome. An Employee may create a Task for themself and may complete a normal assigned Task, but may not assign another Employee, change an official organizational deadline, independently change organizational priority, or directly reopen a formally completed Commitment. "Overdue" is derived from deadline/status, not a mutable status. Parent/child Tasks may support decomposition but must not represent dependencies.
+An executable unit of work. It has an owner (operational assignee), status, deadline, progress, priority/criticality, optional Commitment and milestone context, and outcome. An Stavyan may create a Task for themself and may complete a normal assigned Task, but may not assign another Stavyan, change an official organizational deadline, independently change organizational priority, or directly reopen a formally completed Commitment. "Overdue" is derived from deadline/status, not a mutable status. Parent/child Tasks may support decomposition but must not represent dependencies.
 
 ### Commitment versus task
 

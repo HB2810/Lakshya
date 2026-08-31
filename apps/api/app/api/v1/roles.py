@@ -77,7 +77,7 @@ def list_roles(
 ) -> RoleListResponse:
     """Requires ``role.read``.
 
-    Seeded persona templates (MD, MD Office, Department Head, Manager, Employee)
+    Seeded persona templates (MD, MD Office, Department Head, Manager, Stavyan)
     appear with ``is_system_template: true``, no permissions and no organization.
     They cannot be assigned; an organization creates its own role from one.
     """

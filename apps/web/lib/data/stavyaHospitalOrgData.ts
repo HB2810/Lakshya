@@ -92,7 +92,7 @@ export const STAVYA_STAFF_DATABASE: Record<string, HospitalStaffMember> = {
   "e195": {"id":"e195","code":"255","name":"Vatsal Maheshkumar Vaghasiya","unit":"Infrastructure & Engineering","desig":"IT Head · Head of Infrastructure & Engineering","reports":"Dr. Mirant Bharat Dave","dept_master":"ADMIN","mobile":"9106882723","other":"7567651886","email":"vatsalstavya@gmail.com","omail":"","blood":"AB+","gender":"male","marital":"Single","dob":"10-01-1998","join":"01-04-2026","worker":"Company Staff","emp":"Confirm","shift":"Flexi fixed shift - 5 hours","skill":"SKILLED","branch":"Ahmedabad"},
   "e208": {"id":"e208","code":"110","name":"Zankhana Chirag Joshi","unit":"Facility Operations","desig":"CAO · Head, Facility Operations","reports":"Dr. Mirant Bharat Dave","dept_master":"ADMIN","mobile":"7486038892","other":"9925144195","email":"zankhana.joshi80@yahoo.com","omail":"","blood":"B+","gender":"female","marital":"Married","dob":"20-02-1980","join":"01-09-2012","worker":"Company Staff","emp":"Confirm","shift":"Flexi fixed shift - 7 hours","skill":"SKILLED","branch":"Ahmedabad"},
   // System aliases
-  "usr-stav-101": {"id":"usr-stav-101","code":"118","name":"Priyesh Shah","unit":"Infrastructure & Engineering","desig":"Systems Engineer","reports":"Vatsal Maheshkumar Vaghasiya","dept_master":"ADMIN","mobile":"9825490625","email":"employee@stavya.local","gender":"male","join":"2023-05-01","worker":"Company Staff","emp":"Confirm","shift":"General Shift","skill":"SKILLED","branch":"Ahmedabad"},
+  "usr-stav-101": {"id":"usr-stav-101","code":"118","name":"Priyesh Shah","unit":"Infrastructure & Engineering","desig":"Systems Engineer","reports":"Vatsal Maheshkumar Vaghasiya","dept_master":"ADMIN","mobile":"9825490625","email":"stavyan@stavya.local","gender":"male","join":"2023-05-01","worker":"Company Staff","emp":"Confirm","shift":"General Shift","skill":"SKILLED","branch":"Ahmedabad"},
 };
 
 export const STAVYA_ORG_STRUCTURE: HospitalOrgStructure = {
@@ -252,7 +252,7 @@ export function getAllVerifiedHospitalUsers() {
   return Object.values(STAVYA_STAFF_DATABASE).map(s => {
     const isMD = s.name.toLowerCase().includes('mirant') && s.name.toLowerCase().includes('dave');
     const isHead = Object.values(STAVYA_ORG_STRUCTURE.heads).some(h => h.toLowerCase() === s.name.toLowerCase());
-    const role = isMD ? 'MD' : isHead ? 'LEADER' : 'EMPLOYEE';
+    const role = isMD ? 'MD' : isHead ? 'LEADER' : 'STAVYAN';
     return {
       id: s.id,
       name: s.name,

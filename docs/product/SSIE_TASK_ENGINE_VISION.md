@@ -259,7 +259,7 @@ Meeting Discussion / Note Input
 1. **No Autonomous Ownership Changes**: AI cannot change task ownership without human approval.
 2. **No Autonomous Deadline Alterations**: AI cannot extend or shorten committed deadlines.
 3. **No Autonomous Task Closure**: Tasks and commitments must be marked complete by the Responsible or Accountable human.
-4. **No Autonomous Employee Escalation**: Escalation rules are deterministic; AI suggestions must be reviewed before formal HR/management record logging.
+4. **No Autonomous Stavyan Escalation**: Escalation rules are deterministic; AI suggestions must be reviewed before formal HR/management record logging.
 5. **Full Audit Traceability**: Every AI proposal, human approval, modification, and execution state change is recorded with actor ID, timestamp, and source diff.
 
 ---

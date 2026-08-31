@@ -1,7 +1,7 @@
 """WorkItem business logic and server-side authorization enforcement.
 
 TASK ISOLATION RULES (V1 SPEC):
-- EMPLOYEE: Can ONLY see/update own WorkItems. Accessing another user's task returns 403 Forbidden.
+- STAVYAN: Can ONLY see/update own WorkItems. Accessing another user's task returns 403 Forbidden.
 - LEADER: Can see/update own WorkItems and permitted team/department members' WorkItems.
 - MD: Broadest operational visibility across the organization.
 - MASTER: System admin scope.
@@ -110,7 +110,7 @@ class WorkItemService:
         elif is_leader:
             # Leader sees own tasks + subordinate team reportees' tasks + department tasks
             if owner_id:
-                # If querying a specific employee, ensure it's themselves, a subordinate, or in their dept
+                # If querying a specific stavyan, ensure it's themselves, a subordinate, or in their dept
                 query = query.where(WorkItem.owner_id == owner_id)
             else:
                 clauses = [
@@ -123,7 +123,7 @@ class WorkItemService:
                     clauses.append(WorkItem.department_id.in_(user_department_ids))
                 query = query.where(or_(*clauses))
         else:
-            # EMPLOYEE: STRICT ISOLATION -> only own tasks
+            # STAVYAN: STRICT ISOLATION -> only own tasks
             query = query.where(
 
                 (WorkItem.owner_id == current_user.id) | (WorkItem.created_by == current_user.id)
@@ -176,7 +176,7 @@ class WorkItemService:
             priority=payload.priority,
             status="todo",
             owner_id=payload.owner_id or current_user.id,
-            owner_name=payload.owner_name or getattr(current_user, "full_name", "Employee"),
+            owner_name=payload.owner_name or getattr(current_user, "full_name", "Stavyan"),
             department_id=payload.department_id,
             department_name=payload.department_name,
             created_by=current_user.id,
@@ -197,7 +197,7 @@ class WorkItemService:
         activity = WorkItemActivity(
             work_item_id=item.id,
             author_id=current_user.id,
-            author_name=getattr(current_user, "full_name", "Employee"),
+            author_name=getattr(current_user, "full_name", "Stavyan"),
             activity_type="CREATED",
             note=f"Created work item '{item.title}'",
             new_status="todo",
@@ -348,7 +348,7 @@ class WorkItemService:
             level=payload.level,
             reason=payload.reason,
             escalated_by_id=current_user.id,
-            escalated_by_name=getattr(current_user, "full_name", "Employee"),
+            escalated_by_name=getattr(current_user, "full_name", "Stavyan"),
             escalated_to_id=target_id,
             escalated_to_name=target_name,
             status="PENDING",
@@ -360,7 +360,7 @@ class WorkItemService:
         activity = WorkItemActivity(
             work_item_id=item.id,
             author_id=current_user.id,
-            author_name=getattr(current_user, "full_name", "Employee"),
+            author_name=getattr(current_user, "full_name", "Stavyan"),
             activity_type="ESCALATION_TRIGGERED",
             note=f"Escalated to {payload.level}: {payload.reason}",
             previous_status=item.status,

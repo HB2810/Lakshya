@@ -72,7 +72,7 @@ class Role(Base, TimestampMixin, VersionMixin):
     Two kinds of row:
 
     * **System template** (``organization_id IS NULL``,
-      ``is_system_template = true``) — a seeded persona such as MD or Employee.
+      ``is_system_template = true``) — a seeded persona such as MD or Stavyan.
       Templates are *not assignable*: ``role_assignments`` has a composite
       foreign key to ``roles (organization_id, id)``, which a NULL-organization
       row can never satisfy. A template is a starting point an organization

@@ -1581,7 +1581,7 @@ export const DynamicHospitalOrgChart: React.FC<DynamicHospitalOrgChartProps> = (
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="font-bold text-slate-700">Employee Code</label>
+                  <label className="font-bold text-slate-700">Stavyan Code</label>
                   <input
                     type="text"
                     value={newStaffCode}
@@ -1719,7 +1719,7 @@ export const DynamicHospitalOrgChart: React.FC<DynamicHospitalOrgChartProps> = (
               </div>
 
               <div className="space-y-1">
-                <label className="font-bold text-slate-700">Employee Code</label>
+                <label className="font-bold text-slate-700">Stavyan Code</label>
                 <input
                   type="text"
                   value={editCode}

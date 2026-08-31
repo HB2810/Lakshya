@@ -95,7 +95,7 @@ graph TD
 ### Decision 8: O&O Rejection, Verification & Cross-Department Authority
 * **Simple Business Language**: Who has authority to approve an Opportunity for action, reject an Obstacle, or mark an Obstacle as "Verified Resolved"?
 * **Recommended V1 Option**:
-  * *Raising O&O*: Any employee/leader.
+  * *Raising O&O*: Any stavyan/leader.
   * *Updating Assigned O&O*: Assigned Owner.
   * *Verification & Closure*: Department Head of source department or MD Office Lead.
   * *Cross-Department O&O*: Requires explicit approval from HODs of both involved departments or MD.

@@ -38,12 +38,12 @@ export function mapBackendUserToFrontendUser(res: CurrentUserResponse): User {
     leaders: 'LEADER',
     master: 'MASTER',
     admin: 'MASTER',
-    employee: 'EMPLOYEE',
-    stavyans: 'EMPLOYEE',
+    stavyan: 'STAVYAN',
+    stavyans: 'STAVYAN',
   };
 
-  const primaryRoleKey = (res.roles[0] || 'employee').toLowerCase();
-  const primaryRole: Persona = roleMap[primaryRoleKey] || 'EMPLOYEE';
+  const primaryRoleKey = (res.roles[0] || 'stavyan').toLowerCase();
+  const primaryRole: Persona = roleMap[primaryRoleKey] || 'STAVYAN';
 
   return {
     id: res.user.id,
@@ -157,7 +157,7 @@ export const apiClient = {
         }
         // Fallback for dev mode when backend is unreachable
         if (process.env.NODE_ENV === 'development') {
-          const fallbackUser = DEMO_USERS.EMPLOYEE;
+          const fallbackUser = DEMO_USERS.STAVYAN;
           const mockResponse: CurrentUserResponse = {
             user: {
               id: fallbackUser.id,
@@ -174,7 +174,7 @@ export const apiClient = {
               expires_at: new Date(Date.now() + 86400000).toISOString(),
               last_activity_at: new Date().toISOString(),
             },
-            roles: ['employee'],
+            roles: ['stavyan'],
             permissions: [
               'user.read', 'department.read', 'task.read', 'task.create', 'task.complete', 'stuck.create'
             ],
@@ -190,11 +190,11 @@ export const apiClient = {
     async login(emailOrId: string, password?: string, organization_slug?: string): Promise<{ response: CurrentUserResponse; user: User }> {
       const idKey = emailOrId.trim().toUpperCase();
       const emailMap: Record<string, string> = {
-        'STAVYANS-101': 'employee@stavya.local',
+        'STAVYANS-101': 'stavyan@stavya.local',
         'STAVYANS-001': 'md@stavya.local',
         'STAVYANS-002': 'leader@stavya.local',
         'STAVYANS-000': 'master@stavya.local',
-        'EMPLOYEE': 'employee@stavya.local',
+        'STAVYAN': 'stavyan@stavya.local',
         'LEADER': 'leader@stavya.local',
         'LEADERS': 'leader@stavya.local',
         'MD': 'md@stavya.local',
@@ -246,12 +246,12 @@ export const apiClient = {
             'ROHAN.SHARMA@STAVYASPINE.COM': 'DEPARTMENT_HEAD',
             'ANANYA.PATEL@STAVYASPINE.COM': 'MANAGER',
 
-            'STAVYANS-101': 'EMPLOYEE',
-            'EMPLOYEE': 'EMPLOYEE',
-            'EMPLOYEE@STAVYA.LOCAL': 'EMPLOYEE',
-            'STAVYANS': 'EMPLOYEE',
-            'PRIYESH.SHAH@STAVYASPINE.COM': 'EMPLOYEE',
-            'SUNITA.RAO@STAVYA.LOCAL': 'EMPLOYEE',
+            'STAVYANS-101': 'STAVYAN',
+            'STAVYAN': 'STAVYAN',
+            'STAVYAN@STAVYA.LOCAL': 'STAVYAN',
+            'STAVYANS': 'STAVYAN',
+            'PRIYESH.SHAH@STAVYASPINE.COM': 'STAVYAN',
+            'SUNITA.RAO@STAVYA.LOCAL': 'STAVYAN',
 
             'STAVYANS-000': 'MASTER',
             'MASTER': 'MASTER',
@@ -270,7 +270,7 @@ export const apiClient = {
 
           if (matchedKey && DEMO_USERS[matchedKey]) {
             const demoUser = DEMO_USERS[matchedKey];
-            const roleLower = (demoUser.role || 'employee').toLowerCase();
+            const roleLower = (demoUser.role || 'stavyan').toLowerCase();
 
             let permissions: string[] = ['user.read', 'department.read', 'task.read', 'task.create', 'task.complete'];
             if (roleLower === 'md' || roleLower === 'managing_director' || roleLower === 'md_office') {
@@ -292,8 +292,8 @@ export const apiClient = {
               permissions = ['*'];
             }
 
-            const userRoles = (roleLower === 'stavyans' || roleLower === 'employee') 
-              ? ['stavyans', 'employee'] 
+            const userRoles = (roleLower === 'stavyans' || roleLower === 'stavyan') 
+              ? ['stavyans', 'stavyan'] 
               : [roleLower];
 
             const mockResponse: CurrentUserResponse = {

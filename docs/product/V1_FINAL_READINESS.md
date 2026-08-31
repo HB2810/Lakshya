@@ -41,7 +41,7 @@ ONE UNIFIED MANAGEMENT OPERATING SYSTEM
 - **RBAC Boundaries:** Strict role-scoped data visibility:
   - **MD / Master:** Hospital-wide operational metrics, cross-department velocity, global bottleneck distribution.
   - **Leader:** Aggregated workload, throughput, and bottleneck statistics strictly within their department and subordinate hierarchy.
-  - **Employee:** Personal execution velocity, assigned tasks, and pending commitments.
+  - **Stavyan:** Personal execution velocity, assigned tasks, and pending commitments.
 - **Frontend Live-Wiring:** Management Intelligence tab in `/reports` featuring real-time department velocity, owner workload grids, and 10-milestone strategic delivery rates.
 
 ### Capability 3: Two-Way Google Calendar Integration & Sync Outbox
@@ -64,7 +64,7 @@ ONE UNIFIED MANAGEMENT OPERATING SYSTEM
 | :--- | :--- | :--- | :--- |
 | **MD** | Hospital-wide organizational command | Operational Command Center, Executive Brief, Hospital Analytics, Global Escalations | Complete cross-department visibility; strategic milestone control. |
 | **Leader** | Permitted subordinate hierarchy & department | Leader Workspace, Team Workload Grid, Tier 1-3 Escalation Inbox, RACI delegation | Strictly cannot see or mutate unpermitted sibling departments. |
-| **Employee** | Personal commitments & assigned tasks | Employee Workspace, My Queue, EDC Sign-Off, Blocker Reporting | Cannot access leader-only management views or unassigned private records. |
+| **Stavyan** | Personal commitments & assigned tasks | Stavyan Workspace, My Queue, EDC Sign-Off, Blocker Reporting | Cannot access leader-only management views or unassigned private records. |
 | **Master** | System administration & identity governance | Position Matrix, Dynamic Organization Chart, Role Assignment, Security Audit | Full administrative control with audit provenance. |
 
 ---
@@ -72,7 +72,7 @@ ONE UNIFIED MANAGEMENT OPERATING SYSTEM
 ## 4. Verification & Quality Gate Results
 
 - **Backend Pytest Suite:** 100% Passed (including `test_v1_features_completion.py` and `test_calendar_api.py`).
-- **Frontend Vitest Suite:** 47/47 Passed (8 test suites covering Authentication, Hardening, WorkItem Drawer, Leader Inbox, Employee Workflow, Policies).
+- **Frontend Vitest Suite:** 47/47 Passed (8 test suites covering Authentication, Hardening, WorkItem Drawer, Leader Inbox, Stavyan Workflow, Policies).
 - **TypeScript Static Verification:** 0 Type Errors (`tsc --noEmit` passed).
 - **Next.js Production Build:** 17/17 Pages Prerendered Successfully (`next build` passed).
 

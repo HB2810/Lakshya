@@ -180,7 +180,7 @@ def create_position(
 @router.post(
     "/transfer",
     response_model=PositionAssignmentResponse,
-    summary="Unified organizational transfer of an employee",
+    summary="Unified organizational transfer of an stavyan",
 )
 def transfer_person(
     payload: PositionTransferRequest,
@@ -221,5 +221,5 @@ def get_user_reporting_chain(
     context: RequestContext = CurrentContext,
     service: PositionService = Depends(get_position_service),
 ) -> list[dict[str, Any]]:
-    """Walks up the reporting line from employee to MD."""
+    """Walks up the reporting line from stavyan to MD."""
     return service.get_user_reporting_chain(context.authorization, user_id)

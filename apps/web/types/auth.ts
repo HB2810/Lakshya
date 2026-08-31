@@ -2,7 +2,7 @@ export type Persona =
   | 'MASTER'
   | 'MD'
   | 'LEADER'
-  | 'EMPLOYEE'
+  | 'STAVYAN'
   // Existing system & organizational aliases:
   | 'MANAGING_DIRECTOR'
   | 'STAVYANS'
@@ -13,14 +13,14 @@ export type Persona =
   | 'DEPARTMENT_HEAD'
   | 'MANAGER';
 
-export type StandardV1Role = 'MASTER' | 'MD' | 'LEADER' | 'EMPLOYEE';
+export type StandardV1Role = 'MASTER' | 'MD' | 'LEADER' | 'STAVYAN';
 
 export function normalizeV1Role(role: Persona | string): StandardV1Role {
   const upper = (role || '').toUpperCase();
   if (upper === 'MASTER' || upper === 'ADMIN') return 'MASTER';
   if (upper === 'MD' || upper === 'MANAGING_DIRECTOR' || upper === 'MD_OFFICE') return 'MD';
   if (upper === 'LEADER' || upper === 'LEADERS' || upper === 'DEPARTMENT_HEAD' || upper === 'MANAGER') return 'LEADER';
-  return 'EMPLOYEE';
+  return 'STAVYAN';
 }
 
 export interface BackendUser {

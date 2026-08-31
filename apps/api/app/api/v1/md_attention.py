@@ -29,7 +29,7 @@ def get_md_attention_summary(
 ) -> MDAttentionSummary:
     """Get server-derived executive items requiring MD/MD Office attention.
 
-    Strictly gated to MD and MD Office leadership. Employees are rejected with HTTP 403.
+    Strictly gated to MD and MD Office leadership. Stavyans are rejected with HTTP 403.
     """
     effective_roles = list(ctx.authorization.effective_roles)
     return MDAttentionService.get_attention_summary(

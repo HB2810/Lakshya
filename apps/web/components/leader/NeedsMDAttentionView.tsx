@@ -91,7 +91,7 @@ export const NeedsMDAttentionView: React.FC<NeedsMDAttentionViewProps> = ({ onSe
     onSelectItem?.(item);
   };
 
-  // 1. UNAUTHORIZED STATE (Forbidden for standard employees)
+  // 1. UNAUTHORIZED STATE (Forbidden for standard stavyans)
   if (isUnauthorized || !isMDOrMDOffice) {
     return (
       <div className="p-6 bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-2xl flex flex-col items-center justify-center text-center space-y-3 shadow-xs">

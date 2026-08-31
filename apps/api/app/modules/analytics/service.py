@@ -60,7 +60,7 @@ class AnalyticsService:
                     filters.append(WorkItem.department_id.in_(user_department_ids))
                 wi_stmt = wi_stmt.where(or_(*filters))
             else:
-                # Employee strictly sees own items or assigned RACI
+                # Stavyan strictly sees own items or assigned RACI
                 wi_stmt = wi_stmt.where(
                     or_(
                         WorkItem.owner_id == current_user.id,
@@ -231,7 +231,7 @@ class AnalyticsService:
         )
 
         scope = "ORGANIZATION" if is_md_or_master else ("DEPARTMENT_TEAM" if is_leader else "INDIVIDUAL")
-        role_label = "MD" if is_md_or_master else ("LEADER" if is_leader else "EMPLOYEE")
+        role_label = "MD" if is_md_or_master else ("LEADER" if is_leader else "STAVYAN")
 
         return OperationalAnalyticsResponse(
             scope=scope,

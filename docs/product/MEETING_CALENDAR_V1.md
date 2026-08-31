@@ -206,7 +206,7 @@ stateDiagram-v2
 ### 6.7 KPI System
 * Indicators: Target, Actual, Trend, Warning Threshold, Critical Threshold.
 * Values entered manually or calculated via automated backend integration.
-* **Rule**: KPI drops below target **do not** trigger automatic employee penalties or automatic task assignments. KPI exceptions flag O&O review recommendations for human decision.
+* **Rule**: KPI drops below target **do not** trigger automatic stavyan penalties or automatic task assignments. KPI exceptions flag O&O review recommendations for human decision.
 
 ### 6.8 O&O (Obstacle and Opportunity)
 * **Lifecycle**: `OPEN` → `UNDER_REVIEW` → `APPROVED_FOR_ACTION` → `IN_PROGRESS` → `WAITING`/`BLOCKED` → `RESOLVED`/`IMPLEMENTED` → `VERIFIED` → `CLOSED`.
@@ -451,7 +451,7 @@ Every inbound and outbound operation carries organization, provider connection, 
 
 A KPI definition includes name, description, department, owner, accountable leader, measurement frequency, unit, target operator, target value, warning threshold, critical threshold when approved, data source, automatic/manual mode, review meeting, active status, strategic relationships, and audit history. A KPI value includes period, value, source (`MANUAL`, `LAKSHYA_CALCULATED`, or approved external integration), recorder/import job, recorded time, evidence, contextual notes, and correction history.
 
-Only an assigned user or explicitly authorized manager may record a manual value. An automatic KPI still requires a human-approved definition. Exceptions support review and O&O recommendations; they do not silently punish employees, reassign work, escalate, or create tasks.
+Only an assigned user or explicitly authorized manager may record a manual value. An automatic KPI still requires a human-approved definition. Exceptions support review and O&O recommendations; they do not silently punish stavyans, reassign work, escalate, or create tasks.
 
 Meeting review shows current value versus target, trend, data freshness, manual/automatic provenance, contextual notes, and review history. Authorized users may create a KPI or record an assigned value without acquiring authority over other KPI records.
 

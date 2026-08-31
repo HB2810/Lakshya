@@ -80,9 +80,9 @@ describe('Needs MD Attention Executive Cockpit Suite', () => {
     vi.clearAllMocks();
   });
 
-  it('1. Renders Access Restricted banner for standard EMPLOYEE role', async () => {
+  it('1. Renders Access Restricted banner for standard STAVYAN role', async () => {
     vi.spyOn(apiClient.auth, 'getMe').mockResolvedValue({
-      user: { ...DEMO_USERS.EMPLOYEE, role: 'EMPLOYEE' },
+      user: { ...DEMO_USERS.STAVYAN, role: 'STAVYAN' },
       response: { must_change_password: false } as any,
     });
 
@@ -277,8 +277,8 @@ describe('Needs MD Attention Executive Cockpit Suite', () => {
       'leader',
       'LEADERS',
       'leaders',
-      'EMPLOYEE',
-      'employee',
+      'STAVYAN',
+      'stavyan',
       'STAVYAN',
       'stavyan',
       'NURSE',
@@ -303,7 +303,7 @@ describe('Needs MD Attention Executive Cockpit Suite', () => {
     expect(isLeaderOrAbove('DEPARTMENT_HEAD')).toBe(true);
     expect(isLeaderOrAbove('MANAGER')).toBe(true);
     expect(isLeaderOrAbove('LEADER')).toBe(true);
-    expect(isLeaderOrAbove('EMPLOYEE')).toBe(false);
+    expect(isLeaderOrAbove('STAVYAN')).toBe(false);
     expect(isLeaderOrAbove('STAVYAN')).toBe(false);
   });
 
