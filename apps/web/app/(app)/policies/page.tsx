@@ -658,7 +658,7 @@ export default function PoliciesPage() {
               <button
                 type="button"
                 onClick={() => setSelectedPolicyForView(null)}
-                className="px-4 py-2 bg-slate-900 hover:bg-black text-white font-bold text-xs rounded-xl shadow-xs transition-colors cursor-pointer"
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 font-bold text-xs rounded-xl shadow-xs transition-colors cursor-pointer"
               >
                 Close Protocol Viewer
               </button>
@@ -673,7 +673,7 @@ export default function PoliciesPage() {
           <div className="bg-white rounded-3xl p-4 sm:p-6 max-w-2xl w-full shadow-2xl border border-slate-200 space-y-5 animate-fadeIn max-h-[calc(100dvh-2rem)] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div className="flex items-center gap-2">
-                <span className="p-1.5 bg-slate-900 text-white rounded-lg">
+                <span className="p-1.5 bg-blue-600 text-white shadow-sm rounded-lg">
                   <UploadCloud className="w-4 h-4" />
                 </span>
                 <div>

@@ -69,7 +69,7 @@ export const TeamExecutionHub: React.FC = () => {
   let tierBadge = 'bg-blue-600';
   if (isGovernance) {
     tierLabel = 'Tier 1: Hospital Executive Governance (MD / Board)';
-    tierBadge = 'bg-slate-900';
+    tierBadge = 'bg-blue-600 shadow-sm text-white';
   } else if (isLeader) {
     tierLabel = 'Tier 2: Division Operational Leadership';
     tierBadge = 'bg-indigo-600';

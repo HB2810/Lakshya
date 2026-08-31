@@ -241,7 +241,7 @@ export default function RCAPage() {
             <button
               type="button"
               onClick={() => setShowNew5WhyModal(true)}
-              className="w-full justify-center px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-xs transition-colors flex items-center gap-1.5 shrink-0 cursor-pointer sm:w-auto"
+              className="w-full justify-center px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 font-bold text-xs rounded-xl shadow-xs transition-colors flex items-center gap-1.5 shrink-0 cursor-pointer sm:w-auto"
             >
               <Plus className="w-4 h-4" />
               <span>New 5-Why RCA</span>
@@ -432,7 +432,7 @@ export default function RCAPage() {
             <button
               type="button"
               onClick={() => setShowNewFmeaModal(true)}
-              className="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer"
+              className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 font-bold text-xs rounded-xl shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer"
             >
               <Plus className="w-4 h-4" />
               <span>+ Add Failure Mode Row</span>
@@ -442,7 +442,7 @@ export default function RCAPage() {
           {/* FMEA Table Matrix */}
           <div className="border border-slate-200 rounded-xl overflow-x-auto">
             <table className="w-full text-left text-xs min-w-[900px]">
-              <thead className="bg-slate-900 text-white uppercase tracking-wider text-[10px]">
+              <thead className="bg-blue-600 text-white shadow-sm uppercase tracking-wider text-[10px]">
                 <tr>
                   <th className="px-3.5 py-3">Process Step</th>
                   <th className="px-3.5 py-3">Potential Failure Mode</th>
@@ -588,7 +588,7 @@ export default function RCAPage() {
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-xs transition-colors cursor-pointer"
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 font-bold text-xs rounded-xl shadow-xs transition-colors cursor-pointer"
                 >
                   Save 5-Why Investigation
                 </button>
@@ -717,7 +717,7 @@ export default function RCAPage() {
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-xs transition-colors cursor-pointer"
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 font-bold text-xs rounded-xl shadow-xs transition-colors cursor-pointer"
                 >
                   Add to FMEA Table
                 </button>

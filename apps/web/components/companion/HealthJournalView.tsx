@@ -243,7 +243,7 @@ export const HealthJournalView: React.FC = () => {
                 className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
                   device.connected
                     ? 'bg-white border border-emerald-300 text-emerald-800 hover:bg-emerald-100/50 shadow-2xs'
-                    : 'bg-slate-900 hover:bg-black text-white shadow-xs'
+                    : 'bg-blue-600 hover:bg-blue-700 text-white shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 shadow-xs'
                 }`}
               >
                 {device.connected ? 'Linked' : 'Connect'}

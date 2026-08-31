@@ -41,7 +41,7 @@ export const AppShellContent: React.FC<{ children: React.ReactNode }> = ({ child
     <div className="flex h-[100dvh] min-h-0 w-full overflow-hidden bg-workspace-bg text-text-primary">
       <a
         href="#stavya-one-main-content"
-        className="sr-only focus:not-sr-only fixed left-3 top-3 z-[70] rounded-lg bg-slate-900 px-4 py-3 text-sm font-bold text-white shadow-xl"
+        className="sr-only focus:not-sr-only fixed left-3 top-3 z-[70] rounded-lg bg-blue-600 shadow-sm px-4 py-3 text-sm font-bold text-white shadow-xl"
       >
         Skip to main content
       </a>

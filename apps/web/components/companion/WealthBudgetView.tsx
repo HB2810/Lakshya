@@ -160,7 +160,7 @@ export const WealthBudgetView: React.FC = () => {
       {/* Progress Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {/* Monthly Budget Remaining */}
-        <Card className="p-6 bg-slate-900 text-white rounded-3xl space-y-4 shadow-sm border-slate-800 relative overflow-hidden">
+        <Card className="p-6 bg-white text-slate-900 border-2 border-slate-200 rounded-2xl shadow-sm space-y-4 shadow-sm border-slate-800 relative overflow-hidden">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
               <Wallet className="w-4 h-4 text-blue-400" />

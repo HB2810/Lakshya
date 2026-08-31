@@ -132,6 +132,8 @@ export const Header: React.FC<HeaderProps> = ({ onOpenNavigation = () => {} }) =
             {getPageTitle(pathname)}
           </h1>
           <div className="hidden items-center gap-1.5 text-xs text-slate-500 mt-0.5 sm:flex">
+            <span className="font-bold text-blue-700 tracking-wide">Stavya One</span>
+            <span className="text-slate-300">|</span>
             <span className="max-w-44 truncate font-semibold text-slate-700">{user.departmentName || 'Stavya Spine Hospital'}</span>
           </div>
         </div>

@@ -288,7 +288,7 @@ export default function ExecutionPage() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6">
+    <div className="max-w-6xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       {/* Toast Feedback */}
       {toastMessage && (
         <div className="p-3.5 bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs font-bold rounded-2xl flex items-center justify-between shadow-xs animate-in fade-in">
@@ -307,7 +307,7 @@ export default function ExecutionPage() {
       )}
 
       {/* 1. HEADER & ACTIONS */}
-      <div className="bg-white border border-slate-200/90 rounded-3xl p-5 sm:p-6 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="bg-white border border-slate-200 rounded-2xl p-5 sm:p-6 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
             <span className="px-3 py-0.5 bg-blue-600 text-white text-[10px] font-black rounded-full uppercase tracking-wider shadow-2xs">
@@ -401,7 +401,7 @@ export default function ExecutionPage() {
       {isQuickAddOpen && (
         <form
           onSubmit={handleQuickAdd}
-          className="p-4 sm:p-5 bg-white border border-blue-200/80 rounded-3xl shadow-xs space-y-3 animate-in fade-in duration-150"
+          className="p-4 sm:p-5 bg-white border border-blue-200/80 rounded-2xl shadow-sm space-y-3 animate-in fade-in duration-150"
         >
           <div className="flex items-center justify-between border-b border-slate-100 pb-2">
             <h3 className="text-xs font-bold uppercase tracking-wider text-slate-900">
@@ -551,7 +551,7 @@ export default function ExecutionPage() {
 
       {/* 4. WORK ITEMS LIST */}
       {displayedItems.length === 0 ? (
-        <div className="p-12 text-center bg-white border border-slate-200 rounded-3xl space-y-2">
+        <div className="p-12 text-center bg-white border border-slate-200 rounded-2xl shadow-sm space-y-2">
           <CheckSquare className="w-8 h-8 text-slate-300 mx-auto" />
           <h3 className="text-base font-bold text-slate-900">No Work Items Found</h3>
           <p className="text-xs text-slate-500">
@@ -559,14 +559,16 @@ export default function ExecutionPage() {
           </p>
         </div>
       ) : (
-        <div className="space-y-3">
-          {displayedItems.map(item => {
+        <div className="bg-white border border-slate-200 rounded-2xl shadow-sm flex flex-col overflow-hidden">
+          {displayedItems.map((item, index) => {
             const raciHealth = evaluateRaciGovernance(item.raci, item);
             return (
             <div
               key={item.id}
               onClick={() => openTask(item)}
-              className="p-4 bg-white border border-slate-200 hover:border-slate-300 rounded-2xl shadow-xs transition-all flex flex-col md:flex-row md:items-center justify-between gap-4 cursor-pointer hover:shadow-sm"
+              className={`p-4 bg-white hover:bg-slate-50 transition-all flex flex-col md:flex-row md:items-center justify-between gap-4 cursor-pointer ${
+                index !== displayedItems.length - 1 ? 'border-b border-slate-200' : ''
+              }`}
             >
               {/* Task Details */}
               <div className="space-y-1.5 flex-1 min-w-0">

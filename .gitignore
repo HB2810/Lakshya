@@ -39,3 +39,6 @@ htmlcov/
 *.swo
 .DS_Store
 Thumbs.db
+
+# Agent Config & Skills
+.agents/

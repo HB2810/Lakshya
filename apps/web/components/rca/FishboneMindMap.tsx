@@ -321,7 +321,7 @@ export const FishboneMindMap: React.FC<FishboneMindMapProps> = ({ fishbone }) =>
                         <button
                           type="button"
                           onClick={() => handleSaveInlineCause(cat.key)}
-                          className="p-1 bg-slate-900 text-white rounded cursor-pointer"
+                          className="p-1 bg-blue-600 text-white shadow-sm rounded cursor-pointer"
                         >
                           <Plus className="w-3 h-3" />
                         </button>
@@ -462,7 +462,7 @@ export const FishboneMindMap: React.FC<FishboneMindMapProps> = ({ fishbone }) =>
                         <button
                           type="button"
                           onClick={() => handleSaveInlineCause(cat.key)}
-                          className="p-1 bg-slate-900 text-white rounded cursor-pointer"
+                          className="p-1 bg-blue-600 text-white shadow-sm rounded cursor-pointer"
                         >
                           <Plus className="w-3 h-3" />
                         </button>
@@ -549,7 +549,7 @@ export const FishboneMindMap: React.FC<FishboneMindMapProps> = ({ fishbone }) =>
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-slate-900 text-white text-xs font-bold rounded-xl"
+                  className="px-4 py-2 bg-blue-600 text-white shadow-sm text-xs font-bold rounded-xl"
                 >
                   Update Problem Head
                 </button>

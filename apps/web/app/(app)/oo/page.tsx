@@ -175,7 +175,7 @@ export default function OOPage() {
             <button
               onClick={() => setFilterType('ALL')}
               className={`shrink-0 whitespace-nowrap px-3 py-1 rounded-full text-xs font-bold transition-all ${
-                filterType === 'ALL' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600'
+                filterType === 'ALL' ? 'bg-blue-600 text-white shadow-sm' : 'bg-slate-100 text-slate-600'
               }`}
             >
               All O&O
