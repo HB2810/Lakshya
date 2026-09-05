@@ -69,34 +69,49 @@ stavya-one/
 
 ---
 
-## 🚀 Quick Start Guide
+## 🚀 Quick Start & Deployment
 
-### 1. Frontend (`apps/web`)
+For a full step-by-step operations manual, staff credentials list, and cloud VPS guide, see the [Deployment & Staff Launch Guide](docs/development/DEPLOYMENT_GUIDE.md).
+
+### 1. One-Command Docker Launch (Recommended)
+
+Run the entire full-stack application (PostgreSQL 16, FastAPI backend, and Next.js frontend) with automatic database migrations and initial seeding:
 
 ```bash
-# Navigate to the frontend directory
+# Clone and copy environment configuration
+cp .env.example .env
+
+# Launch the full stack
+docker compose up -d --build
+```
+- **Frontend:** `http://localhost:3001`
+- **Backend API Docs:** `http://localhost:8000/docs`
+
+---
+
+### 2. Local Development (Without Docker)
+
+#### Backend (`apps/api`)
+```bash
+cd apps/api
+# The backend automatically boots an in-memory SQLite database if PostgreSQL is not running!
+.venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 8000
+
+# Run automated tests
+.venv/bin/pytest
+```
+
+#### Frontend (`apps/web`)
+```bash
 cd apps/web
-
-# Install dependencies
 npm install
-
-# Run development server (Port 3000)
 npm run dev
 
 # Run typecheck & automated test suites
 npm run typecheck
 npm test
 ```
-
-### 2. Backend (`apps/api`)
-
-```bash
-# Navigate to the backend directory
-cd apps/api
-
-# Activate Python virtual environment & run tests
-.venv/bin/pytest
-```
+Access the application at `http://localhost:3001`. Default staff credentials are pre-configured (`Stavya@2026`) with a 214-member directory selector on `/login`.
 
 ---
 

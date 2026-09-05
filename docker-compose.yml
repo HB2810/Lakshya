@@ -1,0 +1,64 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: stavya_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-lakshya}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-lakshya_secure_pass}
+      POSTGRES_DB: ${POSTGRES_DB:-lakshya_prod}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-lakshya} -d ${POSTGRES_DB:-lakshya_prod}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: ./apps/api
+      dockerfile: Dockerfile
+    container_name: stavya_api
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      LAKSHYA_ENVIRONMENT: ${LAKSHYA_ENVIRONMENT:-production}
+      LAKSHYA_DEBUG: ${LAKSHYA_DEBUG:-false}
+      LAKSHYA_LOG_LEVEL: ${LAKSHYA_LOG_LEVEL:-info}
+      LAKSHYA_DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-lakshya}:${POSTGRES_PASSWORD:-lakshya_secure_pass}@db:5432/${POSTGRES_DB:-lakshya_prod}
+      LAKSHYA_CORS_ALLOWED_ORIGINS: ${LAKSHYA_CORS_ALLOWED_ORIGINS:-http://localhost:3000,http://localhost:3001,http://127.0.0.1:3000,http://127.0.0.1:3001}
+      LAKSHYA_TRUSTED_ORIGINS: ${LAKSHYA_TRUSTED_ORIGINS:-http://localhost:3000,http://localhost:3001,http://127.0.0.1:3000,http://127.0.0.1:3001}
+      LAKSHYA_SESSION_COOKIE_SECURE: ${LAKSHYA_SESSION_COOKIE_SECURE:-false}
+      LAKSHYA_ALLOW_LOCAL_BOOTSTRAP: "false"
+    ports:
+      - "8000:8000"
+    command: >
+      sh -c "alembic upgrade head &&
+             python -m app.scripts.seed_v1_demo_users &&
+             uvicorn app.main:app --host 0.0.0.0 --port 8000"
+
+  web:
+    build:
+      context: ./apps/web
+      dockerfile: Dockerfile
+    container_name: stavya_web
+    restart: unless-stopped
+    depends_on:
+      - api
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      NEXT_PUBLIC_API_URL: http://api:8000
+    ports:
+      - "${WEB_PORT:-3001}:3000"
+
+volumes:
+  pgdata:
+    driver: local
